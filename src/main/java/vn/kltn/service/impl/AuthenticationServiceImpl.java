@@ -32,6 +32,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
                     .userId(user.getId())
+                    .fullName(user.getFullName())
                     .build();
         } catch (Exception e) {
             log.error(e.getMessage());
