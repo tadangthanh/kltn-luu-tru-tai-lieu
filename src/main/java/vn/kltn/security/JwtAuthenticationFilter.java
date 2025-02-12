@@ -22,14 +22,16 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final IUserService userService;
     private final JwtService jwtService;
+
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
         String authorizationHeader = request.getHeader("Authorization");
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             String token = authorizationHeader.substring(7);
             if (this.jwtService.tokenIsValid(token)) {
+                // lay username trong jwt
                 String username = this.jwtService.extractUsername(authorizationHeader.substring(7));
-                UserDetails userDetails = this.userService.loadUserByUsername(username                   );
+                UserDetails userDetails = this.userService.loadUserByUsername(username);
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails((new WebAuthenticationDetailsSource()).buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
