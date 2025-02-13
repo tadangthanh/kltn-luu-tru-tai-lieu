@@ -14,7 +14,7 @@ import vn.kltn.dto.response.TokenResponse;
 import vn.kltn.service.IAuthenticationService;
 
 @RequestMapping("/auth")
-@Slf4j
+@Slf4j(topic = "AUTHENTICATION_CONTROLLER")
 @RestController
 @RequiredArgsConstructor
 public class AuthenticationController {
@@ -22,5 +22,9 @@ public class AuthenticationController {
     @PostMapping("/access")
     public ResponseData<TokenResponse> login(@Validated @RequestBody AuthRequest authRequest) {
         return new ResponseData<>(HttpStatus.OK.value(), "Login success", authenticationService.login(authRequest));
+    }
+    @PostMapping("/refresh-token")
+    public ResponseData<TokenResponse> refreshToken(@Validated @RequestBody String refreshToken) {
+        return new ResponseData<>(HttpStatus.OK.value(), "Login success", authenticationService.refreshToken(refreshToken));
     }
 }

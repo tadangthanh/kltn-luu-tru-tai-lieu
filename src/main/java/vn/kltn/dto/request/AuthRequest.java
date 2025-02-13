@@ -11,4 +11,7 @@ public class AuthRequest implements Serializable {
     private String email;
     @NotBlank(message = "Password is required")
     private String password;
+    private String platform;
+    private String deviceToken;
+
 }

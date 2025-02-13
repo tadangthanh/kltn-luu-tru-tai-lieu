@@ -5,4 +5,5 @@ import vn.kltn.dto.response.TokenResponse;
 
 public interface IAuthenticationService {
     TokenResponse login(AuthRequest authRequest);
+    TokenResponse refreshToken(String refreshToken);
 }
