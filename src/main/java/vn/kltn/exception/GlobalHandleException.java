@@ -23,7 +23,7 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         errorResponse.setPath(request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
-    @ExceptionHandler({BadRequestException.class,UploadFailureException.class})
+    @ExceptionHandler({BadRequestException.class,UploadFailureException.class,CustomBlobStorageException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public final ResponseEntity<ErrorResponse> handleUploadFail(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
@@ -33,5 +33,16 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         errorResponse.setMessage(ex.getMessage());
         errorResponse.setPath(request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+    @ExceptionHandler({CustomBlobStorageException.class})
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public final ResponseEntity<ErrorResponse> handleBlobStorageException(Exception ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(LocalDateTime.now());
+        errorResponse.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+        errorResponse.setError(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
+        errorResponse.setMessage(ex.getMessage());
+        errorResponse.setPath(request.getDescription(false));
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

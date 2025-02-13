@@ -8,7 +8,7 @@ import java.io.InputStream;
 public interface IFileStorageService {
     String upload(MultipartFile file);
     String upload(InputStream data,String originalFileName,long length);
-    String uploadChunked(InputStream data, String originalFileName, long length, int chunkSize) throws IOException;
+    String uploadChunked(InputStream data, String originalFileName, long length, int chunkSize) ;
     String getBlobUrl(String blobName);
 
     boolean deleteBlob(String blobName);
