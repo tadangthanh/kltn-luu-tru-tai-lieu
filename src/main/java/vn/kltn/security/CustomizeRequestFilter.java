@@ -20,13 +20,14 @@ import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+@Slf4j(topic = "CUSTOMIZE_REQUEST_FILTER")
+public class CustomizeRequestFilter extends OncePerRequestFilter {
     private final IUserService userService;
     private final JwtService jwtService;
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
         log.info("{} {}", request.getMethod(), request.getRequestURI());
         String authorizationHeader = request.getHeader("Authorization");
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
@@ -35,7 +36,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // lay username trong jwt
                 String username = this.jwtService.extractUsername(authorizationHeader.substring(7));
                 UserDetails userDetails = this.userService.loadUserByUsername(username);
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
+                        null, userDetails.getAuthorities());
                 authToken.setDetails((new WebAuthenticationDetailsSource()).buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             } else {

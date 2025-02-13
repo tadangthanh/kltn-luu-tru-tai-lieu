@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import vn.kltn.common.UserStatus;
 
 import java.util.Collection;
 import java.util.List;
@@ -24,6 +25,9 @@ public class User extends BaseEntity implements UserDetails {
     @ManyToOne
     @JoinColumn(name = "role_id")
     private Role role;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status",length = 255)
+    private UserStatus status;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -37,25 +41,24 @@ public class User extends BaseEntity implements UserDetails {
 
     @Override
     public boolean isAccountNonExpired() {
-//        return UserDetails.super.isAccountNonExpired();
-        return true;
+        return UserDetails.super.isAccountNonExpired();
+//        return true;
     }
 
     @Override
     public boolean isAccountNonLocked() {
-//        return UserDetails.super.isAccountNonLocked();
-        return true;
+        return UserDetails.super.isAccountNonLocked();
+//        return true;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-//        return UserDetails.super.isCredentialsNonExpired();
-        return true;
+        return UserDetails.super.isCredentialsNonExpired();
+//        return true;
     }
 
     @Override
     public boolean isEnabled() {
-//        return UserDetails.super.isEnabled();
-        return true;
+        return UserStatus.ACTIVE.equals(status);
     }
 }

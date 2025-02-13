@@ -31,7 +31,7 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig implements WebMvcConfigurer {
     private final IUserService userDetailsService;
-    private final JwtAuthenticationFilter preFilter;
+    private final CustomizeRequestFilter requestFilter;
     private final String[] WHITE_LIST = {
             "/auth/**",
             "/ws/**",
@@ -75,7 +75,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                                 .requestMatchers(WHITE_LIST).permitAll()
                                 .anyRequest().authenticated()
                 ).sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authenticationProvider(provider()).addFilterBefore(preFilter, UsernamePasswordAuthenticationFilter.class);
+                .authenticationProvider(provider()).addFilterBefore(requestFilter, UsernamePasswordAuthenticationFilter.class);
         http.httpBasic(AbstractHttpConfigurer::disable);
         http.cors((cors) -> {
             cors.configurationSource(this.corsConfigurationSource());
