@@ -81,7 +81,7 @@ public class CustomizeRequestFilter extends OncePerRequestFilter {
     }
     @Getter
     @Setter
-    private class ErrorResponse{
+    private static class ErrorResponse{
         private Date timestamp;
         private int status;
         private String error;
