@@ -5,7 +5,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
@@ -14,7 +13,6 @@ import java.time.LocalDateTime;
 @ControllerAdvice
 public class GlobalHandleException extends ResponseEntityExceptionHandler {
     @ExceptionHandler({ResourceNotFoundException.class})
-    @ResponseStatus(HttpStatus.NOT_FOUND)
     public final ResponseEntity<ErrorResponse> handleResourceNotFound(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(LocalDateTime.now());
@@ -22,10 +20,9 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         errorResponse.setError(HttpStatus.NOT_FOUND.getReasonPhrase());
         errorResponse.setMessage(ex.getMessage());
         errorResponse.setPath(request.getDescription(false));
-        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(errorResponse, HttpStatus.OK);
     }
-    @ExceptionHandler({AccessDeniedException.class})
-    @ResponseStatus(HttpStatus.FORBIDDEN)
+    @ExceptionHandler({AccessDeniedException.class,AccessDeniedException.class})
     public final ResponseEntity<ErrorResponse> handleAccessDenied(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(LocalDateTime.now());
@@ -33,10 +30,19 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         errorResponse.setError(HttpStatus.FORBIDDEN.getReasonPhrase());
         errorResponse.setMessage(ex.getMessage());
         errorResponse.setPath(request.getDescription(false));
-        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
+        return new ResponseEntity<>(errorResponse, HttpStatus.OK);
+    }
+    @ExceptionHandler({UnauthorizedException.class})
+    public final ResponseEntity<ErrorResponse> handleUnauthorized(Exception ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(LocalDateTime.now());
+        errorResponse.setStatus(HttpStatus.UNAUTHORIZED.value());
+        errorResponse.setError(HttpStatus.UNAUTHORIZED.getReasonPhrase());
+        errorResponse.setMessage(ex.getMessage());
+        errorResponse.setPath(request.getDescription(false));
+        return new ResponseEntity<>(errorResponse, HttpStatus.OK);
     }
     @ExceptionHandler({BadRequestException.class,UploadFailureException.class,InvalidDataException.class})
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public final ResponseEntity<ErrorResponse> handleUploadFail(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(LocalDateTime.now());
@@ -44,10 +50,9 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         errorResponse.setError(HttpStatus.BAD_REQUEST.getReasonPhrase());
         errorResponse.setMessage(ex.getMessage());
         errorResponse.setPath(request.getDescription(false));
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(errorResponse, HttpStatus.OK);
     }
     @ExceptionHandler({CustomBlobStorageException.class})
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public final ResponseEntity<ErrorResponse> handleBlobStorageException(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(LocalDateTime.now());
@@ -55,6 +60,6 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         errorResponse.setError(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
         errorResponse.setMessage(ex.getMessage());
         errorResponse.setPath(request.getDescription(false));
-        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(errorResponse, HttpStatus.OK);
     }
 }

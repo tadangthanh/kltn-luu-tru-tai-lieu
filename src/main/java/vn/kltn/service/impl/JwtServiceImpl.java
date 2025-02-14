@@ -11,16 +11,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.TokenType;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.service.IJwtService;
 
 import javax.crypto.SecretKey;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -41,7 +40,7 @@ public class JwtServiceImpl implements IJwtService {
     private long expiryDay;
 
     @Override
-    public String generateAccessToken(long userId, String email, Collection<? extends GrantedAuthority> authorities) {
+    public String generateAccessToken(long userId, String email,  List<String> authorities) {
         log.info("Generate access token for user with id: {}", userId);
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
@@ -50,7 +49,7 @@ public class JwtServiceImpl implements IJwtService {
     }
 
     @Override
-    public String generateRefreshToken(long userId, String email, Collection<? extends GrantedAuthority> authorities) {
+    public String generateRefreshToken(long userId, String email, List<String> authorities) {
         log.info("Generate refresh token for user with id: {}", userId);
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);

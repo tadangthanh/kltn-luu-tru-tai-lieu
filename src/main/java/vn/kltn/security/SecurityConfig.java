@@ -33,10 +33,7 @@ public class SecurityConfig implements WebMvcConfigurer {
     private final IUserService userDetailsService;
     private final CustomizeRequestFilter requestFilter;
     private final String[] WHITE_LIST = {
-            "/auth/**",
-            "/ws/**",
-            "/api/blob/**",
-            "/swagger-ui/*"
+            "/auth/**"
     };
 
     @Override

@@ -13,6 +13,8 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -29,6 +31,7 @@ import static vn.kltn.common.TokenType.ACCESS_TOKEN;
 @Component
 @RequiredArgsConstructor
 @Slf4j(topic = "CUSTOMIZE_REQUEST_FILTER")
+@EnableMethodSecurity
 public class CustomizeRequestFilter extends OncePerRequestFilter {
     private final IUserService userService;
     private final IJwtService jwtService;
@@ -51,7 +54,7 @@ public class CustomizeRequestFilter extends OncePerRequestFilter {
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.setContentType("application/json");
                 response.setCharacterEncoding("UTF-8");
-                response.getWriter().write(errorResponse(e.getMessage()));
+                response.getWriter().write(errorResponse(request.getRequestURI(),e.getMessage()));
                 return;
             }
             UserDetails userDetails = this.userService.loadUserByUsername(email);
@@ -66,12 +69,13 @@ public class CustomizeRequestFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private String errorResponse(String message) {
+    private String errorResponse(String uri,String message) {
         try{
             ErrorResponse errorResponse = new ErrorResponse();
             errorResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
             errorResponse.setError("Forbidden");
             errorResponse.setMessage(message);
+            errorResponse.setPath(uri);
             errorResponse.setTimestamp(new Date());
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             return gson.toJson(errorResponse);
@@ -85,6 +89,7 @@ public class CustomizeRequestFilter extends OncePerRequestFilter {
     private static class ErrorResponse{
         private Date timestamp;
         private int status;
+        private String path;
         private String error;
         private String message;
     }

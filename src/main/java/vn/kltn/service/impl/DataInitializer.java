@@ -25,9 +25,13 @@ public class DataInitializer implements CommandLineRunner {
     }
     private List<Role> initRole() {
         Role r1 = new Role();
-        r1.setName("ROLE_ADMIN");
+        r1.setName("sysAdmin");
         Role r2 = new Role();
-        r2.setName("ROLE_USER");
+        r2.setName("admin");
+        Role r3=new Role();
+        r3.setName("manager");
+        Role r4 = new Role();
+        r4.setName("user");
         return List.of(r1, r2);
     }
 }
