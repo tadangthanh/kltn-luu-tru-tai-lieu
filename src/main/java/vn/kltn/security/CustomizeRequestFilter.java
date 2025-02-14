@@ -46,6 +46,7 @@ public class CustomizeRequestFilter extends OncePerRequestFilter {
                 email = jwtService.extractEmail(authorizationHeader, ACCESS_TOKEN);
                 log.info("Email: {}", email);
             } catch (AccessDeniedException e) {
+                // neu token ko hop le thi khi extract email se bi nem ra ngoai le
                 log.error("Access denied: {}", e.getMessage());
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.setContentType("application/json");
@@ -54,6 +55,7 @@ public class CustomizeRequestFilter extends OncePerRequestFilter {
                 return;
             }
             UserDetails userDetails = this.userService.loadUserByUsername(email);
+
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
                     null, userDetails.getAuthorities());
             authToken.setDetails((new WebAuthenticationDetailsSource()).buildDetails(request));

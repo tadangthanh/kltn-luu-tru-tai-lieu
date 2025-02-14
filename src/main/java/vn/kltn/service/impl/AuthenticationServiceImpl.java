@@ -28,9 +28,9 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     public TokenResponse getAccessToken(AuthRequest authRequest) {
         log.info("Get access token");
         try {
+            // neu khong co exception thi login thanh cong
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(authRequest.getEmail()
-                    , authRequest.getPassword()));
+                    new UsernamePasswordAuthenticationToken(authRequest.getEmail(),authRequest.getPassword()));
         } catch (AuthenticationException e) {
             log.error("Login fail, message: {}", e.getMessage());
             throw new AccessDeniedException(e.getMessage());
