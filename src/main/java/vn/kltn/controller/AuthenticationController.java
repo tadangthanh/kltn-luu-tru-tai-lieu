@@ -21,10 +21,10 @@ public class AuthenticationController {
     private final IAuthenticationService authenticationService;
     @PostMapping("/access")
     public ResponseData<TokenResponse> login(@Validated @RequestBody AuthRequest authRequest) {
-        return new ResponseData<>(HttpStatus.OK.value(), "Login success", authenticationService.login(authRequest));
+        return new ResponseData<>(HttpStatus.OK.value(), "Login success", authenticationService.getAccessToken(authRequest));
     }
     @PostMapping("/refresh-token")
     public ResponseData<TokenResponse> refreshToken(@Validated @RequestBody String refreshToken) {
-        return new ResponseData<>(HttpStatus.OK.value(), "Login success", authenticationService.refreshToken(refreshToken));
+        return new ResponseData<>(HttpStatus.OK.value(), "Login success", authenticationService.getRefreshToken(refreshToken));
     }
 }

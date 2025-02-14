@@ -46,3 +46,9 @@ spring:
 azure:
   blob-storage:
     connection-string: ${AZURE_STORAGE_CONNECTION_STRING}
+
+jwt:
+  expirationMinutes: ${JWT_EXPIRATION_MS:5}
+  accessKey: ${JWT_ACCESS_KEY:f0mDtrSt+bRlEszLhbyn97P8a9gRqBHO3/ZR2D5QR0Q=}
+  refreshKey: ${JWT_REFRESH_KEY:P2HKzJI3GvYDayyxtX/9x5906PVnrj8aXU8b6RPXjNc=}
+  expiryDay: ${JWT_EXPIRATION_DAY:14}

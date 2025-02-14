@@ -23,7 +23,7 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         errorResponse.setPath(request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
-    @ExceptionHandler({BadRequestException.class,UploadFailureException.class,CustomBlobStorageException.class})
+    @ExceptionHandler({BadRequestException.class,UploadFailureException.class,InvalidDataException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public final ResponseEntity<ErrorResponse> handleUploadFail(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
