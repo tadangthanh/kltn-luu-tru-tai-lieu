@@ -22,7 +22,6 @@ import vn.kltn.service.IJwtService;
 import vn.kltn.service.IUserService;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.Date;
 
 import static vn.kltn.common.TokenType.ACCESS_TOKEN;

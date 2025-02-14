@@ -8,6 +8,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
+import vn.kltn.common.TokenType;
 import vn.kltn.dto.request.AuthRequest;
 import vn.kltn.dto.response.TokenResponse;
 import vn.kltn.exception.ResourceNotFoundException;
@@ -27,7 +28,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     public TokenResponse getAccessToken(AuthRequest authRequest) {
         log.info("Get access token");
         try {
-            Authentication authentication=authenticationManager.authenticate(
+            authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(authRequest.getEmail()
                     , authRequest.getPassword()));
         } catch (AuthenticationException e) {
@@ -45,7 +46,16 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     }
 
     @Override
-    public TokenResponse getRefreshToken(String refreshToken) {
-        return null;
+    public TokenResponse getRefreshToken(String token) {
+        log.info("Get refresh token");
+        String email = jwtService.extractEmail(token, TokenType.REFRESH_TOKEN);
+        var user = userRepo.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại"));
+        String accessToken = jwtService.generateAccessToken(user.getId(), email, user.getAuthorities());
+        String refreshToken = jwtService.generateRefreshToken(user.getId(),email, user.getAuthorities());
+        return TokenResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
     }
 }
