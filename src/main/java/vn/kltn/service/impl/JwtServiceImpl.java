@@ -6,6 +6,7 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,7 +19,6 @@ import vn.kltn.service.IJwtService;
 
 import javax.crypto.SecretKey;
 import java.security.Key;
-import java.security.SignatureException;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -149,7 +149,7 @@ public class JwtServiceImpl implements IJwtService {
             return Jwts.parser()
                     .verifyWith(getKey(type))
                     .build().parseSignedClaims(token).getPayload();
-        } catch (ExpiredJwtException e) {
+        } catch (ExpiredJwtException | SignatureException e) {
             throw new AccessDeniedException("Access denied!, error: " + e.getMessage());
         }
     }

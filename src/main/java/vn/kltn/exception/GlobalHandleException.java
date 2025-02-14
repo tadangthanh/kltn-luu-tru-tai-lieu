@@ -2,6 +2,7 @@ package vn.kltn.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -22,6 +23,17 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         errorResponse.setMessage(ex.getMessage());
         errorResponse.setPath(request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+    }
+    @ExceptionHandler({AccessDeniedException.class})
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public final ResponseEntity<ErrorResponse> handleAccessDenied(Exception ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(LocalDateTime.now());
+        errorResponse.setStatus(HttpStatus.FORBIDDEN.value());
+        errorResponse.setError(HttpStatus.FORBIDDEN.getReasonPhrase());
+        errorResponse.setMessage(ex.getMessage());
+        errorResponse.setPath(request.getDescription(false));
+        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
     }
     @ExceptionHandler({BadRequestException.class,UploadFailureException.class,InvalidDataException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
