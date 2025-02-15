@@ -19,7 +19,7 @@ public class UserController {
     private final IUserService userService;
 
     @PostMapping("/register")
-    public ResponseData<String> register(@Valid @RequestBody UserRegister userRegister) {
+    public ResponseData<String> register(@Validated @RequestBody UserRegister userRegister) {
         log.info("register user with email: {}", userRegister.getEmail());
         userService.register(userRegister);
         return new ResponseData<>(HttpStatus.CREATED.value(), "Vui lòng kiểm tra email để xác nhận tài khoản");

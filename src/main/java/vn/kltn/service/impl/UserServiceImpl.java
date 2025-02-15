@@ -14,6 +14,7 @@ import vn.kltn.entity.User;
 import vn.kltn.entity.UserHasRole;
 import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.InvalidTokenException;
+import vn.kltn.exception.PasswordMismatchException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.UserMapper;
 import vn.kltn.repository.RoleRepo;
@@ -45,9 +46,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public void register(UserRegister userRegister) {
-        if (isValidUserRegister(userRegister)) {
-            throw new ConflictResourceException("Email đã được sử dụng");
-        }
+        validationUserRegister(userRegister);
         User user = userMapper.registerToUser(userRegister);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user = userRepo.save(user);
@@ -58,7 +57,18 @@ public class UserServiceImpl implements IUserService {
         // Gửi email bất đồng bộ
         gmailService.sendConfirmLink(user.getEmail(), user.getId(), jwtService.generateTokenConfirmEmail(user.getEmail()));
     }
+    private void validationUserRegister(UserRegister userRegister) {
+        if (!isMatchPassword(userRegister.getPassword(), userRegister.getConfirmPassword())) {
+            throw new PasswordMismatchException("Mật khẩu không khớp");
+        }
+        if (userRepo.existsByEmail(userRegister.getEmail())) {
+            throw new ConflictResourceException("Email đã được sử dụng");
+        }
+    }
 
+    private boolean isMatchPassword(String password, String confirmPassword) {
+        return password.equals(confirmPassword);
+    }
     @Override
     public void confirmEmail(Long userId, String token) {
         User user = findUserByIdOrThrow(userId);
@@ -91,7 +101,7 @@ public class UserServiceImpl implements IUserService {
 
     private void validateUserActivationStatus(User user) {
         if (user.getStatus() == UserStatus.ACTIVE) {
-            throw new ConflictResourceException("Tài khoản đã được kích hoạt");
+            throw new ConflictResourceException("Tài khoản đã được kích hoạt trước đó!");
         }
     }
 
@@ -119,9 +129,7 @@ public class UserServiceImpl implements IUserService {
         return userHasRoleRepo.save(userHasRole);
     }
 
-    private boolean isValidUserRegister(UserRegister userRegister) {
-        return userRepo.existsByEmail(userRegister.getEmail());
-    }
+
 
     private Role findRoleByName(String name) {
         return roleRepo.findRoleByName(name).orElseThrow(() -> {

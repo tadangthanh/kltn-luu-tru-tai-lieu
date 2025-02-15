@@ -1,14 +1,19 @@
 package vn.kltn.exception;
 
+import lombok.NonNull;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @ControllerAdvice
 public class GlobalHandleException extends ResponseEntityExceptionHandler {
@@ -42,7 +47,7 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         errorResponse.setPath(request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.OK);
     }
-    @ExceptionHandler({BadRequestException.class,UploadFailureException.class,InvalidDataException.class})
+    @ExceptionHandler({BadRequestException.class,UploadFailureException.class,InvalidDataException.class,PasswordMismatchException.class})
     public final ResponseEntity<ErrorResponse> handleUploadFail(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(LocalDateTime.now());
@@ -71,5 +76,16 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         errorResponse.setMessage(ex.getMessage());
         errorResponse.setPath(request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.OK);
+    }
+
+    // method override return field and details
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, @NonNull HttpHeaders headers, @NonNull  HttpStatusCode status, @NonNull  WebRequest request) {
+        ErrorObjectDetails errorObjectDetails = new ErrorObjectDetails();
+        errorObjectDetails.setTimestamp(LocalDateTime.now());
+        errorObjectDetails.setMessage(ex.getMessage().substring(ex.getMessage().lastIndexOf("[")+1,ex.getMessage().lastIndexOf("]")-1));
+        errorObjectDetails.setField(Objects.requireNonNull(ex.getBindingResult().getFieldError()).getField());
+        errorObjectDetails.setDetails(ex.getBindingResult().getFieldError().getDefaultMessage());
+        return new ResponseEntity<>(errorObjectDetails, HttpStatus.BAD_REQUEST);
     }
 }
