@@ -34,6 +34,6 @@ public class AuthenticationRest {
     @PostMapping("/reset-password")
     public ResponseData<Void> resetPassword(@Validated @RequestBody AuthResetPassword authResetPassword) {
         userService.resetPassword(authResetPassword);
-        return new ResponseData<>(HttpStatus.OK.value(), "Vui lòng kiểm tra email để đổi mật khẩu");
+        return new ResponseData<>(HttpStatus.OK.value(), "Đổi mật khẩu thành công");
     }
 }
