@@ -13,6 +13,7 @@ import vn.kltn.entity.Role;
 import vn.kltn.entity.User;
 import vn.kltn.entity.UserHasRole;
 import vn.kltn.exception.ConflictResourceException;
+import vn.kltn.exception.InvalidTokenException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.UserMapper;
 import vn.kltn.repository.RoleRepo;
@@ -62,22 +63,37 @@ public class UserServiceImpl implements IUserService {
         gmailService.sendConfirmLink(user.getEmail(), user.getId(),jwtService.generateTokenConfirmEmail(user.getEmail(), 1));
     }
 
-    @Override // xac nhan email de kich hoat tai khoan
+    @Override
     public void confirmEmail(Long userId, String token) {
-        User userExist = findUserByIdOrThrow(userId);
-        if (userExist.getStatus() != UserStatus.NONE) {
+        User user = findUserByIdOrThrow(userId);
+
+        validateUserActivationStatus(user);
+        validateToken(token, user);
+
+        activateUserAccount(user);
+    }
+    private void validateUserActivationStatus(User user) {
+        if (user.getStatus() != UserStatus.NONE) {
             throw new ConflictResourceException("Tài khoản đã được kích hoạt");
         }
-        if (!jwtService.isTokenValid(token, CONFIRMATION_TOKEN)) {
-            throw new ResourceNotFoundException("Token không hợp lệ");
-        }
-        String email = jwtService.extractEmail(token, TokenType.CONFIRMATION_TOKEN);
-        if (!userExist.getEmail().equals(email)) {
-            throw new ResourceNotFoundException("Email không hợp lệ");
-        }
-        userExist.setStatus(UserStatus.ACTIVE);
-        userRepo.save(userExist);
     }
+
+    private void validateToken(String token, User user) {
+        if (!jwtService.isTokenValid(token, TokenType.CONFIRMATION_TOKEN)) {
+            throw new InvalidTokenException("Token không hợp lệ");
+        }
+
+        String extractedEmail = jwtService.extractEmail(token, TokenType.CONFIRMATION_TOKEN);
+        if (!user.getEmail().equals(extractedEmail)) {
+            throw new InvalidTokenException("Email không khớp với token");
+        }
+    }
+
+    private void activateUserAccount(User user) {
+        user.setStatus(UserStatus.ACTIVE);
+        userRepo.save(user);
+    }
+
 
     private UserHasRole saveUserHasRole(User user, Role role) {
         UserHasRole userHasRole = new UserHasRole();

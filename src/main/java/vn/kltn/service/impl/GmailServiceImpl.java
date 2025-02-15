@@ -78,7 +78,7 @@ public class GmailServiceImpl implements IMailService {
         } catch (MessagingException | UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
-        log.info("sent confirm link to {}", email);
+        log.info("sent confirm link to {} success", email);
     }
 
 
