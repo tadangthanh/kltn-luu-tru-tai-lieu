@@ -14,7 +14,7 @@ public interface IJwtService {
     String extractEmail(String token, TokenType type);
     String extractSecret(String token);
 
-    String generateTokenConfirmEmail(String email, long expiryMinutes);
+    String generateTokenConfirmEmail(String email);
 
     boolean isTokenValid(String token, TokenType type);
 }

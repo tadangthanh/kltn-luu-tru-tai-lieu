@@ -56,7 +56,7 @@ public class UserServiceImpl implements IUserService {
         // user tao moi se co role la user
         saveUserHasRole(user, role);
         // Gửi email bất đồng bộ
-        gmailService.sendConfirmLink(user.getEmail(), user.getId(), jwtService.generateTokenConfirmEmail(user.getEmail(), 30));
+        gmailService.sendConfirmLink(user.getEmail(), user.getId(), jwtService.generateTokenConfirmEmail(user.getEmail()));
     }
 
     @Override
@@ -71,7 +71,14 @@ public class UserServiceImpl implements IUserService {
     public void reConfirmEmail(String email) {
         User user = findUserByEmailOrThrow(email);
         validateUserActivationStatus(user);
-        gmailService.sendConfirmLink(user.getEmail(), user.getId(), jwtService.generateTokenConfirmEmail(user.getEmail(), 30));
+        gmailService.sendConfirmLink(user.getEmail(), user.getId(), jwtService.generateTokenConfirmEmail(user.getEmail()));
+    }
+
+    @Override
+    public void forgotPassword(String email) {
+        if(!userRepo.existsByEmail(email)){
+            throw new ResourceNotFoundException("Email không tồn tại");
+        }
     }
 
 

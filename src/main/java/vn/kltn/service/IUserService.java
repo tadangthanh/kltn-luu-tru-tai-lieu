@@ -10,4 +10,6 @@ public interface IUserService extends UserDetailsService {
     void confirmEmail(Long userId, String token);
 
     void reConfirmEmail(String email);
+
+    void forgotPassword(String email);
 }

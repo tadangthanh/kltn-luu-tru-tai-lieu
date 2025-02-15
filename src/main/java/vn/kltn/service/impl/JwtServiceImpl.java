@@ -37,12 +37,14 @@ public class JwtServiceImpl implements IJwtService {
     @Value("${jwt.refreshKey}")
     private String refreshKey;
     @Value("${jwt.confirmationKey}")
-    private String confirmationKey  ;
+    private String confirmationKey;
     @Value("${jwt.expiryDay}")
     private long expiryDay;
+    @Value("${jwt.expirationMinutesConfirm}")
+    private long expiryMinutesConfirm;
 
     @Override
-    public String generateAccessToken(long userId, String email,  List<String> authorities) {
+    public String generateAccessToken(long userId, String email, List<String> authorities) {
         log.info("Generate access token for user with id: {}", userId);
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
@@ -72,7 +74,7 @@ public class JwtServiceImpl implements IJwtService {
     }
 
     @Override
-    public String generateTokenConfirmEmail(String email, long expiryMinutes) {
+    public String generateTokenConfirmEmail(String email) {
         log.info("Generate token confirm email for email: {}", email);
         Map<String, Object> claims = new HashMap<>();
         claims.put("email", email);
@@ -80,7 +82,7 @@ public class JwtServiceImpl implements IJwtService {
                 .claims(claims)
                 .subject(email)
                 .issuedAt(new Date()) // thoi diem tao
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * expiryMinutes))
+                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * getExpiryMinutes(CONFIRMATION_TOKEN)))
                 .signWith(getKey(CONFIRMATION_TOKEN))
                 .compact();
     }
@@ -117,7 +119,7 @@ public class JwtServiceImpl implements IJwtService {
                 .claims(claims)
                 .subject(email)
                 .issuedAt(new Date()) // thoi diem tao
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * expiryMinutes))
+                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * getExpiryMinutes(ACCESS_TOKEN)))
                 .signWith(getKey(ACCESS_TOKEN))
                 .compact();
     }
@@ -128,7 +130,7 @@ public class JwtServiceImpl implements IJwtService {
                 .claims(claims)
                 .subject(email)
                 .issuedAt(new Date()) // thoi diem tao
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * expiryDay))
+                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * getExpiryMinutes(REFRESH_TOKEN)))
                 .signWith(getKey(REFRESH_TOKEN))
                 .compact();
     }
@@ -141,6 +143,15 @@ public class JwtServiceImpl implements IJwtService {
             default -> throw new InvalidDataException("Invalid token type");
         };
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(key));
+    }
+
+    private long getExpiryMinutes(TokenType type) {
+        return switch (type) {
+            case ACCESS_TOKEN -> expiryMinutes;
+            case REFRESH_TOKEN -> expiryDay * 24 * 60;
+            case CONFIRMATION_TOKEN -> expiryMinutesConfirm;
+            default -> throw new InvalidDataException("Invalid token type");
+        };
     }
 
 }

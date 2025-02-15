@@ -55,3 +55,5 @@ jwt:
   refreshKey: ${JWT_REFRESH_KEY:P2HKzJI3GvYDayyxtX/9x5906PVnrj8aXU8b6RPXjNc=}
   confirmationKey: ${JWT_CONFIRMATION_KEY:Q2HKzJI3GvYDayyxtX/9x5906PVnrj8aXU8b6RPXjNc=}
   expiryDay: ${JWT_EXPIRATION_DAY:14}
+  expirationMinutesConfirm: ${JWT_EXPIRATION_MS_CONFIRM:10} #thoi gian ton tai cua token confirm
+
