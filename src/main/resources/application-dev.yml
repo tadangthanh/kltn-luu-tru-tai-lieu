@@ -42,6 +42,8 @@ spring:
       max-file-size: -1
       max-request-size: -1
       file-size-threshold: 2MB
+  mail:
+    confirm-url: ${URL_EMAIL_CONFIRMATION:http://localhost:8080/api/v1/user/confirm}
 
 azure:
   blob-storage:

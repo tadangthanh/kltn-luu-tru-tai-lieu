@@ -35,7 +35,10 @@ public class SecurityConfig implements WebMvcConfigurer {
     private final CustomizeRequestFilter requestFilter;
     private final PasswordEncoder passwordEncoder;
     private final String[] WHITE_LIST = {
-            "/auth/**"
+            "/auth/**",
+            "/api/v1/user/register",
+            "/api/v1/user/confirm/**",
+            "/api/v1/user/re-confirm",
     };
 
     @Override

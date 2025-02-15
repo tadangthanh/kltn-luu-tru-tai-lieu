@@ -27,6 +27,11 @@ public class GmailServiceImpl implements IMailService {
     private final SpringTemplateEngine springTemplateEngine;
     @Value("${spring.mail.from}")
     private String emailFrom;
+    @Value("${spring.mail.confirm-url}")
+    private String confirmUrl;
+
+
+
 
     @Override
     public String sendEmail(String recipients, String subject, String content, MultipartFile[] files) {
@@ -65,7 +70,7 @@ public class GmailServiceImpl implements IMailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
             Context context = new Context();
 
-            String linkConfirm = String.format("http://localhost:8080/auth/confirm/%s?token=%s", id, secret);
+            String linkConfirm = String.format(confirmUrl+"/%s?token=%s", id, secret);
             Map<String, Object> properties = Map.of("linkConfirm", linkConfirm);
             context.setVariables(properties);
 
