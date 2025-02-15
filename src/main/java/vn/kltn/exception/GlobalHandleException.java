@@ -62,4 +62,14 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         errorResponse.setPath(request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.OK);
     }
+    @ExceptionHandler({ConflictResourceException.class})
+    public final ResponseEntity<ErrorResponse> handleConflict(Exception ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(LocalDateTime.now());
+        errorResponse.setStatus(HttpStatus.CONFLICT.value());
+        errorResponse.setError(HttpStatus.CONFLICT.getReasonPhrase());
+        errorResponse.setMessage(ex.getMessage());
+        errorResponse.setPath(request.getDescription(false));
+        return new ResponseEntity<>(errorResponse, HttpStatus.OK);
+    }
 }
