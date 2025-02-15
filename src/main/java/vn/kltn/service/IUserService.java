@@ -1,6 +1,7 @@
 package vn.kltn.service;
 
 import org.springframework.security.core.userdetails.UserDetailsService;
+import vn.kltn.dto.request.AuthResetPassword;
 import vn.kltn.dto.request.UserRegister;
 
 public interface IUserService extends UserDetailsService {
@@ -12,4 +13,6 @@ public interface IUserService extends UserDetailsService {
     void reConfirmEmail(String email);
 
     void forgotPassword(String email);
+
+    void resetPassword(AuthResetPassword authResetPassword);
 }

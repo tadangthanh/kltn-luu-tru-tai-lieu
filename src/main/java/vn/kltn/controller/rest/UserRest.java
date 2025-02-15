@@ -1,6 +1,5 @@
-package vn.kltn.controller;
+package vn.kltn.controller.rest;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,7 +14,7 @@ import vn.kltn.service.IUserService;
 @Validated
 @RequestMapping("/api/v1/user")
 @Slf4j(topic = "USER_CONTROLLER")
-public class UserController {
+public class UserRest {
     private final IUserService userService;
 
     @PostMapping("/register")
@@ -35,5 +34,11 @@ public class UserController {
         log.info("re-confirm email with email: {}", email);
         userService.reConfirmEmail(email);
         return new ResponseData<>(HttpStatus.OK.value(), "Vui lòng kiểm tra email để xác nhận tài khoản");
+    }
+    @PostMapping("/forgot-password")
+    public ResponseData<String> forgotPassword(@RequestParam("email") String email) {
+        log.info("forgot password with email: {}", email);
+        userService.forgotPassword(email);
+        return new ResponseData<>(HttpStatus.OK.value(), "Vui lòng kiểm tra email để đổi mật khẩu");
     }
 }

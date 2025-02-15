@@ -43,7 +43,8 @@ spring:
       max-request-size: -1
       file-size-threshold: 2MB
   mail:
-    confirm-url: ${URL_EMAIL_CONFIRMATION:http://localhost:8080/api/v1/user/confirm}
+    confirm-url: ${URL_EMAIL_CONFIRMATION:http://localhost:8080/api/v1/user/confirm} #url xac nhan email
+    reset-password-url: ${URL_RESET_PASSWORD:http://localhost:8080/auth/reset-password} #url reset password
 
 azure:
   blob-storage:
@@ -54,6 +55,8 @@ jwt:
   accessKey: ${JWT_ACCESS_KEY:f0mDtrSt+bRlEszLhbyn97P8a9gRqBHO3/ZR2D5QR0Q=}
   refreshKey: ${JWT_REFRESH_KEY:P2HKzJI3GvYDayyxtX/9x5906PVnrj8aXU8b6RPXjNc=}
   confirmationKey: ${JWT_CONFIRMATION_KEY:Q2HKzJI3GvYDayyxtX/9x5906PVnrj8aXU8b6RPXjNc=}
+  resetPasswordKey: ${JWT_RESET_PASSWORD_KEY:Q2HKzJI3GvYDayyxtX/9x5906PVnrj8aXU8b6RPXjNc=}
   expiryDay: ${JWT_EXPIRATION_DAY:14}
   expirationMinutesConfirm: ${JWT_EXPIRATION_MS_CONFIRM:10} #thoi gian ton tai cua token confirm
+  expirationMinutesResetPassword: ${JWT_EXPIRATION_MS_RESET_PASSWORD:10} #thoi gian ton tai cua token reset password
 

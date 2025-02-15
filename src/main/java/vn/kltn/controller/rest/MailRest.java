@@ -1,4 +1,4 @@
-package vn.kltn.controller;
+package vn.kltn.controller.rest;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +12,7 @@ import vn.kltn.service.IMailService;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/mail")
 @Slf4j(topic = "MAIL_CONTROLLER")
-public class MailController {
+public class MailRest {
     private final IMailService gmailService;
 
     @PostMapping("/send-email")

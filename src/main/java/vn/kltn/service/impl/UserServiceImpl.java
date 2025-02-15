@@ -8,6 +8,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.TokenType;
 import vn.kltn.common.UserStatus;
+import vn.kltn.dto.request.AuthResetPassword;
 import vn.kltn.dto.request.UserRegister;
 import vn.kltn.entity.Role;
 import vn.kltn.entity.User;
@@ -57,6 +58,7 @@ public class UserServiceImpl implements IUserService {
         // Gửi email bất đồng bộ
         gmailService.sendConfirmLink(user.getEmail(), user.getId(), jwtService.generateTokenConfirmEmail(user.getEmail()));
     }
+
     private void validationUserRegister(UserRegister userRegister) {
         if (!isMatchPassword(userRegister.getPassword(), userRegister.getConfirmPassword())) {
             throw new PasswordMismatchException("Mật khẩu không khớp");
@@ -69,11 +71,12 @@ public class UserServiceImpl implements IUserService {
     private boolean isMatchPassword(String password, String confirmPassword) {
         return password.equals(confirmPassword);
     }
+
     @Override
     public void confirmEmail(Long userId, String token) {
         User user = findUserByIdOrThrow(userId);
         validateUserActivationStatus(user);
-        validateToken(token, user);
+        validateToken(token, TokenType.CONFIRMATION_TOKEN);
         activateUserAccount(user);
     }
 
@@ -86,9 +89,24 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public void forgotPassword(String email) {
-        if(!userRepo.existsByEmail(email)){
+        if (!userRepo.existsByEmail(email)) {
             throw new ResourceNotFoundException("Email không tồn tại");
         }
+        gmailService.sendForgotPasswordLink(email, jwtService.generateTokenResetPassword(email));
+    }
+
+    @Override
+    public void resetPassword(AuthResetPassword authResetPassword) {
+        String token = authResetPassword.getToken();
+        validateToken(token, TokenType.RESET_PASSWORD_TOKEN);
+        String extractedEmail = jwtService.extractEmail(token, TokenType.RESET_PASSWORD_TOKEN);
+        String passwordNew = authResetPassword.getNewPassword();
+        if (!isMatchPassword(passwordNew, authResetPassword.getConfirmPassword())) {
+            throw new PasswordMismatchException("Mật khẩu không khớp");
+        }
+        User user = findUserByEmailOrThrow(extractedEmail);
+        user.setPassword(passwordEncoder.encode(passwordNew));
+        userRepo.save(user);
     }
 
 
@@ -105,14 +123,9 @@ public class UserServiceImpl implements IUserService {
         }
     }
 
-    private void validateToken(String token, User user) {
-        if (!jwtService.isTokenValid(token, TokenType.CONFIRMATION_TOKEN)) {
+    private void validateToken(String token, TokenType type) {
+        if (!jwtService.isTokenValid(token, type)) {
             throw new InvalidTokenException("Token không hợp lệ");
-        }
-
-        String extractedEmail = jwtService.extractEmail(token, TokenType.CONFIRMATION_TOKEN);
-        if (!user.getEmail().equals(extractedEmail)) {
-            throw new InvalidTokenException("Email không khớp với token");
         }
     }
 
@@ -128,7 +141,6 @@ public class UserServiceImpl implements IUserService {
         userHasRole.setRole(role);
         return userHasRoleRepo.save(userHasRole);
     }
-
 
 
     private Role findRoleByName(String name) {

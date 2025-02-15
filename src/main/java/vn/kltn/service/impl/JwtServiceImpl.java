@@ -34,6 +34,8 @@ public class JwtServiceImpl implements IJwtService {
     private long expiryMinutes;
     @Value("${jwt.accessKey}")
     private String accessKey;
+    @Value("${jwt.resetPasswordKey}")
+    private String resetPasswordKey;
     @Value("${jwt.refreshKey}")
     private String refreshKey;
     @Value("${jwt.confirmationKey}")
@@ -42,6 +44,8 @@ public class JwtServiceImpl implements IJwtService {
     private long expiryDay;
     @Value("${jwt.expirationMinutesConfirm}")
     private long expiryMinutesConfirm;
+    @Value("${jwt.expirationMinutesResetPassword}")
+    private long expiryMinutesResetPassword;
 
     @Override
     public String generateAccessToken(long userId, String email, List<String> authorities) {
@@ -76,15 +80,34 @@ public class JwtServiceImpl implements IJwtService {
     @Override
     public String generateTokenConfirmEmail(String email) {
         log.info("Generate token confirm email for email: {}", email);
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("email", email);
+        return generateToken(CONFIRMATION_TOKEN, null, email);
+    }
+
+    private String generateToken(TokenType tokenType, Map<String, Object> claims, String email) {
+        log.info("Generate token {} for email: {}", tokenType, email);
         return Jwts.builder()
                 .claims(claims)
                 .subject(email)
                 .issuedAt(new Date()) // thoi diem tao
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * getExpiryMinutes(CONFIRMATION_TOKEN)))
-                .signWith(getKey(CONFIRMATION_TOKEN))
+                .expiration(getExpirationDate(tokenType))
+                .signWith(getKey(tokenType))
                 .compact();
+    }
+
+    private Date getExpirationDate(TokenType tokenType) {
+        return switch (tokenType) {
+            case ACCESS_TOKEN -> new Date(System.currentTimeMillis() + 1000 * 60 * expiryMinutes);
+            case REFRESH_TOKEN -> new Date(System.currentTimeMillis() + 1000 * 60 * expiryDay * 24 * 60);
+            case CONFIRMATION_TOKEN -> new Date(System.currentTimeMillis() + 1000 * 60 * expiryMinutesConfirm);
+            case RESET_PASSWORD_TOKEN -> new Date(System.currentTimeMillis() + 1000 * 60 * expiryMinutesResetPassword);
+            default -> throw new UnauthorizedException("Invalid token type");
+        };
+    }
+
+    @Override
+    public String generateTokenResetPassword(String email) {
+        log.info("Generate token reset password for email: {}", email);
+        return generateToken(RESET_PASSWORD_TOKEN, null, email);
     }
 
     @Override
@@ -115,43 +138,24 @@ public class JwtServiceImpl implements IJwtService {
 
     private String generateAccessToken(Map<String, Object> claims, String email) {
         log.info("Generate access token for email: {}", email);
-        return Jwts.builder()
-                .claims(claims)
-                .subject(email)
-                .issuedAt(new Date()) // thoi diem tao
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * getExpiryMinutes(ACCESS_TOKEN)))
-                .signWith(getKey(ACCESS_TOKEN))
-                .compact();
+        return generateToken(ACCESS_TOKEN, claims, email);
     }
 
     private String generateRefreshToken(Map<String, Object> claims, String email) {
         log.info("Generate refresh token for email: {}", email);
-        return Jwts.builder()
-                .claims(claims)
-                .subject(email)
-                .issuedAt(new Date()) // thoi diem tao
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * getExpiryMinutes(REFRESH_TOKEN)))
-                .signWith(getKey(REFRESH_TOKEN))
-                .compact();
+        return generateToken(REFRESH_TOKEN, claims, email);
     }
 
     private SecretKey getKey(TokenType type) {
         String key = switch (type) {
             case ACCESS_TOKEN -> accessKey;
             case REFRESH_TOKEN -> refreshKey;
+            case RESET_PASSWORD_TOKEN -> resetPasswordKey;
             case CONFIRMATION_TOKEN -> confirmationKey;
             default -> throw new InvalidDataException("Invalid token type");
         };
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(key));
     }
 
-    private long getExpiryMinutes(TokenType type) {
-        return switch (type) {
-            case ACCESS_TOKEN -> expiryMinutes;
-            case REFRESH_TOKEN -> expiryDay * 24 * 60;
-            case CONFIRMATION_TOKEN -> expiryMinutesConfirm;
-            default -> throw new InvalidDataException("Invalid token type");
-        };
-    }
 
 }

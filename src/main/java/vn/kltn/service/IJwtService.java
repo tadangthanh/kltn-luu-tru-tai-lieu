@@ -12,9 +12,11 @@ public interface IJwtService {
     String generateRefreshToken(long userId, String email, List<String> authorities);
 
     String extractEmail(String token, TokenType type);
+
     String extractSecret(String token);
 
     String generateTokenConfirmEmail(String email);
+    String generateTokenResetPassword(String email);
 
     boolean isTokenValid(String token, TokenType type);
 }

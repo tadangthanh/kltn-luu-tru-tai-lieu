@@ -1,4 +1,4 @@
-package vn.kltn.controller;
+package vn.kltn.controller.rest;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +13,7 @@ import java.io.InputStream;
 @RestController
 @RequestMapping("/api/blob")
 @RequiredArgsConstructor
-public class FileController {
+public class FileRest {
     private final IFileStorageService azureFileStorageService;
 
     @PostMapping("/{upload}")
