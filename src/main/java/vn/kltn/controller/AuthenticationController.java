@@ -44,5 +44,11 @@ public class AuthenticationController {
         userService.confirmEmail(userId,token);
         return new ResponseData<>(HttpStatus.OK.value(), "Xác nhận email thành công");
     }
+    @PostMapping("/re-confirm")
+    public ResponseData<String> reConfirmEmail(@RequestParam("email") String email) {
+        log.info("re-confirm email with email: {}", email);
+        userService.reConfirmEmail(email);
+        return new ResponseData<>(HttpStatus.OK.value(), "Vui lòng kiểm tra email để xác nhận tài khoản");
+    }
 
 }

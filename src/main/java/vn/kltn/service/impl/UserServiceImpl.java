@@ -23,10 +23,6 @@ import vn.kltn.service.IJwtService;
 import vn.kltn.service.IMailService;
 import vn.kltn.service.IUserService;
 
-import java.util.UUID;
-
-import static vn.kltn.common.TokenType.CONFIRMATION_TOKEN;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j(topic = "USER_SERVICE")
@@ -60,20 +56,34 @@ public class UserServiceImpl implements IUserService {
         // user tao moi se co role la user
         saveUserHasRole(user, role);
         // Gửi email bất đồng bộ
-        gmailService.sendConfirmLink(user.getEmail(), user.getId(),jwtService.generateTokenConfirmEmail(user.getEmail(), 1));
+        gmailService.sendConfirmLink(user.getEmail(), user.getId(), jwtService.generateTokenConfirmEmail(user.getEmail(), 30));
     }
 
     @Override
     public void confirmEmail(Long userId, String token) {
         User user = findUserByIdOrThrow(userId);
-
         validateUserActivationStatus(user);
         validateToken(token, user);
-
         activateUserAccount(user);
     }
+
+    @Override
+    public void reConfirmEmail(String email) {
+        User user = findUserByEmailOrThrow(email);
+        validateUserActivationStatus(user);
+        gmailService.sendConfirmLink(user.getEmail(), user.getId(), jwtService.generateTokenConfirmEmail(user.getEmail(), 30));
+    }
+
+
+    private User findUserByEmailOrThrow(String email) {
+        return userRepo.findByEmail(email).orElseThrow(() -> {
+            log.error("User not found by email: {}", email);
+            return new ResourceNotFoundException("User not found");
+        });
+    }
+
     private void validateUserActivationStatus(User user) {
-        if (user.getStatus() != UserStatus.NONE) {
+        if (user.getStatus() == UserStatus.ACTIVE) {
             throw new ConflictResourceException("Tài khoản đã được kích hoạt");
         }
     }
@@ -108,14 +118,14 @@ public class UserServiceImpl implements IUserService {
 
     private Role findRoleByName(String name) {
         return roleRepo.findRoleByName(name).orElseThrow(() -> {
-            log.error("Role not found");
+            log.error("Role not found, name: {}", name);
             return new ResourceNotFoundException("Role not found");
         });
     }
 
     private User findUserByIdOrThrow(Long id) {
         return userRepo.findById(id).orElseThrow(() -> {
-            log.error("User not found");
+            log.error("User not found, id: {}", id);
             return new ResourceNotFoundException("User not found");
         });
     }

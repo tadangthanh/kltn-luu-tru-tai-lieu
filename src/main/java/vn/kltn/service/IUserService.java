@@ -8,4 +8,6 @@ public interface IUserService extends UserDetailsService {
 
     // xac nhan email de kich hoat tai khoan
     void confirmEmail(Long userId, String token);
+
+    void reConfirmEmail(String email);
 }
