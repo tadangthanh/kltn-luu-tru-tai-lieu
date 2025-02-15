@@ -14,6 +14,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.TokenType;
 import vn.kltn.exception.InvalidDataException;
+import vn.kltn.exception.UnauthorizedException;
 import vn.kltn.service.IJwtService;
 
 import javax.crypto.SecretKey;
@@ -23,8 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import static vn.kltn.common.TokenType.ACCESS_TOKEN;
-import static vn.kltn.common.TokenType.REFRESH_TOKEN;
+import static vn.kltn.common.TokenType.*;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +36,8 @@ public class JwtServiceImpl implements IJwtService {
     private String accessKey;
     @Value("${jwt.refreshKey}")
     private String refreshKey;
+    @Value("${jwt.confirmationKey}")
+    private String confirmationKey  ;
     @Value("${jwt.expiryDay}")
     private long expiryDay;
 
@@ -61,6 +63,36 @@ public class JwtServiceImpl implements IJwtService {
     public String extractEmail(String token, TokenType type) {
         log.info("Extract email from token: {}", token);
         return extractClaims(type, token, Claims::getSubject);
+    }
+
+    @Override
+    public String extractSecret(String token) {
+        log.info("Extract secret from token: {}", token);
+        return extractClaims(TokenType.CONFIRMATION_TOKEN, token, claims -> claims.get("secret", String.class));
+    }
+
+    @Override
+    public String generateTokenConfirmEmail(String email, long expiryMinutes) {
+        log.info("Generate token confirm email for email: {}", email);
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("email", email);
+        return Jwts.builder()
+                .claims(claims)
+                .subject(email)
+                .issuedAt(new Date()) // thoi diem tao
+                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * expiryMinutes))
+                .signWith(getKey(CONFIRMATION_TOKEN))
+                .compact();
+    }
+
+    @Override
+    public boolean isTokenValid(String token, TokenType type) {
+        try {
+            extractAllClaim(token, type);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     // ham Function nhan vao kieu T (Claims) va tra ve kieu R(gia tri tra ve cua ham claimsExtractor.apply(claims))
@@ -105,6 +137,7 @@ public class JwtServiceImpl implements IJwtService {
         String key = switch (type) {
             case ACCESS_TOKEN -> accessKey;
             case REFRESH_TOKEN -> refreshKey;
+            case CONFIRMATION_TOKEN -> confirmationKey;
             default -> throw new InvalidDataException("Invalid token type");
         };
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(key));

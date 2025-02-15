@@ -38,5 +38,11 @@ public class AuthenticationController {
         userService.register(userRegister);
         return new ResponseData<>(HttpStatus.CREATED.value(), "Vui lòng kiểm tra email để xác nhận tài khoản");
     }
+    @GetMapping("/confirm/{userId}")
+    public ResponseData<String> confirmEmail(@PathVariable("userId") Long userId,@RequestParam("token") String token) {
+        log.info("confirm email with token: {}", token);
+        userService.confirmEmail(userId,token);
+        return new ResponseData<>(HttpStatus.OK.value(), "Xác nhận email thành công");
+    }
 
 }

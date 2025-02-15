@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import vn.kltn.common.TokenType;
 import vn.kltn.common.UserStatus;
 import vn.kltn.dto.request.UserRegister;
 import vn.kltn.entity.Role;
@@ -17,10 +18,13 @@ import vn.kltn.map.UserMapper;
 import vn.kltn.repository.RoleRepo;
 import vn.kltn.repository.UserHasRoleRepo;
 import vn.kltn.repository.UserRepo;
+import vn.kltn.service.IJwtService;
 import vn.kltn.service.IMailService;
 import vn.kltn.service.IUserService;
 
 import java.util.UUID;
+
+import static vn.kltn.common.TokenType.CONFIRMATION_TOKEN;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +37,7 @@ public class UserServiceImpl implements IUserService {
     private final UserHasRoleRepo userHasRoleRepo;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+    private final IJwtService jwtService;
 
 
     @Override
@@ -54,12 +59,24 @@ public class UserServiceImpl implements IUserService {
         // user tao moi se co role la user
         saveUserHasRole(user, role);
         // Gửi email bất đồng bộ
-        gmailService.sendConfirmLink(user.getEmail(), user.getId(), UUID.randomUUID().toString());
+        gmailService.sendConfirmLink(user.getEmail(), user.getId(),jwtService.generateTokenConfirmEmail(user.getEmail(), 1));
     }
 
     @Override // xac nhan email de kich hoat tai khoan
-    public void confirmEmail(Long userId, String secret) {
+    public void confirmEmail(Long userId, String token) {
         User userExist = findUserByIdOrThrow(userId);
+        if (userExist.getStatus() != UserStatus.NONE) {
+            throw new ConflictResourceException("Tài khoản đã được kích hoạt");
+        }
+        if (!jwtService.isTokenValid(token, CONFIRMATION_TOKEN)) {
+            throw new ResourceNotFoundException("Token không hợp lệ");
+        }
+        String email = jwtService.extractEmail(token, TokenType.CONFIRMATION_TOKEN);
+        if (!userExist.getEmail().equals(email)) {
+            throw new ResourceNotFoundException("Email không hợp lệ");
+        }
+        userExist.setStatus(UserStatus.ACTIVE);
+        userRepo.save(userExist);
     }
 
     private UserHasRole saveUserHasRole(User user, Role role) {
