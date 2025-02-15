@@ -33,6 +33,7 @@ import java.util.List;
 public class SecurityConfig implements WebMvcConfigurer {
     private final IUserService userDetailsService;
     private final CustomizeRequestFilter requestFilter;
+    private final PasswordEncoder passwordEncoder;
     private final String[] WHITE_LIST = {
             "/auth/**"
     };
@@ -85,12 +86,9 @@ public class SecurityConfig implements WebMvcConfigurer {
     public AuthenticationProvider provider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
+        provider.setPasswordEncoder(passwordEncoder);
         return provider;
     }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+
 }

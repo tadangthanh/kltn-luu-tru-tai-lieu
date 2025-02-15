@@ -26,7 +26,7 @@ public class User extends BaseEntity implements UserDetails {
     private String fullName;
     private String avatarBlobName;
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 255)
+    @Column(name = "status")
     private UserStatus status;
     @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
     private Set<UserHasRole> roles = new HashSet<>();
@@ -49,19 +49,16 @@ public class User extends BaseEntity implements UserDetails {
     @Override
     public boolean isAccountNonExpired() {
         return UserDetails.super.isAccountNonExpired();
-//        return true;
     }
 
     @Override
     public boolean isAccountNonLocked() {
         return UserDetails.super.isAccountNonLocked();
-//        return true;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
         return UserDetails.super.isCredentialsNonExpired();
-//        return true;
     }
 
     @Override
