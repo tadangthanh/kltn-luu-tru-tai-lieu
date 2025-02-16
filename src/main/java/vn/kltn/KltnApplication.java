@@ -11,6 +11,7 @@ public class KltnApplication {
 		// Load .env variables into environment
 		Dotenv dotenv = Dotenv.configure().load();
 		System.setProperty("AZURE_STORAGE_CONNECTION_STRING", dotenv.get("AZURE_STORAGE_CONNECTION_STRING"));
+		System.setProperty("MAIL_PASSWORD", dotenv.get("MAIL_PASSWORD"));
 		SpringApplication.run(KltnApplication.class, args);
 	}
 
