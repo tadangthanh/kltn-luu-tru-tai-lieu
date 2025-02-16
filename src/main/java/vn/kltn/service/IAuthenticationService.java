@@ -8,7 +8,4 @@ public interface IAuthenticationService {
 
     TokenResponse getRefreshToken(String token);
 
-
-
-
 }

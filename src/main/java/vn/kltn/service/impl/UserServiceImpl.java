@@ -3,11 +3,14 @@ package vn.kltn.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.TokenType;
 import vn.kltn.common.UserStatus;
+import vn.kltn.dto.request.AuthChangePassword;
 import vn.kltn.dto.request.AuthResetPassword;
 import vn.kltn.dto.request.UserRegister;
 import vn.kltn.entity.Role;
@@ -109,6 +112,33 @@ public class UserServiceImpl implements IUserService {
         userRepo.save(user);
     }
 
+    @Override
+    public void changePassword(AuthChangePassword authChangePassword) {
+        log.info("Change password");
+        User currentUser=getCurrentUser();
+        validateChangePassword(authChangePassword, currentUser);
+        currentUser.setPassword(passwordEncoder.encode(authChangePassword.getNewPassword()));
+        userRepo.save(currentUser);
+    }
+
+    private void validateChangePassword(AuthChangePassword authChangePassword, User currentUser) {
+        String currentPassword = authChangePassword.getCurrentPassword();
+        String newPassword = authChangePassword.getNewPassword();
+        if (!passwordEncoder.matches(currentPassword, currentUser.getPassword())) {
+            throw new PasswordMismatchException("Mật khẩu hiện tại không đúng");
+        }
+        if (!isMatchPassword(newPassword, authChangePassword.getConfirmPassword())) {
+            throw new PasswordMismatchException("Nhập lại mật khẩu không khớp");
+        }
+        if(passwordEncoder.matches(newPassword, currentUser.getPassword())){
+            throw new PasswordMismatchException("Mật khẩu mới không được trùng với mật khẩu cũ");
+        }
+    }
+
+    private User getCurrentUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return findUserByEmailOrThrow(email);
+    }
 
     private User findUserByEmailOrThrow(String email) {
         return userRepo.findByEmail(email).orElseThrow(() -> {
