@@ -3,7 +3,6 @@ package vn.kltn.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,20 +12,22 @@ import vn.kltn.common.UserStatus;
 import vn.kltn.dto.request.AuthChangePassword;
 import vn.kltn.dto.request.AuthResetPassword;
 import vn.kltn.dto.request.UserRegister;
+import vn.kltn.entity.RedisToken;
 import vn.kltn.entity.Role;
 import vn.kltn.entity.User;
 import vn.kltn.entity.UserHasRole;
-import vn.kltn.exception.ConflictResourceException;
-import vn.kltn.exception.InvalidTokenException;
-import vn.kltn.exception.PasswordMismatchException;
-import vn.kltn.exception.ResourceNotFoundException;
+import vn.kltn.exception.*;
 import vn.kltn.map.UserMapper;
 import vn.kltn.repository.RoleRepo;
 import vn.kltn.repository.UserHasRoleRepo;
 import vn.kltn.repository.UserRepo;
 import vn.kltn.service.IJwtService;
 import vn.kltn.service.IMailService;
+import vn.kltn.service.IRedisTokenService;
 import vn.kltn.service.IUserService;
+
+import static vn.kltn.common.TokenType.ACCESS_TOKEN;
+import static vn.kltn.common.TokenType.RESET_PASSWORD_TOKEN;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +40,7 @@ public class UserServiceImpl implements IUserService {
     private final UserHasRoleRepo userHasRoleRepo;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+    private final IRedisTokenService redisTokenService;
     private final IJwtService jwtService;
 
 
@@ -95,33 +97,34 @@ public class UserServiceImpl implements IUserService {
         if (!userRepo.existsByEmail(email)) {
             throw new ResourceNotFoundException("Email không tồn tại");
         }
-        gmailService.sendForgotPasswordLink(email, jwtService.generateTokenResetPassword(email));
+        String token = jwtService.generateTokenResetPassword(email);
+        redisTokenService.save(RedisToken.builder().id(email).resetToken(token).build());
+        gmailService.sendForgotPasswordLink(email, token);
     }
 
     @Override
     public void resetPassword(AuthResetPassword authResetPassword) {
         String token = authResetPassword.getToken();
-        validateToken(token, TokenType.RESET_PASSWORD_TOKEN);
-        String extractedEmail = jwtService.extractEmail(token, TokenType.RESET_PASSWORD_TOKEN);
+        User user = validateTokenForResetPassword(token);
         String passwordNew = authResetPassword.getNewPassword();
         if (!isMatchPassword(passwordNew, authResetPassword.getConfirmPassword())) {
             throw new PasswordMismatchException("Mật khẩu không khớp");
         }
-        User user = findUserByEmailOrThrow(extractedEmail);
         user.setPassword(passwordEncoder.encode(passwordNew));
         userRepo.save(user);
+        redisTokenService.delete(user.getEmail());
     }
 
     @Override
-    public void changePassword(AuthChangePassword authChangePassword) {
-        log.info("Change password");
-        User currentUser=getCurrentUser();
-        validateChangePassword(authChangePassword, currentUser);
+    public void updatePassword(AuthChangePassword authChangePassword) {
+        log.info("update password");
+        User currentUser = validateTokenForUpdatePassword(authChangePassword.getToken());
+        validateUpdatePassword(authChangePassword, currentUser);
         currentUser.setPassword(passwordEncoder.encode(authChangePassword.getNewPassword()));
         userRepo.save(currentUser);
     }
 
-    private void validateChangePassword(AuthChangePassword authChangePassword, User currentUser) {
+    private void validateUpdatePassword(AuthChangePassword authChangePassword, User currentUser) {
         String currentPassword = authChangePassword.getCurrentPassword();
         String newPassword = authChangePassword.getNewPassword();
         if (!passwordEncoder.matches(currentPassword, currentUser.getPassword())) {
@@ -130,7 +133,7 @@ public class UserServiceImpl implements IUserService {
         if (!isMatchPassword(newPassword, authChangePassword.getConfirmPassword())) {
             throw new PasswordMismatchException("Nhập lại mật khẩu không khớp");
         }
-        if(passwordEncoder.matches(newPassword, currentUser.getPassword())){
+        if (passwordEncoder.matches(newPassword, currentUser.getPassword())) {
             throw new PasswordMismatchException("Mật khẩu mới không được trùng với mật khẩu cũ");
         }
     }
@@ -185,5 +188,32 @@ public class UserServiceImpl implements IUserService {
             log.error("User not found, id: {}", id);
             return new ResourceNotFoundException("User not found");
         });
+    }
+    private User validateTokenForUpdatePassword(String token){
+        // validate token
+        var email = jwtService.extractEmail(token, ACCESS_TOKEN);
+        // check token in redis
+        redisTokenService.isExists(email);
+
+        // validate user is active or not
+        var user = userRepo.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found!"));
+        if (!user.isEnabled()) {
+            throw new InvalidDataException("User not active");
+        }
+        return user;
+    }
+
+    private User validateTokenForResetPassword(String token) {
+        // validate token
+        var email = jwtService.extractEmail(token, RESET_PASSWORD_TOKEN);
+        // check token in redis
+        redisTokenService.isExists(email);
+
+        // validate user is active or not
+        var user = userRepo.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found!"));
+        if (!user.isEnabled()) {
+            throw new InvalidDataException("User not active");
+        }
+        return user;
     }
 }

@@ -48,7 +48,7 @@ public class UserRest {
 
     @PostMapping("/change-password")
     public ResponseData<String> changePassword(@Validated @RequestBody AuthChangePassword authChangePassword) {
-        userService.changePassword(authChangePassword);
+        userService.updatePassword(authChangePassword);
         return new ResponseData<>(HttpStatus.OK.value(), "Đổi mật khẩu thành công");
     }
 }

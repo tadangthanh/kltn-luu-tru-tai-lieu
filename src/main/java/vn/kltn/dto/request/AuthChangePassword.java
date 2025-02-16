@@ -13,4 +13,6 @@ public class AuthChangePassword {
     private String newPassword;
     @NotBlank(message = "Bạn cần nhập lại mật khẩu mới")
     private String confirmPassword;
+    @NotBlank(message = "Token không được rỗng")
+    private String token;
 }

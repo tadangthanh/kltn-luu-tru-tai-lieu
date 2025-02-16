@@ -16,5 +16,5 @@ public interface IUserService extends UserDetailsService {
     void forgotPassword(String email);
 
     void resetPassword(AuthResetPassword authResetPassword);
-    void changePassword(AuthChangePassword authChangePassword);
+    void updatePassword(AuthChangePassword authChangePassword);
 }

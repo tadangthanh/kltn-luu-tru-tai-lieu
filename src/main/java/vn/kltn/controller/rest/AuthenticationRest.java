@@ -27,8 +27,7 @@ public class AuthenticationRest {
     }
 
     @PostMapping("/refresh-token")
-    public ResponseData<TokenResponse> refreshToken(@RequestHeader("X-REFRESH-TOKEN") String refreshToken) {
-        System.out.println("refreshToken = " + refreshToken);
+    public ResponseData<TokenResponse> refreshToken(@RequestHeader("Referer") String refreshToken) {
         return new ResponseData<>(HttpStatus.OK.value(), "Success", authenticationService.getRefreshToken(refreshToken));
     }
     @PostMapping("/reset-password")
