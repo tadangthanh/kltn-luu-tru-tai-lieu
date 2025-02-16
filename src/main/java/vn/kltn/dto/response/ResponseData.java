@@ -1,7 +1,9 @@
 package vn.kltn.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Getter;
 
+@Getter
 public class ResponseData<T> {
     private final int status;
     private final String message;
@@ -21,16 +23,5 @@ public class ResponseData<T> {
         this.data = data;
     }
 
-    public int getStatus() {
-        return status;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public T getData() {
-        return data;
-    }
 }
 
