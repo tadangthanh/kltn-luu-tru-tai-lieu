@@ -11,6 +11,8 @@ import lombok.Setter;
 public class Repository extends BaseEntity{
     @Column(name = "name")
     private String name;
+    @Column(name = "uuid",nullable = false)
+    private String uuid;
     @Column(name = "description")
     private String description;
     @ManyToOne

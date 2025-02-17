@@ -5,20 +5,25 @@ import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.models.BlobStorageException;
+import com.azure.storage.blob.sas.BlobContainerSasPermission;
+import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
 import com.azure.storage.blob.specialized.BlockBlobClient;
+import com.azure.storage.common.sas.SasProtocol;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import vn.kltn.common.RepositoryPermission;
 import vn.kltn.exception.CustomBlobStorageException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.exception.UploadFailureException;
-import vn.kltn.service.IFileStorageService;
+import vn.kltn.service.IAzureStorageService;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -27,7 +32,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class AzureFileStorageServiceImpl implements IFileStorageService {
+public class AzureStorageServiceImpl implements IAzureStorageService {
     @Value("${spring.cloud.azure.storage.blob.container-name}")
     private String containerName;
     private final BlobServiceClient blobServiceClient;
@@ -144,4 +149,37 @@ public class AzureFileStorageServiceImpl implements IFileStorageService {
             throw new ResourceNotFoundException("Lỗi khi tải blob: " + blobName);
         }
     }
+
+    @Override
+    public String createContainerForRepository(String repoName, String uuid) {
+        // container k co ki tu dac biet, khoang trang va moi container la duy nhat
+        String containerName = repoName.toLowerCase().replace(" ", "-") + "_" + uuid;
+        BlobContainerClient blobContainerClient = blobServiceClient.createBlobContainer(containerName);
+        // Thiết lập thời gian hết hạn (ví dụ: 24 giờ)
+        OffsetDateTime expiryTime = OffsetDateTime.now().plusHours(24);
+        // Tạo SAS Token với full quyền hạn
+        // Tạo SAS Token
+        BlobServiceSasSignatureValues sasValues = new BlobServiceSasSignatureValues(expiryTime, createFullPermissionContainer())
+                .setProtocol(SasProtocol.HTTPS_HTTP);  // Chỉ cho phép truy cập qua HTTPS_HTTP
+        return blobContainerClient.generateSas(sasValues);
+    }
+
+    // tạo quyền cho thành viên của repo tùy vào quyền của từng thành viên
+    @Override
+    public String generatePermissionForMemberRepo(Long repoId, List<RepositoryPermission> permissionList) {
+        return "";
+    }
+
+    // tao quyen full cho container
+    private BlobContainerSasPermission createFullPermissionContainer() {
+        return new BlobContainerSasPermission()
+                .setReadPermission(true)
+                .setAddPermission(true)
+                .setCreatePermission(true)
+                .setDeletePermission(true)
+                .setListPermission(true)
+                .setWritePermission(true);
+    }
+
+
 }

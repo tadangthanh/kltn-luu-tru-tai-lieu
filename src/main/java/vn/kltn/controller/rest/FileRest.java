@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import vn.kltn.service.IFileStorageService;
+import vn.kltn.service.IAzureStorageService;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,7 +14,7 @@ import java.io.InputStream;
 @RequestMapping("/api/blob")
 @RequiredArgsConstructor
 public class FileRest {
-    private final IFileStorageService azureFileStorageService;
+    private final IAzureStorageService azureFileStorageService;
 
     @PostMapping("/{upload}")
     public ResponseEntity<String> upload(@RequestParam MultipartFile file) throws IOException {
