@@ -23,5 +23,5 @@ public interface IAzureStorageService {
 
     String createContainerForRepository(String repoName, String uuid);
 
-    String generatePermissionForMemberRepo(Long repoId, List<RepositoryPermission> permissionList);
+    String generatePermissionForMemberRepo(String containerName, List<RepositoryPermission> permissionList);
 }

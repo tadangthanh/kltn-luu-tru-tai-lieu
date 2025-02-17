@@ -159,19 +159,54 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
         OffsetDateTime expiryTime = OffsetDateTime.now().plusHours(24);
         // Tạo SAS Token với full quyền hạn
         // Tạo SAS Token
-        BlobServiceSasSignatureValues sasValues = new BlobServiceSasSignatureValues(expiryTime, createFullPermissionContainer())
-                .setProtocol(SasProtocol.HTTPS_HTTP);  // Chỉ cho phép truy cập qua HTTPS_HTTP
+        BlobServiceSasSignatureValues sasValues = new BlobServiceSasSignatureValues(expiryTime, generateFullPermissionContainer())
+                .setProtocol(SasProtocol.HTTPS_HTTP);  // cho phép truy cập qua HTTPS_HTTP
         return blobContainerClient.generateSas(sasValues);
     }
 
     // tạo quyền cho thành viên của repo tùy vào quyền của từng thành viên
     @Override
-    public String generatePermissionForMemberRepo(Long repoId, List<RepositoryPermission> permissionList) {
-        return "";
+    public String generatePermissionForMemberRepo(String containerName, List<RepositoryPermission> permissionList) {
+        BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
+        // Thiết lập thời gian hết hạn (ví dụ: 24 giờ)
+        OffsetDateTime expiryTime = OffsetDateTime.now().plusHours(24);
+        // Tạo SAS Token với quyền hạn tùy vào từng thành viên
+        BlobServiceSasSignatureValues sasValues = new BlobServiceSasSignatureValues(expiryTime, generatePermissionForMember(permissionList))
+                .setProtocol(SasProtocol.HTTPS_HTTP);  //  cho phép truy cập qua HTTPS_HTTP
+        return blobContainerClient.generateSas(sasValues);
     }
 
-    // tao quyen full cho container
-    private BlobContainerSasPermission createFullPermissionContainer() {
+    private BlobContainerSasPermission generatePermissionForMember(List<RepositoryPermission> permissionList) {
+        BlobContainerSasPermission permission = new BlobContainerSasPermission();
+        for (RepositoryPermission repoPermission : permissionList) {
+            switch (repoPermission) {
+                case CREATE:
+                    permission.setCreatePermission(true);
+                    break;
+                case READ:
+                    permission.setReadPermission(true);
+                    break;
+                case UPDATE, WRITE:
+                    permission.setWritePermission(true);
+                    break;
+                case DELETE:
+                    permission.setDeletePermission(true);
+                    break;
+                case LIST:
+                    permission.setListPermission(true);
+                    break;
+                case ADD:
+                    permission.setAddPermission(true);
+                    break;
+                default:
+                    break;
+            }
+        }
+        return permission;
+    }
+
+    // tao quyen full cho container, thuong la danh cho nguoi tao container la quyen cao nhat
+    private BlobContainerSasPermission generateFullPermissionContainer() {
         return new BlobContainerSasPermission()
                 .setReadPermission(true)
                 .setAddPermission(true)
