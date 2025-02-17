@@ -7,7 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "repository")
+@Table(name = "repo")
 public class Repository extends BaseEntity{
     @Column(name = "name")
     private String name;
