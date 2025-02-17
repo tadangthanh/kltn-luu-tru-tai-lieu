@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import vn.kltn.common.RepositoryPermission;
+import vn.kltn.common.RepoPermission;
 import vn.kltn.exception.CustomBlobStorageException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.exception.UploadFailureException;
@@ -151,9 +151,8 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     }
 
     /**
-     *
      * @param repoName : tên repository
-     * @param uuid : id của repository
+     * @param uuid     : id của repository
      * @return : trả về SAS Token cho container
      */
     @Override
@@ -172,7 +171,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
 
     // tạo quyền cho thành viên của repo tùy vào quyền của từng thành viên
     @Override
-    public String generatePermissionForMemberRepo(String containerName, List<RepositoryPermission> permissionList) {
+    public String generatePermissionForMemberRepo(String containerName, List<RepoPermission> permissionList) {
         BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
         // Thiết lập thời gian hết hạn (ví dụ: 24 giờ)
         OffsetDateTime expiryTime = OffsetDateTime.now().plusHours(24);
@@ -182,9 +181,28 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
         return blobContainerClient.generateSas(sasValues);
     }
 
-    private BlobContainerSasPermission generatePermissionForMember(List<RepositoryPermission> permissionList) {
+    @Override
+    public boolean deleteContainer(String containerName) {
+        try {
+            log.info("Deleting container:  {}", containerName);
+            BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
+            if (containerClient.exists()) {
+                containerClient.delete();
+                log.info("Container {} delete success", containerName);
+                return true;
+            } else {
+                log.warn("Container {} not exist", containerName);
+                return false;
+            }
+        } catch (BlobStorageException e) {
+            log.error("error delete container name: {}: {}", containerName, e.getMessage());
+            return false;
+        }
+    }
+
+    private BlobContainerSasPermission generatePermissionForMember(List<RepoPermission> permissionList) {
         BlobContainerSasPermission permission = new BlobContainerSasPermission();
-        for (RepositoryPermission repoPermission : permissionList) {
+        for (RepoPermission repoPermission : permissionList) {
             switch (repoPermission) {
                 case CREATE:
                     permission.setCreatePermission(true);

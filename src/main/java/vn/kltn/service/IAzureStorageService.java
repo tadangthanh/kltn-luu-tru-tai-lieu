@@ -1,7 +1,7 @@
 package vn.kltn.service;
 
 import org.springframework.web.multipart.MultipartFile;
-import vn.kltn.common.RepositoryPermission;
+import vn.kltn.common.RepoPermission;
 
 import java.io.InputStream;
 import java.util.List;
@@ -23,5 +23,7 @@ public interface IAzureStorageService {
 
     String createContainerForRepository(String repoName, String uuid);
 
-    String generatePermissionForMemberRepo(String containerName, List<RepositoryPermission> permissionList);
+    String generatePermissionForMemberRepo(String containerName, List<RepoPermission> permissionList);
+
+    boolean deleteContainer(String containerName);
 }

@@ -8,10 +8,10 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "repo")
-public class Repository extends BaseEntity{
+public class Repository extends BaseEntity {
     @Column(name = "name")
     private String name;
-    @Column(name = "uuid",nullable = false)
+    @Column(name = "uuid", nullable = false)
     private String uuid;
     @Column(name = "description")
     private String description;

@@ -1,6 +1,6 @@
 package vn.kltn.common;
 
-public enum RepositoryPermission {
+public enum RepoPermission {
     // Quyền tạo tài nguyên
     CREATE,  // Tạo blob mới (file mới)
 
@@ -20,5 +20,5 @@ public enum RepositoryPermission {
     WRITE,   // Ghi dữ liệu vào blob (có thể ghi đè)
 
     // Quyền thêm mới (chỉ cho phép thêm file, không ghi đè)
-    ADD      // Chỉ được thêm file mới vào repository, không ghi đè
+    ADD      // Chỉ được thêm file mới vào repository, không ghi đè,
 }
