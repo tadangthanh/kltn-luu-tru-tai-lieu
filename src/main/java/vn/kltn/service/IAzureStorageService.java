@@ -21,7 +21,7 @@ public interface IAzureStorageService {
 
     InputStream downloadBlob(String blobName); // Tải blob về
 
-    String createContainerForRepository(String repoName, String uuid);
+    String createContainerForRepository(String repoName);
 
     String generatePermissionForMemberRepo(String containerName, List<RepoPermission> permissionList);
 

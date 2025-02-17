@@ -8,9 +8,9 @@ import vn.kltn.common.RepoPermission;
 @Getter
 @Setter
 @Entity
-@Table(name = "permission_repository")
-public class PermissionRepository extends BaseEntity{
+@Table(name = "permission_repo")
+public class PermissionRepo extends BaseEntity {
     @Enumerated(EnumType.STRING)
-    @Column(unique = true,nullable = false)
+    @Column(unique = true, nullable = false)
     private RepoPermission permission;
 }

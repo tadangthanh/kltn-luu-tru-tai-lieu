@@ -20,5 +20,5 @@ public enum RepoPermission {
     WRITE,   // Ghi dữ liệu vào blob (có thể ghi đè)
 
     // Quyền thêm mới (chỉ cho phép thêm file, không ghi đè)
-    ADD      // Chỉ được thêm file mới vào repository, không ghi đè,
+    ADD   // Chỉ được thêm file mới vào repository, không ghi đè,
 }

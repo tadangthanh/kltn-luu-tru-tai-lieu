@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.RepoPermission;
+import vn.kltn.dto.request.PermissionRepoDto;
 import vn.kltn.exception.CustomBlobStorageException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.exception.UploadFailureException;
@@ -152,13 +153,12 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
 
     /**
      * @param repoName : tên repository
-     * @param uuid     : id của repository
      * @return : trả về SAS Token cho container
      */
     @Override
-    public String createContainerForRepository(String repoName, String uuid) {
+    public String createContainerForRepository(String repoName) {
         // container k co ki tu dac biet, khoang trang va moi container la duy nhat
-        String containerName = repoName.toLowerCase().replace(" ", "-") + "-" + uuid;
+        String containerName = repoName.toLowerCase().replace(" ", "-");
         BlobContainerClient blobContainerClient = blobServiceClient.createBlobContainer(containerName);
         // Thiết lập thời gian hết hạn (ví dụ: 24 giờ)
         OffsetDateTime expiryTime = OffsetDateTime.now().plusHours(24);
@@ -170,6 +170,12 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     }
 
     // tạo quyền cho thành viên của repo tùy vào quyền của từng thành viên
+
+    /**
+     * @param containerName  : tên container cần tạo SAS Token
+     * @param permissionList : danh sách quyền hạn của từng thành viên
+     * @return : trả về SAS Token của thành viên với container này
+     */
     @Override
     public String generatePermissionForMemberRepo(String containerName, List<RepoPermission> permissionList) {
         BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
@@ -200,10 +206,16 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
         }
     }
 
+    /**
+     * Tạo quyền cho thành viên của container
+     *
+     * @param permissionList : danh sách quyền hạn của từng thành viên
+     * @return : trả về quyền hạn của thành viên
+     */
     private BlobContainerSasPermission generatePermissionForMember(List<RepoPermission> permissionList) {
         BlobContainerSasPermission permission = new BlobContainerSasPermission();
-        for (RepoPermission repoPermission : permissionList) {
-            switch (repoPermission) {
+        for (RepoPermission permissionRepo : permissionList) {
+            switch (permissionRepo) {
                 case CREATE:
                     permission.setCreatePermission(true);
                     break;
@@ -229,6 +241,10 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
         return permission;
     }
 
+    /**
+     * Tạo quyền full cho container
+     * @return
+     */
     // tao quyen full cho container, thuong la danh cho nguoi tao container la quyen cao nhat
     private BlobContainerSasPermission generateFullPermissionContainer() {
         return new BlobContainerSasPermission()

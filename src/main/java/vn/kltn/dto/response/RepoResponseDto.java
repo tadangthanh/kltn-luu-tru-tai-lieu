@@ -10,9 +10,8 @@ import vn.kltn.dto.BaseDto;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class RepositoryResponseDto extends BaseDto {
+public class RepoResponseDto extends BaseDto {
     private String name;
-    private String uuid;
     private String description;
     private Long ownerId;
     private String ownerEmail;

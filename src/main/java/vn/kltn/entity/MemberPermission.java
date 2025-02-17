@@ -10,13 +10,12 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "repository_member")
-public class RepositoryMember extends BaseEntity {
+@Table(name = "member_permission")
+public class MemberPermission extends BaseEntity {
     @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+    @JoinColumn(name = "member_id")
+    private RepoMember member;
     @ManyToOne
-    @JoinColumn(name = "repository_id")
-    private Repository repository;
-    private String sasToken;
+    @JoinColumn(name = "permission_id")
+    private PermissionRepo permission;
 }
