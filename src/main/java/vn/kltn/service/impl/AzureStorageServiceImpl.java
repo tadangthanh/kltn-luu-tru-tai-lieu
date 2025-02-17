@@ -150,10 +150,16 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
         }
     }
 
+    /**
+     *
+     * @param repoName : tên repository
+     * @param uuid : id của repository
+     * @return : trả về SAS Token cho container
+     */
     @Override
     public String createContainerForRepository(String repoName, String uuid) {
         // container k co ki tu dac biet, khoang trang va moi container la duy nhat
-        String containerName = repoName.toLowerCase().replace(" ", "-") + "_" + uuid;
+        String containerName = repoName.toLowerCase().replace(" ", "-") + "-" + uuid;
         BlobContainerClient blobContainerClient = blobServiceClient.createBlobContainer(containerName);
         // Thiết lập thời gian hết hạn (ví dụ: 24 giờ)
         OffsetDateTime expiryTime = OffsetDateTime.now().plusHours(24);
