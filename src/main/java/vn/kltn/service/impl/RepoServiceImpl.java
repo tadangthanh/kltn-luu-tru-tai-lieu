@@ -86,7 +86,7 @@ public class RepoServiceImpl implements IRepoService {
         User authUser = getAuthUser();
         if (!isOwner(repo, authUser)) {
             log.error("Không có quyền thêm thành viên vào kho lưu trữ, repositoryId: {}, userId: {}", repositoryId, userId);
-            throw new UnauthorizedException("Bạn không có quyền thêm thành viên vào kho lưu trữ này");
+            throw new UnauthorizedException("Chỉ chủ sở hữu mới có quyền thêm thành viên");
         }
         String sasToken = azureStorageService.generatePermissionForMemberRepo(repo.getContainerName(), permissions);
         User memberAdd = getUserByIdOrThrow(userId);

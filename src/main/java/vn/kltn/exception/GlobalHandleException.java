@@ -1,21 +1,23 @@
 package vn.kltn.exception;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-@ControllerAdvice
+@RestControllerAdvice
 public class GlobalHandleException extends ResponseEntityExceptionHandler {
     @ExceptionHandler({ResourceNotFoundException.class})
     public final ResponseEntity<ErrorResponse> handleResourceNotFound(Exception ex, WebRequest request) {
@@ -86,6 +88,16 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         errorObjectDetails.setMessage(ex.getMessage().substring(ex.getMessage().lastIndexOf("[")+1,ex.getMessage().lastIndexOf("]")-1));
         errorObjectDetails.setField(Objects.requireNonNull(ex.getBindingResult().getFieldError()).getField());
         errorObjectDetails.setDetails(ex.getBindingResult().getFieldError().getDefaultMessage());
+        return new ResponseEntity<>(errorObjectDetails, HttpStatus.BAD_REQUEST);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,@NonNull HttpHeaders headers,@NonNull HttpStatusCode status,@NonNull WebRequest request) {
+        ErrorObjectDetails errorObjectDetails = new ErrorObjectDetails();
+        errorObjectDetails.setTimestamp(LocalDateTime.now());
+        errorObjectDetails.setField("Request body");
+        errorObjectDetails.setMessage("Cannot deserialize value");
+        errorObjectDetails.setDetails("Request body is not valid");
         return new ResponseEntity<>(errorObjectDetails, HttpStatus.BAD_REQUEST);
     }
 }
