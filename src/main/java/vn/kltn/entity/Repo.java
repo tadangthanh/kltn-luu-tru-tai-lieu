@@ -10,7 +10,7 @@ import java.util.Set;
 @Setter
 @Entity
 @Table(name = "repo")
-public class Repository extends BaseEntity {
+public class Repo extends BaseEntity {
     @Column(name = "name")
     private String name;
     @Column(name = "container_name", nullable = false)
@@ -21,6 +21,4 @@ public class Repository extends BaseEntity {
     @JoinColumn(name = "owner_id")
     private User owner;
 
-    @OneToMany(mappedBy = "repository", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private Set<RepoMember> members;
 }

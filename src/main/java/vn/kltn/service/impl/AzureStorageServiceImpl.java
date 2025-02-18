@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.RepoPermission;
-import vn.kltn.dto.request.PermissionRepoDto;
 import vn.kltn.exception.CustomBlobStorageException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.exception.UploadFailureException;
@@ -25,10 +24,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -156,17 +152,10 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
      * @return : trả về SAS Token cho container
      */
     @Override
-    public String createContainerForRepository(String repoName) {
+    public void createContainerForRepository(String repoName) {
         // container k co ki tu dac biet, khoang trang va moi container la duy nhat
-        String containerName = repoName.toLowerCase().replace(" ", "-");
-        BlobContainerClient blobContainerClient = blobServiceClient.createBlobContainer(containerName);
-        // Thiết lập thời gian hết hạn (ví dụ: 24 giờ)
-        OffsetDateTime expiryTime = OffsetDateTime.now().plusHours(24);
-        // Tạo SAS Token với full quyền hạn
-        // Tạo SAS Token
-        BlobServiceSasSignatureValues sasValues = new BlobServiceSasSignatureValues(expiryTime, generateFullPermissionContainer())
-                .setProtocol(SasProtocol.HTTPS_HTTP);  // cho phép truy cập qua HTTPS_HTTP
-        return blobContainerClient.generateSas(sasValues);
+        String containerName = repoName.toLowerCase().replaceAll("[^a-z0-9-]", "").replaceAll("^-|-$", "");
+        blobServiceClient.createBlobContainer(containerName);
     }
 
     // tạo quyền cho thành viên của repo tùy vào quyền của từng thành viên
@@ -177,7 +166,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
      * @return : trả về SAS Token của thành viên với container này
      */
     @Override
-    public String generatePermissionForMemberRepo(String containerName, List<RepoPermission> permissionList) {
+    public String generatePermissionForMemberRepo(String containerName, Set<RepoPermission> permissionList) {
         BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
         // Thiết lập thời gian hết hạn (ví dụ: 24 giờ)
         OffsetDateTime expiryTime = OffsetDateTime.now().plusHours(24);
@@ -212,7 +201,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
      * @param permissionList : danh sách quyền hạn của từng thành viên
      * @return : trả về quyền hạn của thành viên
      */
-    private BlobContainerSasPermission generatePermissionForMember(List<RepoPermission> permissionList) {
+    private BlobContainerSasPermission generatePermissionForMember(Set<RepoPermission> permissionList) {
         BlobContainerSasPermission permission = new BlobContainerSasPermission();
         for (RepoPermission permissionRepo : permissionList) {
             switch (permissionRepo) {
@@ -243,6 +232,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
 
     /**
      * Tạo quyền full cho container
+     *
      * @return
      */
     // tao quyen full cho container, thuong la danh cho nguoi tao container la quyen cao nhat

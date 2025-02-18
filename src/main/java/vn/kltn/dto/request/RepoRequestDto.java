@@ -8,7 +8,7 @@ import java.io.Serializable;
 
 @Getter
 @Setter
-public class RepositoryRequestDto implements Serializable {
+public class RepoRequestDto implements Serializable {
     @NotBlank(message = "Tên repository không được để trống")
     private String name;
     private String description;

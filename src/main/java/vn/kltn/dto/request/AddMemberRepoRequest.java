@@ -7,14 +7,14 @@ import lombok.Setter;
 import vn.kltn.common.RepoPermission;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
 public class AddMemberRepoRequest implements Serializable {
     @NotEmpty(message = "Yêu cầu nhập ít nhất một quyền")
     @NotNull(message = "Yêu cầu nhập ít nhất một quyền")
-    private List<RepoPermission> permissions;
+    private Set<RepoPermission> permissions;
     @NotNull(message = "Yêu cầu nhập id người dùng")
     private Long userId;
 }

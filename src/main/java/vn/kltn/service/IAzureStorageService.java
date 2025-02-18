@@ -5,6 +5,7 @@ import vn.kltn.common.RepoPermission;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.Set;
 
 public interface IAzureStorageService {
     String upload(MultipartFile file);
@@ -21,9 +22,9 @@ public interface IAzureStorageService {
 
     InputStream downloadBlob(String blobName); // Tải blob về
 
-    String createContainerForRepository(String repoName);
+    void createContainerForRepository(String repoName);
 
-    String generatePermissionForMemberRepo(String containerName, List<RepoPermission> permissionList);
+    String generatePermissionForMemberRepo(String containerName, Set<RepoPermission> permissionList);
 
     boolean deleteContainer(String containerName);
 }
