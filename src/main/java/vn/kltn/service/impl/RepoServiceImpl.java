@@ -124,8 +124,31 @@ public class RepoServiceImpl implements IRepoService {
         repoMemberRepo.deleteById(memberId);
     }
 
+    @Override
+    public RepoResponseDto updatePermissionMember(Long repoId, Long memberId, Set<RepoPermission> permissionRequest) {
+        Repo repo = getRepositoryByIdOrThrow(repoId);
+        //chi co chu so huu moi co quyen thay doi quyen cua thanh vien
+        if (!isOwnerRepo(repo, getAuthUser())) {
+            log.error("Không có quyền thay đổi quyền thành viên, repoId: {}", repoId);
+            throw new AccessDeniedException("Bạn không có quyền thay đổi quyền thành viên");
+        }
+        RepoMember repoMember = getRepoMemberByIdOrThrow(memberId);
+        String sasToken = azureStorageService.generatePermissionForMemberRepo(repo.getContainerName(), permissionRequest);
+        repoMember.setPermissions(permissionRequest);
+        repoMember.setSasToken(sasToken);
+        repoMemberRepo.save(repoMember);
+        return convertRepositoryToResponse(repo);
+    }
 
-    public void validateNotSelfRepoMember(Long userIdToCheck) {
+    private RepoMember getRepoMemberByIdOrThrow(Long memberId) {
+        return repoMemberRepo.findById(memberId).orElseThrow(() -> {
+            log.error("Không tìm thấy thành viên, id: {}", memberId);
+            return new ResourceNotFoundException("Không tìm thấy thành viên: " + memberId);
+        });
+    }
+
+
+    private void validateNotSelfRepoMember(Long userIdToCheck) {
         User authUser = getAuthUser(); // Lấy user đang đăng nhập
         if (authUser.getId().equals(userIdToCheck)) {
             throw new InvalidDataException("Không thể thực hiện hành động này với chính mình");
@@ -180,12 +203,13 @@ public class RepoServiceImpl implements IRepoService {
      * @param repoId : id của repository mà user sẽ tham gia
      */
     private void validateMemberNotExists(Long userId, Long repoId) {
-        RepoMember repoMember = repoMemberRepo.findRepoMemberByUserIdAndRepoId(userId, repoId).orElseThrow(() -> {
-            log.error("Thành viên đã tồn tại, userId: {}, repoId: {}", userId, repoId);
-            return new ConflictResourceException("Người dùng này đã là thành viên");
-        });
-        User authUser = getAuthUser();
-        if (isOwnerRepo(repoMember.getRepo(), authUser)) {
+        repoMemberRepo.findRepoMemberByUserIdAndRepoId(userId, repoId)
+                .ifPresent(repoMember -> {
+                    log.error("Thành viên đã tồn tại, userId: {}, repoId: {}", userId, repoId);
+                    throw new ConflictResourceException("Người dùng này đã là thành viên");
+                });
+        Repo repo = getRepositoryByIdOrThrow(repoId);
+        if (repo.getOwner().getId().equals(userId)) {
             log.error("Thành viên đã tồn tại, userId: {}, repoId: {}", userId, repoId);
             throw new ConflictResourceException("Người dùng này đã là thành viên");
         }
