@@ -86,7 +86,7 @@ public class RepoServiceImpl implements IRepoService {
     }
 
     @Override
-    public RepoResponseDto addMemberToRepository(Long repoId, Long userId, Set<RepoPermission> permissions) {
+    public RepoResponseDto addMemberToRepository(Long repoId, Long userId, Set<RepoPermission> permissionRequest) {
         // validate quyen cua thanh vien dang dang nhap
         validateSelfPermission(repoId, RepoPermission.ADD_MEMBER);
         // ko the thuc hien hanh dong voi chinh minh
@@ -95,9 +95,9 @@ public class RepoServiceImpl implements IRepoService {
         validateMemberNotExists(userId, repoId);
         Repo repo = getRepositoryByIdOrThrow(repoId);
         // set permission cho thanh vien
-        Set<RepoPermission> permissionsAdd = getPermission(repo, permissions);
+        Set<RepoPermission> permissions = determinePermissions(repo, permissionRequest);
         // tao sas token cho thanh vien
-        String sasToken = azureStorageService.generatePermissionForMemberRepo(repo.getContainerName(), permissionsAdd);
+        String sasToken = azureStorageService.generatePermissionForMemberRepo(repo.getContainerName(), permissions);
         User memberAdd = getUserByIdOrThrow(userId);
         // save vao database
         addMemberToRepository(repo, memberAdd, permissions, sasToken);
@@ -105,14 +105,14 @@ public class RepoServiceImpl implements IRepoService {
     }
 
     /**
-     * @param repo        : repository cua thanh vien
-     * @param permissions : neu la owner thi dung permission cua request, nguoc lai dung permission mac dinh
+     * @param repo                 : repository cua thanh vien
+     * @param requestedPermissions : neu la owner thi dung permission cua request, nguoc lai dung permission mac dinh
      * @return : nếu authUser là owner thì trả về permission của request, ngược lại trả về permission mặc định
      */
-    private Set<RepoPermission> getPermission(Repo repo, Set<RepoPermission> permissions) {
+    private Set<RepoPermission> determinePermissions(Repo repo, Set<RepoPermission> requestedPermissions) {
         User authUser = getAuthUser();
         if (isOwnerRepo(repo, authUser)) {
-            return permissions;
+            return requestedPermissions;
         }
         return RepoPermissionDefaults.DEFAULT_MEMBER_PERMISSIONS;
     }
@@ -126,13 +126,13 @@ public class RepoServiceImpl implements IRepoService {
 
 
     @Override
-    public RepoResponseDto updatePermissionForMember(Long repoId, Long userId, Set<RepoPermission> permissions) {
+    public RepoResponseDto updatePermissionForMember(Long repoId, Long userId, Set<RepoPermission> permissionRequest) {
         // validate quyen cua thanh vien
         validateSelfPermission(repoId, RepoPermission.UPDATE_MEMBER_PERMISSION);
         RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(userId, repoId);
         // ko the thuc hien hanh dong voi chinh minh
         validateNotSelfRepoMember(userId);
-        repoMember.setPermissions(permissions);
+        repoMember.setPermissions(permissionRequest);
         return convertRepositoryToResponse(repoMember.getRepo());
     }
 
@@ -191,10 +191,15 @@ public class RepoServiceImpl implements IRepoService {
      * @param repoId : id của repository mà user sẽ tham gia
      */
     private void validateMemberNotExists(Long userId, Long repoId) {
-        repoMemberRepo.findRepoMemberByUserIdAndRepoId(userId, repoId).ifPresent(repoMember -> {
+        RepoMember repoMember = repoMemberRepo.findRepoMemberByUserIdAndRepoId(userId, repoId).orElseThrow(() -> {
+            log.error("Thành viên đã tồn tại, userId: {}, repoId: {}", userId, repoId);
+            return new ConflictResourceException("Người dùng này đã là thành viên");
+        });
+        User authUser = getAuthUser();
+        if (isOwnerRepo(repoMember.getRepo(), authUser)) {
             log.error("Thành viên đã tồn tại, userId: {}, repoId: {}", userId, repoId);
             throw new ConflictResourceException("Người dùng này đã là thành viên");
-        });
+        }
     }
 
     private RepoMember getRepoMemberByUserIdAndRepoIdOrThrow(Long userId, Long repoId) {
