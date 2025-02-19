@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import vn.kltn.entity.RepoMember;
 
+import java.util.Optional;
+
 public interface RepoMemberRepo extends JpaRepository<RepoMember,Long> {
     @Modifying
     @Transactional
@@ -14,4 +16,7 @@ public interface RepoMemberRepo extends JpaRepository<RepoMember,Long> {
 
     @Query("select count(rm) from RepoMember rm where rm.repo.id = ?1")
     int countRepoMemberByRepoId(Long repoId);
+
+    @Query("select rm from RepoMember rm where rm.user.id = ?1 and rm.repo.id = ?2")
+    Optional<RepoMember> findRepoMemberByUserIdAndRepoId(Long userId, Long repoId);
 }

@@ -13,12 +13,13 @@ import java.util.Set;
 public class Repo extends BaseEntity {
     @Column(name = "name")
     private String name;
-    @Column(name = "container_name", nullable = false)
+    @Column(name = "container_name", nullable = false, unique = true)
     private String containerName;
     @Column(name = "description")
     private String description;
     @ManyToOne
     @JoinColumn(name = "owner_id")
     private User owner;
-
+    @Column(name = "max_size_in_gb", nullable = false)
+    private Integer maxSizeInGB; // dung luong toi da cua repository
 }

@@ -11,7 +11,10 @@ import java.util.Set;
 @Getter
 @Setter
 @Entity
-@Table(name = "repo_member")
+@Table(name = "repo_member",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"user_id", "repo_id"})}
+)
 public class RepoMember extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "user_id")

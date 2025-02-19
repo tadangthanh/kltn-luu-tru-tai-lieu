@@ -28,7 +28,8 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         errorResponse.setPath(request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.OK);
     }
-    @ExceptionHandler({AccessDeniedException.class,AccessDeniedException.class})
+
+    @ExceptionHandler({AccessDeniedException.class, AccessDeniedException.class})
     public final ResponseEntity<ErrorResponse> handleAccessDenied(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(LocalDateTime.now());
@@ -38,7 +39,8 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         errorResponse.setPath(request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.OK);
     }
-    @ExceptionHandler({UnauthorizedException.class,InvalidTokenException.class})
+
+    @ExceptionHandler({UnauthorizedException.class, InvalidTokenException.class})
     public final ResponseEntity<ErrorResponse> handleUnauthorized(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(LocalDateTime.now());
@@ -48,8 +50,9 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         errorResponse.setPath(request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.OK);
     }
-    @ExceptionHandler({BadRequestException.class,UploadFailureException.class,InvalidDataException.class,PasswordMismatchException.class})
-    public final ResponseEntity<ErrorResponse> handleUploadFail(Exception ex, WebRequest request) {
+
+    @ExceptionHandler({BadRequestException.class, UploadFailureException.class, InvalidDataException.class, PasswordMismatchException.class})
+    public final ResponseEntity<ErrorResponse> handleBadRequestException(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(LocalDateTime.now());
         errorResponse.setStatus(HttpStatus.BAD_REQUEST.value());
@@ -58,6 +61,7 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         errorResponse.setPath(request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.OK);
     }
+
     @ExceptionHandler({CustomBlobStorageException.class})
     public final ResponseEntity<ErrorResponse> handleBlobStorageException(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
@@ -68,6 +72,7 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         errorResponse.setPath(request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.OK);
     }
+
     @ExceptionHandler({ConflictResourceException.class})
     public final ResponseEntity<ErrorResponse> handleConflict(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
@@ -85,15 +90,15 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
                                                                   @NonNull HttpStatusCode status, @NonNull WebRequest request) {
         ErrorObjectDetails errorObjectDetails = new ErrorObjectDetails();
         errorObjectDetails.setTimestamp(LocalDateTime.now());
-        errorObjectDetails.setMessage(ex.getMessage().substring(ex.getMessage().lastIndexOf("[")+1,ex.getMessage().lastIndexOf("]")-1));
+        errorObjectDetails.setMessage(ex.getMessage().substring(ex.getMessage().lastIndexOf("[") + 1, ex.getMessage().lastIndexOf("]") - 1));
         errorObjectDetails.setField(Objects.requireNonNull(ex.getBindingResult().getFieldError()).getField());
         errorObjectDetails.setDetails(ex.getBindingResult().getFieldError().getDefaultMessage());
         return new ResponseEntity<>(errorObjectDetails, HttpStatus.BAD_REQUEST);
     }
 
     @Override
-    protected ResponseEntity<Object> handleHttpMessageNotReadable(@NonNull HttpMessageNotReadableException ex,@NonNull HttpHeaders headers,
-                                                                  @NonNull HttpStatusCode status,@NonNull WebRequest request) {
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(@NonNull HttpMessageNotReadableException ex, @NonNull HttpHeaders headers,
+                                                                  @NonNull HttpStatusCode status, @NonNull WebRequest request) {
         ErrorObjectDetails errorObjectDetails = new ErrorObjectDetails();
         errorObjectDetails.setTimestamp(LocalDateTime.now());
         errorObjectDetails.setField("Request body");

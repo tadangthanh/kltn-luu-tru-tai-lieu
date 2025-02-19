@@ -60,3 +60,6 @@ jwt:
   expirationMinutesConfirm: ${JWT_EXPIRATION_MS_CONFIRM:10} #thoi gian ton tai cua token confirm
   expirationMinutesResetPassword: ${JWT_EXPIRATION_MS_RESET_PASSWORD:10} #thoi gian ton tai cua token reset password
 
+repo:
+  max-size-gb: ${REPO_MAX_SIZE_GB:10}
+
