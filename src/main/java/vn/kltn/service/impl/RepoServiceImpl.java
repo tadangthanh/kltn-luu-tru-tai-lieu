@@ -87,9 +87,9 @@ public class RepoServiceImpl implements IRepoService {
 
     @Override
     public RepoResponseDto addMemberToRepository(RepoMemberRequest repoMemberRequest) {
-        // validate quyen cua thanh vien
+        // validate quyen cua thanh vien da dang nhap
         validateMemberPermission(repoMemberRequest.getRepoId(), RepoPermission.ADD_MEMBER);
-        // validate thanh vien da ton tai hay chua
+        // validate thanh vien se them da ton tai hay chua
         validateMemberNotExists(repoMemberRequest.getUserId(), repoMemberRequest.getRepoId());
         Repo repo = getRepositoryByIdOrThrow(repoMemberRequest.getRepoId());
         // set permission cho thanh vien
