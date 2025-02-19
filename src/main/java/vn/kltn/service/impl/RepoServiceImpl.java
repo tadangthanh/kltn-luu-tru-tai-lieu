@@ -119,9 +119,7 @@ public class RepoServiceImpl implements IRepoService {
 
     private RepoResponseDto convertRepositoryToResponse(Repo repo) {
         RepoResponseDto repoResponseDto = repoMapper.entityToResponse(repo);
-        repoResponseDto.setOwnerName(repo.getOwner().getFullName());
-        repoResponseDto.setOwnerId(repo.getOwner().getId());
-        repoResponseDto.setOwnerEmail(repo.getOwner().getEmail());
+        repoResponseDto.setMemberCount(repoMemberRepo.countRepoMemberByRepoId(repo.getId()));
         return repoResponseDto;
     }
 

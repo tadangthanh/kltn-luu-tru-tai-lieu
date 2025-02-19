@@ -1,6 +1,5 @@
 package vn.kltn.exception;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -82,7 +81,8 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
 
     // method override return field and details
     @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, @NonNull HttpHeaders headers, @NonNull  HttpStatusCode status, @NonNull  WebRequest request) {
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, @NonNull HttpHeaders headers,
+                                                                  @NonNull HttpStatusCode status, @NonNull WebRequest request) {
         ErrorObjectDetails errorObjectDetails = new ErrorObjectDetails();
         errorObjectDetails.setTimestamp(LocalDateTime.now());
         errorObjectDetails.setMessage(ex.getMessage().substring(ex.getMessage().lastIndexOf("[")+1,ex.getMessage().lastIndexOf("]")-1));
@@ -92,7 +92,8 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
     }
 
     @Override
-    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,@NonNull HttpHeaders headers,@NonNull HttpStatusCode status,@NonNull WebRequest request) {
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(@NonNull HttpMessageNotReadableException ex,@NonNull HttpHeaders headers,
+                                                                  @NonNull HttpStatusCode status,@NonNull WebRequest request) {
         ErrorObjectDetails errorObjectDetails = new ErrorObjectDetails();
         errorObjectDetails.setTimestamp(LocalDateTime.now());
         errorObjectDetails.setField("Request body");

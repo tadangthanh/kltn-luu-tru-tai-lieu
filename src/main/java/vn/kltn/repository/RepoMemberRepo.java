@@ -11,4 +11,7 @@ public interface RepoMemberRepo extends JpaRepository<RepoMember,Long> {
     @Transactional
     @Query("delete from RepoMember rm where rm.repo.id = ?1")
     void deleteByRepoId(Long repoId);
+
+    @Query("select count(rm) from RepoMember rm where rm.repo.id = ?1")
+    int countRepoMemberByRepoId(Long repoId);
 }

@@ -15,5 +15,6 @@ public class RepoResponseDto extends BaseDto {
     private String description;
     private Long ownerId;
     private String ownerEmail;
+    private int memberCount;
     private String ownerName;
 }
