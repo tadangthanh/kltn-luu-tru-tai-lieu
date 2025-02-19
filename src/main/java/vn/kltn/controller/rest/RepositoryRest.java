@@ -36,14 +36,6 @@ public class RepositoryRest {
                 repositoryService.addMemberToRepository(repositoryId, repoMemberRequest.getUserId(), repoMemberRequest.getPermissions()));
     }
 
-    @PostMapping("/{repositoryId}/member/{userId}")
-    public ResponseData<RepoResponseDto> updatePermissionForMember(@PathVariable Long repositoryId,
-                                                                   @PathVariable Long userId,
-                                                                   @Validated @RequestBody RepoMemberRequest repoMemberRequest) {
-        return new ResponseData<>(HttpStatus.OK.value(), "Cập nhật quyền cho thành viên thành công",
-                repositoryService.updatePermissionMember(repositoryId, userId, repoMemberRequest.getPermissions()));
-    }
-
     @DeleteMapping("/{repositoryId}/member/{memberId}")
     public ResponseData<Void> removeMemberFromRepository(@PathVariable Long repositoryId, @PathVariable Long memberId) {
         repositoryService.removeMemberFromRepository(repositoryId, memberId);
