@@ -18,6 +18,7 @@ import vn.kltn.entity.Repo;
 import vn.kltn.entity.RepoMember;
 import vn.kltn.entity.User;
 import vn.kltn.exception.ConflictResourceException;
+import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.RepoMapper;
 import vn.kltn.repository.RepoMemberRepo;
@@ -127,17 +128,26 @@ public class RepoServiceImpl implements IRepoService {
     public RepoResponseDto updatePermissionForMember(RepoMemberRequest repoMemberRequest) {
         // validate quyen cua thanh vien
         validateMemberPermission(repoMemberRequest.getRepoId(), RepoPermission.UPDATE_MEMBER_PERMISSION);
-        RepoMember repoMember = getRepoMemberByIdOrThrow(repoMemberRequest.getMemberId());
+        RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(repoMemberRequest.getUserId(), repoMemberRequest.getRepoId());
+        // ko the thuc hien hanh dong voi chinh minh
+        validateNotSelfRepoMember(repoMemberRequest.getUserId());
         repoMember.setPermissions(repoMemberRequest.getPermissions());
         return convertRepositoryToResponse(repoMember.getRepo());
     }
 
-    private RepoMember getRepoMemberByIdOrThrow(Long id) {
-        return repoMemberRepo.findById(id).orElseThrow(() -> {
-            log.error("Không tìm thấy repo member, id: {}", id);
-            return new ResourceNotFoundException("Không tìm thấy thành viên id: " + id);
-        });
+    public void validateNotSelfRepoMember(Long userIdToCheck) {
+        User authUser = getAuthUser(); // Lấy user đang đăng nhập
+
+        if (authUser.getId().equals(userIdToCheck)) {
+            throw new InvalidDataException("Không thể thực hiện hành động này với chính mình");
+        }
     }
+//    private RepoMember getRepoMemberByUserIdAndRepoIdOrThrow(Long userId, Long repoId) {
+//        return repoMemberRepo.findRepoMemberByUserIdAndRepoId(userId,repoId).orElseThrow(() -> {
+//            log.error("Không tìm thấy repo member có id: {} với repo có id {}", userId,repoId );
+//            return new ResourceNotFoundException("Không tìm thấy thành viên id: " + userId);
+//        });
+//    }
 
     private User getUserByIdOrThrow(Long id) {
         return userRepo.findById(id).orElseThrow(() -> {

@@ -8,7 +8,7 @@ import vn.kltn.entity.RepoMember;
 
 import java.util.Optional;
 
-public interface RepoMemberRepo extends JpaRepository<RepoMember,Long> {
+public interface RepoMemberRepo extends JpaRepository<RepoMember, Long> {
     @Modifying
     @Transactional
     @Query("delete from RepoMember rm where rm.repo.id = ?1")
