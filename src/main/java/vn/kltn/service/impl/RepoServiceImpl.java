@@ -125,17 +125,6 @@ public class RepoServiceImpl implements IRepoService {
     }
 
 
-    @Override
-    public RepoResponseDto updatePermissionForMember(Long repoId, Long userId, Set<RepoPermission> permissionRequest) {
-        // validate quyen cua thanh vien
-        validateSelfPermission(repoId, RepoPermission.UPDATE_MEMBER_PERMISSION);
-        RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(userId, repoId);
-        // ko the thuc hien hanh dong voi chinh minh
-        validateNotSelfRepoMember(userId);
-        repoMember.setPermissions(permissionRequest);
-        return convertRepositoryToResponse(repoMember.getRepo());
-    }
-
     public void validateNotSelfRepoMember(Long userIdToCheck) {
         User authUser = getAuthUser(); // Lấy user đang đăng nhập
         if (authUser.getId().equals(userIdToCheck)) {

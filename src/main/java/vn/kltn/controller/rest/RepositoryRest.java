@@ -41,7 +41,7 @@ public class RepositoryRest {
                                                                    @PathVariable Long userId,
                                                                    @Validated @RequestBody RepoMemberRequest repoMemberRequest) {
         return new ResponseData<>(HttpStatus.OK.value(), "Cập nhật quyền cho thành viên thành công",
-                repositoryService.updatePermissionForMember(repositoryId, userId, repoMemberRequest.getPermissions()));
+                repositoryService.updatePermissionMember(repositoryId, userId, repoMemberRequest.getPermissions()));
     }
 
     @DeleteMapping("/{repositoryId}/member/{memberId}")

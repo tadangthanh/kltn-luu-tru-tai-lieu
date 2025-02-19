@@ -18,5 +18,4 @@ public enum RepoPermission {
     ADD_MEMBER, // Thêm thành viên vào repository
     // Quyền xóa thành viên khỏi repository
     REMOVE_MEMBER, // Xóa thành viên khỏi repository
-    UPDATE_MEMBER_PERMISSION, // Cập nhật quyền cho thành viên
 }
