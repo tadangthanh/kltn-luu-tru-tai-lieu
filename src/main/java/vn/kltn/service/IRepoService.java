@@ -1,17 +1,19 @@
 package vn.kltn.service;
 
-import vn.kltn.dto.request.RepoMemberRequest;
+import vn.kltn.common.RepoPermission;
 import vn.kltn.dto.request.RepoRequestDto;
 import vn.kltn.dto.response.RepoResponseDto;
+
+import java.util.Set;
 
 public interface IRepoService {
     RepoResponseDto createRepository(RepoRequestDto repoRequestDto);
 
     void deleteRepository(Long id);
 
-    RepoResponseDto addMemberToRepository(RepoMemberRequest repoMemberRequest);
+    RepoResponseDto addMemberToRepository(Long repoId,Long userId, Set<RepoPermission> permissions);
 
     void removeMemberFromRepository(Long repoId,Long memberId);
 
-    RepoResponseDto updatePermissionForMember(RepoMemberRequest repoMemberRequest);
+    RepoResponseDto updatePermissionForMember(Long repoId, Long memberId, Set<RepoPermission> permissions);
 }

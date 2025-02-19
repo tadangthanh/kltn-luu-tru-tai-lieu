@@ -11,7 +11,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.RepoPermission;
 import vn.kltn.common.RepoPermissionDefaults;
-import vn.kltn.dto.request.RepoMemberRequest;
 import vn.kltn.dto.request.RepoRequestDto;
 import vn.kltn.dto.response.RepoResponseDto;
 import vn.kltn.entity.Repo;
@@ -87,31 +86,33 @@ public class RepoServiceImpl implements IRepoService {
     }
 
     @Override
-    public RepoResponseDto addMemberToRepository(RepoMemberRequest repoMemberRequest) {
-        // validate quyen cua thanh vien da dang nhap
-        validateMemberPermission(repoMemberRequest.getRepoId(), RepoPermission.ADD_MEMBER);
+    public RepoResponseDto addMemberToRepository(Long repoId, Long userId, Set<RepoPermission> permissions) {
+        // validate quyen cua thanh vien dang dang nhap
+        validateSelfPermission(repoId, RepoPermission.ADD_MEMBER);
+        // ko the thuc hien hanh dong voi chinh minh
+        validateNotSelfRepoMember(userId);
         // validate thanh vien se them da ton tai hay chua
-        validateMemberNotExists(repoMemberRequest.getUserId(), repoMemberRequest.getRepoId());
-        Repo repo = getRepositoryByIdOrThrow(repoMemberRequest.getRepoId());
+        validateMemberNotExists(userId, repoId);
+        Repo repo = getRepositoryByIdOrThrow(repoId);
         // set permission cho thanh vien
-        Set<RepoPermission> permissions = getPermission(repo, repoMemberRequest);
+        Set<RepoPermission> permissionsAdd = getPermission(repo, permissions);
         // tao sas token cho thanh vien
-        String sasToken = azureStorageService.generatePermissionForMemberRepo(repo.getContainerName(), permissions);
-        User memberAdd = getUserByIdOrThrow(repoMemberRequest.getUserId());
+        String sasToken = azureStorageService.generatePermissionForMemberRepo(repo.getContainerName(), permissionsAdd);
+        User memberAdd = getUserByIdOrThrow(userId);
         // save vao database
         addMemberToRepository(repo, memberAdd, permissions, sasToken);
         return convertRepositoryToResponse(repo);
     }
 
     /**
-     * @param repo              : repository cua thanh vien
-     * @param repoMemberRequest : request cua thanh vien
+     * @param repo        : repository cua thanh vien
+     * @param permissions : neu la owner thi dung permission cua request, nguoc lai dung permission mac dinh
      * @return : nếu authUser là owner thì trả về permission của request, ngược lại trả về permission mặc định
      */
-    private Set<RepoPermission> getPermission(Repo repo, RepoMemberRequest repoMemberRequest) {
+    private Set<RepoPermission> getPermission(Repo repo, Set<RepoPermission> permissions) {
         User authUser = getAuthUser();
         if (isOwnerRepo(repo, authUser)) {
-            return repoMemberRequest.getPermissions();
+            return permissions;
         }
         return RepoPermissionDefaults.DEFAULT_MEMBER_PERMISSIONS;
     }
@@ -119,35 +120,28 @@ public class RepoServiceImpl implements IRepoService {
     @Override
     public void removeMemberFromRepository(Long repoId, Long memberId) {
         // validate quyen cua thanh vien
-        validateMemberPermission(repoId, RepoPermission.REMOVE_MEMBER);
+        validateSelfPermission(repoId, RepoPermission.REMOVE_MEMBER);
         repoMemberRepo.deleteById(memberId);
     }
 
 
     @Override
-    public RepoResponseDto updatePermissionForMember(RepoMemberRequest repoMemberRequest) {
+    public RepoResponseDto updatePermissionForMember(Long repoId, Long userId, Set<RepoPermission> permissions) {
         // validate quyen cua thanh vien
-        validateMemberPermission(repoMemberRequest.getRepoId(), RepoPermission.UPDATE_MEMBER_PERMISSION);
-        RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(repoMemberRequest.getUserId(), repoMemberRequest.getRepoId());
+        validateSelfPermission(repoId, RepoPermission.UPDATE_MEMBER_PERMISSION);
+        RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(userId, repoId);
         // ko the thuc hien hanh dong voi chinh minh
-        validateNotSelfRepoMember(repoMemberRequest.getUserId());
-        repoMember.setPermissions(repoMemberRequest.getPermissions());
+        validateNotSelfRepoMember(userId);
+        repoMember.setPermissions(permissions);
         return convertRepositoryToResponse(repoMember.getRepo());
     }
 
     public void validateNotSelfRepoMember(Long userIdToCheck) {
         User authUser = getAuthUser(); // Lấy user đang đăng nhập
-
         if (authUser.getId().equals(userIdToCheck)) {
             throw new InvalidDataException("Không thể thực hiện hành động này với chính mình");
         }
     }
-//    private RepoMember getRepoMemberByUserIdAndRepoIdOrThrow(Long userId, Long repoId) {
-//        return repoMemberRepo.findRepoMemberByUserIdAndRepoId(userId,repoId).orElseThrow(() -> {
-//            log.error("Không tìm thấy repo member có id: {} với repo có id {}", userId,repoId );
-//            return new ResourceNotFoundException("Không tìm thấy thành viên id: " + userId);
-//        });
-//    }
 
     private User getUserByIdOrThrow(Long id) {
         return userRepo.findById(id).orElseThrow(() -> {
@@ -176,7 +170,7 @@ public class RepoServiceImpl implements IRepoService {
      * @param repoId     : repo mà thành viên tham gia
      * @param permission : quyền hạn cần kiểm tra với repo và thành viên xác định
      */
-    private void validateMemberPermission(Long repoId, RepoPermission permission) {
+    private void validateSelfPermission(Long repoId, RepoPermission permission) {
         User authUser = getAuthUser(); // lay user dang nhap
         Repo repo = getRepositoryByIdOrThrow(repoId);
         // kiem tra xem user co phai la owner cua repository hay khong, neu phai thi tra ve luon, mac dinh owner la co all permission
