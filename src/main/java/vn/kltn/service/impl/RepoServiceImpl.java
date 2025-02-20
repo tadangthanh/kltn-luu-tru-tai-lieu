@@ -88,12 +88,15 @@ public class RepoServiceImpl implements IRepoService {
     @Override
     public RepoResponseDto addMemberToRepository(Long repoId, Long userId, Set<RepoPermission> permissionRequest) {
         // validate quyen cua thanh vien dang dang nhap
-        validateSelfPermission(repoId, RepoPermission.ADD_MEMBER);
+        Repo repo = getRepositoryByIdOrThrow(repoId);
+        if (!isOwnerRepo(repo, getAuthUser())) {
+            log.error("Không có quyền thêm thành viên, repoId: {}", repoId);
+            throw new AccessDeniedException("Bạn không có quyền thêm thành viên");
+        }
         // ko the thuc hien hanh dong voi chinh minh
         validateNotSelfRepoMember(userId);
         // validate thanh vien se them da ton tai hay chua
         validateMemberNotExists(userId, repoId);
-        Repo repo = getRepositoryByIdOrThrow(repoId);
         // set permission cho thanh vien
         Set<RepoPermission> permissions = determinePermissions(repo, permissionRequest);
         // tao sas token cho thanh vien
@@ -119,10 +122,15 @@ public class RepoServiceImpl implements IRepoService {
 
     @Override
     public void removeMemberFromRepository(Long repoId, Long memberId) {
-        // validate quyen cua thanh vien
-        validateSelfPermission(repoId, RepoPermission.REMOVE_MEMBER);
+        //kiem tra owner
+        Repo repo = getRepositoryByIdOrThrow(repoId);
+        if (!isOwnerRepo(repo, getAuthUser())) {
+            log.error("Không có quyền xóa thành viên, repoId: {}", repoId);
+            throw new AccessDeniedException("Bạn không có quyền xóa thành viên");
+        }
         repoMemberRepo.deleteById(memberId);
     }
+
 
     @Override
     public RepoResponseDto updatePermissionMember(Long repoId, Long memberId, Set<RepoPermission> permissionRequest) {

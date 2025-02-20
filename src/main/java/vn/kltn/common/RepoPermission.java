@@ -15,7 +15,4 @@ public enum RepoPermission {
     WRITE,   // Ghi dữ liệu vào blob (có thể ghi đè)
     // Quyền thêm mới (chỉ cho phép thêm file, không ghi đè)
     ADD,   // Chỉ được thêm file mới vào repository, không ghi đè,
-    ADD_MEMBER, // Thêm thành viên vào repository
-    // Quyền xóa thành viên khỏi repository
-    REMOVE_MEMBER, // Xóa thành viên khỏi repository
 }
