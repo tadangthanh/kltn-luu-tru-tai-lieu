@@ -17,4 +17,8 @@ public class GoogleController {
     public String generateContent(@RequestParam("content") String content) {
         return googleService.generateContent(content);
     }
+    @PostMapping("/ask-gemini")
+    public String askGemini(@RequestParam("question") String question, @RequestParam("url") String url) {
+        return googleService.askGemini(question, url);
+    }
 }
