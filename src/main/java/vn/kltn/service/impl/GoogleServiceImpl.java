@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -22,12 +23,13 @@ import java.net.URI;
 @RequiredArgsConstructor
 public class GoogleServiceImpl implements IGoogleService {
     private final Client client;
+    @Value("${google.api-key}")
+    private String googleGeminiApiKey;
     private final WebClient webClient = WebClient.builder()
             .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // Tăng giới hạn lên 10MB
             .build();
 
     private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
-    private static final String API_KEY = "AIzaSyBds62yHRUxTpbX2bA-Og6f_DzFwaEy6Ow";
 
     @Override
     public String generateContent(String content) {
@@ -56,7 +58,7 @@ public class GoogleServiceImpl implements IGoogleService {
 
             // 3. Gọi Gemini API
             String response = webClient.post()
-                    .uri(GEMINI_URL + "?key=" + API_KEY)
+                    .uri(GEMINI_URL + "?key=" + googleGeminiApiKey)
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .bodyValue(buildRequestBody(base64PDF, question))
                     .retrieve()
