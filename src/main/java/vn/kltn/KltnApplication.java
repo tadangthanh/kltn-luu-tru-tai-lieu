@@ -12,6 +12,7 @@ public class KltnApplication {
 		Dotenv dotenv = Dotenv.configure().load();
 		System.setProperty("AZURE_STORAGE_CONNECTION_STRING", dotenv.get("AZURE_STORAGE_CONNECTION_STRING"));
 		System.setProperty("MAIL_PASSWORD", dotenv.get("MAIL_PASSWORD"));
+		System.setProperty("GOOGLE_API_KEY", dotenv.get("GOOGLE_API_KEY"));
 		SpringApplication.run(KltnApplication.class, args);
 	}
 
