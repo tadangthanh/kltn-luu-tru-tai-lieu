@@ -2,6 +2,7 @@ package vn.kltn.map;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import vn.kltn.dto.request.RepoRequestDto;
 import vn.kltn.dto.response.RepoResponseDto;
 import vn.kltn.entity.Repo;
@@ -16,4 +17,6 @@ public interface RepoMapper {
     RepoResponseDto entityToResponse(Repo repo);
 
     Repo requestToEntity(RepoRequestDto repoRequestDto);
+
+    void updateEntityFromRequest(RepoRequestDto repoRequestDto,@MappingTarget Repo repo);
 }

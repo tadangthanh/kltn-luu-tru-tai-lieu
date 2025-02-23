@@ -23,7 +23,7 @@ public class RepositoryRest {
     private final IRepoService repositoryService;
 
     @PostMapping
-    public ResponseData<RepoResponseDto> createRepo(@Validated @RequestBody RepoRequestDto repoRequestDto) {
+    public ResponseData<RepoResponseDto> createRepo(@Validated(Create.class) @RequestBody RepoRequestDto repoRequestDto) {
         return new ResponseData<>(HttpStatus.CREATED.value(), "Tạo kho lưu trữ thành công",
                 repositoryService.createRepository(repoRequestDto));
     }
@@ -59,5 +59,12 @@ public class RepositoryRest {
     public ResponseData<Set<RepoMemberInfoResponse>> getListMember(@RequestParam Long repoId) {
         return new ResponseData<>(HttpStatus.OK.value(), "Lấy danh sách thành viên thành công",
                 repositoryService.getListMember(repoId));
+    }
+
+    @PatchMapping("/{repositoryId}")
+    public ResponseData<RepoResponseDto> updateRepository(@PathVariable Long repositoryId,
+                                                          @Validated(Update.class) @RequestBody RepoRequestDto repoRequestDto) {
+        return new ResponseData<>(HttpStatus.OK.value(), "Cập nhật kho lưu trữ thành công",
+                repositoryService.update(repositoryId, repoRequestDto));
     }
 }

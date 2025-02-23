@@ -24,6 +24,8 @@ public interface IRepoService {
 
     Set<RepoMemberInfoResponse> getListMember(Long repoId);
 
+    RepoResponseDto update(Long repoId,RepoRequestDto repoRequestDto);
+
 
 //    Quản lý repo: Cập nhật repo, chuyển quyền sở hữu.
 //            ✅ Quản lý thành viên: Xem danh sách, kiểm tra quyền, mời qua email.

@@ -67,6 +67,9 @@ jwt:
 
 repo:
   max-size-gb: ${REPO_MAX_SIZE_GB:10}
+  max-members: ${REPO_MAX_MEMBER:10}
 google:
   api-key: ${GOOGLE_API_KEY:AIzaSyD}
+
+
 

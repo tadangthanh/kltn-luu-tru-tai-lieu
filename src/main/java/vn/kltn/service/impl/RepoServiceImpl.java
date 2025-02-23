@@ -44,6 +44,8 @@ public class RepoServiceImpl implements IRepoService {
     private final IMailService gmailService;
     @Value("${repo.max-size-gb}")
     private int maxSizeInGB;
+    @Value("${repo.max-members}")
+    private int maxMembers;
     private final IAzureStorageService azureStorageService;
     private final RepoMapper repoMapper;
     private final RepositoryRepo repositoryRepo;
@@ -108,6 +110,8 @@ public class RepoServiceImpl implements IRepoService {
         validateNotSelfRepoMember(userId);
         // validate thanh vien se them da ton tai hay chua
         validateMemberNotExists(userId, repoId);
+        //validate so luong gioi han member cua repo
+        validateMemberCount(repo);
         // set permission cho thanh vien
         Set<RepoPermission> permissions = determinePermissions(repo, permissionRequest);
         // tao sas token cho thanh vien
@@ -118,6 +122,13 @@ public class RepoServiceImpl implements IRepoService {
         RepoResponseDto repoResponseDto = convertRepositoryToResponse(repo);
         sendInvitationEmail(memberAdd, repoResponseDto);
         return repoResponseDto;
+    }
+
+    private void validateMemberCount(Repo repo) {
+        if (repoMemberRepo.countRepoMemberByRepoId(repo.getId()) >= maxMembers) {
+            log.error("Số lượng thành viên vượt quá giới hạn, repoId: {}", repo.getId());
+            throw new InvalidDataException("Số lượng thành viên vượt quá giới hạn");
+        }
     }
 
     private void sendInvitationEmail(User memberAdd, RepoResponseDto repo) {
@@ -197,6 +208,18 @@ public class RepoServiceImpl implements IRepoService {
     public Set<RepoMemberInfoResponse> getListMember(Long repoId) {
         Set<RepoMember> members = repoMemberRepo.findAllByRepoId(repoId);
         return members.stream().map(this::convertMemberToResponse).collect(Collectors.toSet());
+    }
+
+    @Override
+    public RepoResponseDto update(Long repoId, RepoRequestDto repoRequestDto) {
+        Repo repo = getRepositoryByIdOrThrow(repoId);
+        if (!isOwnerRepo(repo, getAuthUser())) {
+            log.error("Không có quyền cập nhật repository, repoId: {}", repoId);
+            throw new AccessDeniedException("Bạn không có quyền cập nhật repository");
+        }
+        repoMapper.updateEntityFromRequest(repoRequestDto, repo);
+        repo = repositoryRepo.save(repo);
+        return convertRepositoryToResponse(repo);
     }
 
     private RepoMemberInfoResponse convertMemberToResponse(RepoMember member) {
