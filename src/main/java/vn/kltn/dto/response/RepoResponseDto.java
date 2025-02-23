@@ -4,10 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import vn.kltn.common.RepoPermission;
 import vn.kltn.dto.BaseDto;
-
-import java.util.Set;
 
 @Getter
 @Setter

@@ -119,7 +119,7 @@ public class RepoServiceImpl implements IRepoService {
 
     private void sendInvitationEmail(User memberAdd, Repo repo) {
         String token = jwtService.generateToken(TokenType.INVITATION_TOKEN, new HashMap<>(), memberAdd.getEmail());
-        gmailService.sendAddMemberToRepo(memberAdd.getEmail(), repo.getId(), repo.getName(), repo.getCreatedAt(),expiryDayInvitation,repo.getOwner().getFullName(), token);
+        gmailService.sendAddMemberToRepo(memberAdd.getEmail(), repo.getId(), repo.getName(), repo.getCreatedAt(), expiryDayInvitation, repo.getOwner().getFullName(), token);
     }
 
     /**
