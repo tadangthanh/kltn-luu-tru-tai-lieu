@@ -1,0 +1,32 @@
+package vn.kltn.aspect;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Component;
+import vn.kltn.entity.Repo;
+import vn.kltn.exception.ResourceNotFoundException;
+import vn.kltn.repository.RepositoryRepo;
+import vn.kltn.service.IAuthenticationService;
+
+@Aspect
+@Component
+@RequiredArgsConstructor
+@Slf4j(topic = "vn.kltn.aspect.RepoPermissionAspect")
+public class RepoPermissionAspect {
+    private final IAuthenticationService authService;
+    private final RepositoryRepo repositoryRepo;
+
+    @Before("@annotation(vn.kltn.validation.RequireOwner) && args(repoId,..)")
+    public void checkOwnerPermission(JoinPoint joinPoint, Long repoId) {
+        log.info("Kiểm tra quyền cập nhật repository, repoId: {}", repoId);
+        Repo repo = repositoryRepo.findById(repoId).orElseThrow(() -> new ResourceNotFoundException("Repository không tồn tại"));
+        if (!repo.getOwner().getEmail().equals(authService.getAuthUser().getEmail())) {
+            log.error("Không có quyền cập nhật repository, repoId: {}", repoId);
+            throw new AccessDeniedException("Bạn không có quyền cập nhật repository");
+        }
+    }
+}

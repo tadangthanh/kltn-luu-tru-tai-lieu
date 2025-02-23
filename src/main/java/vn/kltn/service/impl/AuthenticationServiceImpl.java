@@ -2,19 +2,20 @@ package vn.kltn.service.impl;
 
 import com.nimbusds.oauth2.sdk.util.StringUtils;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.TokenType;
 import vn.kltn.dto.request.AuthRequest;
 import vn.kltn.dto.response.TokenResponse;
 import vn.kltn.entity.RedisToken;
+import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.exception.UnauthorizedException;
@@ -90,6 +91,23 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .build();
+    }
+
+    @Override
+    public User getAuthUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ResourceNotFoundException("User not authenticated");
+        }
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof User user) {
+            return user; //  Trả về entity User nếu principal là User
+        } else if (principal instanceof UserDetails userDetails) {
+            //  Nếu không phải User, lấy email rồi tìm trong DB
+            log.info("Principal is UserDetails");
+            return userRepo.findByEmail(userDetails.getUsername()).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        }
+        throw new ResourceNotFoundException("User not found");
     }
 
     private String removeToken(HttpServletRequest request) {

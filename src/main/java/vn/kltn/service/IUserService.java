@@ -5,6 +5,7 @@ import vn.kltn.dto.request.AuthChangePassword;
 import vn.kltn.dto.request.AuthResetPassword;
 import vn.kltn.dto.request.UserRegister;
 
+
 public interface IUserService extends UserDetailsService {
     void register(UserRegister userRegister);
 

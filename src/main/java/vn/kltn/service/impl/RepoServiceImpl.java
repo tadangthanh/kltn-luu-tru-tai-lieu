@@ -30,6 +30,7 @@ import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IJwtService;
 import vn.kltn.service.IMailService;
 import vn.kltn.service.IRepoService;
+import vn.kltn.validation.RequireOwner;
 
 import java.util.HashMap;
 import java.util.Set;
@@ -211,12 +212,13 @@ public class RepoServiceImpl implements IRepoService {
     }
 
     @Override
+    @RequireOwner
     public RepoResponseDto update(Long repoId, RepoRequestDto repoRequestDto) {
         Repo repo = getRepositoryByIdOrThrow(repoId);
-        if (!isOwnerRepo(repo, getAuthUser())) {
-            log.error("Không có quyền cập nhật repository, repoId: {}", repoId);
-            throw new AccessDeniedException("Bạn không có quyền cập nhật repository");
-        }
+//        if (!isOwnerRepo(repo, getAuthUser())) {
+//            log.error("Không có quyền cập nhật repository, repoId: {}", repoId);
+//            throw new AccessDeniedException("Bạn không có quyền cập nhật repository");
+//        }
         repoMapper.updateEntityFromRequest(repoRequestDto, repo);
         repo = repositoryRepo.save(repo);
         return convertRepositoryToResponse(repo);
