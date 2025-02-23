@@ -6,11 +6,14 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vn.kltn.dto.request.RepoMemberRequest;
 import vn.kltn.dto.request.RepoRequestDto;
+import vn.kltn.dto.response.RepoMemberInfoResponse;
 import vn.kltn.dto.response.RepoResponseDto;
 import vn.kltn.dto.response.ResponseData;
 import vn.kltn.service.IRepoService;
 import vn.kltn.validation.Create;
 import vn.kltn.validation.Update;
+
+import java.util.Set;
 
 @RequiredArgsConstructor
 @RestController
@@ -52,4 +55,9 @@ public class RepositoryRest {
         return new ResponseData<>(HttpStatus.OK.value(), "Xóa thành viên khỏi kho lưu trữ thành công", null);
     }
 
+    @GetMapping("/list-member")
+    public ResponseData<Set<RepoMemberInfoResponse>> getListMember(@RequestParam Long repoId) {
+        return new ResponseData<>(HttpStatus.OK.value(), "Lấy danh sách thành viên thành công",
+                repositoryService.getListMember(repoId));
+    }
 }

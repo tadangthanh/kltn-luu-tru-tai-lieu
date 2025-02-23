@@ -96,7 +96,6 @@ public class GmailServiceImpl implements IMailService {
         log.info("Sending invitation repository to {}", email);
         String subject = "Lời mời tham gia";
         String template = "invitation-repo.html";
-
         Context context = new Context();
         context.setVariable("linkAccept", invitationRepoUrl + "/accept?repoId=" + repo.getId() + "&token=" + token);
         context.setVariable("linkReject", invitationRepoUrl + "/reject?repoId=" + repo.getId() + "&email=" + email);

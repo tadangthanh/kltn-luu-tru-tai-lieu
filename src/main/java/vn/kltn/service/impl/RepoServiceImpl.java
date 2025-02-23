@@ -32,9 +32,9 @@ import vn.kltn.service.IMailService;
 import vn.kltn.service.IRepoService;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j(topic = "REPOSITORY_SERVICE")
@@ -196,8 +196,17 @@ public class RepoServiceImpl implements IRepoService {
     @Override
     public Set<RepoMemberInfoResponse> getListMember(Long repoId) {
         Set<RepoMember> members = repoMemberRepo.findAllByRepoId(repoId);
-//        return repoMapper.membersToResponse(members);
-        return null;
+        return members.stream().map(this::convertMemberToResponse).collect(Collectors.toSet());
+    }
+
+    private RepoMemberInfoResponse convertMemberToResponse(RepoMember member) {
+        RepoMemberInfoResponse response = new RepoMemberInfoResponse();
+        response.setId(member.getId());
+        response.setMemberName(member.getUser().getFullName());
+        response.setMemberEmail(member.getUser().getEmail());
+        response.setPermissions(member.getPermissions());
+        response.setStatus(member.getStatus());
+        return response;
     }
 
     private User getUserByEmailOrThrow(String email) {

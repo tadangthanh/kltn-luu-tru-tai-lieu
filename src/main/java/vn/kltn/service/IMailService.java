@@ -3,8 +3,6 @@ package vn.kltn.service;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.response.RepoResponseDto;
 
-import java.util.Date;
-
 public interface IMailService {
     String sendEmail(String recipients, String subject, String content, MultipartFile[] files);
 
