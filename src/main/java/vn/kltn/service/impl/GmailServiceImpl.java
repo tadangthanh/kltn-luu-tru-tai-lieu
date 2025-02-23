@@ -90,17 +90,16 @@ public class GmailServiceImpl implements IMailService {
 
     @Override
     @Async
-    public void sendAddMemberToRepo(String email, String repoName, String ownerName, String token) {
+    public void sendAddMemberToRepo(String email, Long repoId, String repoName, String ownerName, String token) {
         log.info("Sending invitation repository to {}", email);
         String subject = "Lời mời tham gia";
         String template = "invitation-repo.html";
 
         Context context = new Context();
-        context.setVariable("linkAccept", formatUrl(invitationRepoUrl, email, "accept", token));
-        context.setVariable("linkReject", formatUrl(invitationRepoUrl, email, "reject", token));
+        context.setVariable("linkAccept", invitationRepoUrl + "/accept?repoId=" + repoId + "&token=" + token);
+        context.setVariable("linkReject", invitationRepoUrl + "/reject?repoId=" + repoId + "&token=" + token);
         context.setVariable("repoName", repoName);
         context.setVariable("ownerName", ownerName);
-
         sendEmail(email, subject, template, context);
 
     }
@@ -123,8 +122,5 @@ public class GmailServiceImpl implements IMailService {
         }
     }
 
-    private String formatUrl(String baseUrl, String email, String action, String token) {
-        return String.format("%s/%s/%s?token=%s", baseUrl, email, action, token);
-    }
 
 }

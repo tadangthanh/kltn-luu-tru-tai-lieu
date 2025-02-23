@@ -3,16 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lời Mời Vào Repository</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>Lời Mời Tham Gia</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
-        }
-
         body {
             background: linear-gradient(to right, #4facfe, #00f2fe);
             display: flex;
@@ -45,63 +37,53 @@
             color: #555;
         }
 
-        .buttons {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
-        }
-
-        .buttons a {
-            text-decoration: none;
-            padding: 12px 20px;
+        .confirmation-container {
+            background: #fff;
+            padding: 20px;
             border-radius: 8px;
-            font-size: 16px;
-            font-weight: 500;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
             text-align: center;
-            width: 48%;
-            transition: all 0.3s ease-in-out;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
         }
 
-        .accept {
+        h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .action-button {
+            display: block;
+            padding: 12px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            color: white;
+            margin: 10px 0;
+            transition: 0.3s;
+        }
+
+        .accept-btn {
             background-color: #28a745;
-            color: white;
         }
 
-        .reject {
+        .reject-btn {
             background-color: #dc3545;
-            color: white;
         }
 
-        .buttons a:hover {
-            cursor: pointer;
-            transform: translateY(-3px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .action-button:hover {
+            opacity: 0.8;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Bạn nhận được một lời mời tham gia</h2>
-    <p><strong>Người gửi:</strong> <span id="sender" th:text="${ownerName}">Tên người gửi</span></p>
-    <p><strong>Repository:</strong> <span id="repo-name" th:text="${repoName}">Tên repo</span></p>
+<div class="confirmation-container">
+    <h2>Bạn nhận được một lời mời</h2>
+    <p><strong>Người gửi:</strong> <span th:text="${ownerName}">Tên người gửi</span></p>
+    <p><strong>Repository:</strong> <span th:text="${repoName}">Tên repo</span></p>
 
-    <div class="buttons">
-        <a th:href="${linkAccept}" class="accept">Chấp nhận</a>
-        <a th:href="${linkReject}" class="reject">Từ chối</a>
-    </div>
+    <a class="action-button accept-btn" th:href="${linkAccept}">Chấp nhận</a>
+    <a class="action-button reject-btn" th:href="${linkReject}">Từ chối</a>
 </div>
 
 </body>

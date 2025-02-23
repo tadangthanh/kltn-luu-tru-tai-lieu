@@ -17,7 +17,7 @@ public interface IRepoService {
 
     RepoResponseDto updatePermissionMember(Long repoId, Long memberId, Set<RepoPermission> permissionRequest);
 
-
+    RepoResponseDto acceptInvitation(Long repoId, String token);
 //    Quản lý repo: Cập nhật repo, chuyển quyền sở hữu.
 //            ✅ Quản lý thành viên: Xem danh sách, kiểm tra quyền, mời qua email.
 //✅ Quản lý dung lượng: Kiểm tra dung lượng sử dụng, đặt giới hạn.

@@ -107,17 +107,17 @@ public class RepoServiceImpl implements IRepoService {
         // set permission cho thanh vien
         Set<RepoPermission> permissions = determinePermissions(repo, permissionRequest);
         // tao sas token cho thanh vien
-//        String sasToken = azureStorageService.generatePermissionForMemberRepo(repo.getContainerName(), permissions);
         User memberAdd = getUserByIdOrThrow(userId);
         // save vao database
         addMemberToRepository(repo, memberAdd, permissions);
+        // gui email moi thanh vien
         sendInvitationEmail(memberAdd, repo);
         return convertRepositoryToResponse(repo);
     }
 
     private void sendInvitationEmail(User memberAdd, Repo repo) {
         String token = jwtService.generateToken(TokenType.INVITATION_TOKEN, new HashMap<>(), memberAdd.getEmail());
-        gmailService.sendAddMemberToRepo(memberAdd.getEmail(), repo.getName(), repo.getOwner().getFullName(), token);
+        gmailService.sendAddMemberToRepo(memberAdd.getEmail(), repo.getId(), repo.getName(), repo.getOwner().getFullName(), token);
     }
 
     /**
@@ -159,6 +159,29 @@ public class RepoServiceImpl implements IRepoService {
         repoMember.setSasToken(sasToken);
         repoMemberRepo.save(repoMember);
         return convertRepositoryToResponse(repo);
+    }
+
+    @Override
+    public RepoResponseDto acceptInvitation(Long repoId, String token) {
+        // trich xuat email cua thanh vien tu token
+        String emailMemberAdd = jwtService.extractEmail(token, TokenType.INVITATION_TOKEN);
+        User memberAdd = getUserByEmailOrThrow(emailMemberAdd);
+        Repo repo = getRepositoryByIdOrThrow(repoId);
+        RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(memberAdd.getId(), repoId);
+        if (repoMember.getStatus().equals(MemberStatus.PENDING)) {
+            repoMember.setStatus(MemberStatus.ACCEPTED);
+            repoMember.setSasToken(azureStorageService.generatePermissionForMemberRepo(repo.getContainerName(), repoMember.getPermissions()));
+            repoMemberRepo.save(repoMember);
+            return convertRepositoryToResponse(repo);
+        }
+        throw new InvalidDataException("Không thể chấp nhận lời mời");
+    }
+
+    private User getUserByEmailOrThrow(String email) {
+        return userRepo.findByEmail(email).orElseThrow(() -> {
+            log.error("Không tìm thấy user, email: {}", email);
+            return new ResourceNotFoundException("User not found");
+        });
     }
 
     private RepoMember getRepoMemberByIdOrThrow(Long memberId) {

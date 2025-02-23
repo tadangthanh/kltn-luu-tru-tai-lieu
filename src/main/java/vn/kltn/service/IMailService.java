@@ -9,5 +9,5 @@ public interface IMailService {
 
     void sendForgotPasswordLink(String email, String token);
 
-    void sendAddMemberToRepo(String receiverEmail, String repoName, String ownerName,  String token);
+    void sendAddMemberToRepo(String receiverEmail,Long repoId,String repoName, String ownerName,  String token);
 }
