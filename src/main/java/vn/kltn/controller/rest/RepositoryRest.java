@@ -51,10 +51,5 @@ public class RepositoryRest {
         repositoryService.removeMemberFromRepository(repositoryId, memberId);
         return new ResponseData<>(HttpStatus.OK.value(), "Xóa thành viên khỏi kho lưu trữ thành công", null);
     }
-    @GetMapping("/invitation/accept")
-    public ResponseData<RepoResponseDto> acceptInvitation(@RequestParam("repoId") Long repositoryId, @RequestParam String token) {
-        return new ResponseData<>(HttpStatus.OK.value(), "Chấp nhận lời mời thành công",
-                repositoryService.acceptInvitation(repositoryId, token));
-    }
 
 }

@@ -7,6 +7,8 @@ server:
       enabled: true
       charset: UTF-8
       force: true
+app:
+  base-url: ${BASE_URL:http://localhost:8080}
 spring:
   config:
     activate:

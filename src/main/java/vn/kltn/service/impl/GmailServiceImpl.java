@@ -16,6 +16,8 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 import vn.kltn.service.IMailService;
 
 import java.io.UnsupportedEncodingException;
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.Objects;
 
 @Service
@@ -90,7 +92,7 @@ public class GmailServiceImpl implements IMailService {
 
     @Override
     @Async
-    public void sendAddMemberToRepo(String email, Long repoId, String repoName, String ownerName, String token) {
+    public void sendAddMemberToRepo(String email, Long repoId, String repoName, Date createdAt,long expiryDayInvitation, String ownerName, String token) {
         log.info("Sending invitation repository to {}", email);
         String subject = "Lời mời tham gia";
         String template = "invitation-repo.html";
@@ -100,6 +102,8 @@ public class GmailServiceImpl implements IMailService {
         context.setVariable("linkReject", invitationRepoUrl + "/reject?repoId=" + repoId + "&token=" + token);
         context.setVariable("repoName", repoName);
         context.setVariable("ownerName", ownerName);
+        context.setVariable("createdAt",createdAt);
+        context.setVariable("expiryDayInvitation",expiryDayInvitation);
         sendEmail(email, subject, template, context);
 
     }

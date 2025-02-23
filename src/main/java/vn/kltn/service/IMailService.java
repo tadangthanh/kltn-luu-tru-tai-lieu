@@ -2,6 +2,8 @@ package vn.kltn.service;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Date;
+
 public interface IMailService {
     String sendEmail(String recipients, String subject, String content, MultipartFile[] files);
 
@@ -9,5 +11,5 @@ public interface IMailService {
 
     void sendForgotPasswordLink(String email, String token);
 
-    void sendAddMemberToRepo(String receiverEmail,Long repoId,String repoName, String ownerName,  String token);
+    void sendAddMemberToRepo(String receiverEmail, Long repoId, String repoName, Date createdAt, long expiryDay, String ownerName, String token);
 }
