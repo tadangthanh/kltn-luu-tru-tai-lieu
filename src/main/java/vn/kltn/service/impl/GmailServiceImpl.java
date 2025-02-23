@@ -16,6 +16,7 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 import vn.kltn.service.IMailService;
 
 import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -29,6 +30,8 @@ public class GmailServiceImpl implements IMailService {
     private String emailFrom;
     @Value("${spring.mail.confirm-url}")
     private String confirmUrl;
+    @Value("${spring.mail.invitation-repo-url}")
+    private String invitationRepoUrl;
     @Value("${spring.mail.reset-password-url}")
     private String resetPasswordUrl;
 
@@ -64,51 +67,110 @@ public class GmailServiceImpl implements IMailService {
     @Override
     @Async
     public void sendConfirmLink(String email, Long id, String token) {
-        log.info("sending confirm link to {}", email);
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
-            Context context = new Context();
+//        log.info("sending confirm link to {}", email);
+//        try {
+//            MimeMessage message = mailSender.createMimeMessage();
+//            MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
+//            Context context = new Context();
+//
+//            String linkConfirm = String.format(confirmUrl + "/%s?token=%s", id, token);
+//            Map<String, Object> properties = Map.of("linkConfirm", linkConfirm);
+//            context.setVariables(properties);
+//
+//            helper.setFrom(emailFrom, "Ta Dang Thanh");
+//            helper.setTo(email);
+//            helper.setSubject("Kích hoạt tài khoản");
+//            String html = springTemplateEngine.process("confirm-email.html", context);
+//            helper.setText(html, true);
+//            mailSender.send(message);
+//        } catch (MessagingException | UnsupportedEncodingException e) {
+//            throw new RuntimeException(e);
+//        }
+//        log.info("sent confirm link to {} success", email);
+        log.info("Sending confirm link to {}", email);
+        String subject = "Kích hoạt tài khoản";
+        String template = "confirm-email.html";
 
-            String linkConfirm = String.format(confirmUrl + "/%s?token=%s", id, token);
-            Map<String, Object> properties = Map.of("linkConfirm", linkConfirm);
-            context.setVariables(properties);
+        Context context = new Context();
+        context.setVariable("linkConfirm", confirmUrl + "?token=" + token);
 
-            helper.setFrom(emailFrom, "Ta Dang Thanh");
-            helper.setTo(email);
-            helper.setSubject("Kích hoạt tài khoản");
-            String html = springTemplateEngine.process("confirm-email.html", context);
-            helper.setText(html, true);
-            mailSender.send(message);
-        } catch (MessagingException | UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
-        log.info("sent confirm link to {} success", email);
+        sendEmail(email, subject, template, context);
     }
 
     @Override
     @Async
     public void sendForgotPasswordLink(String email, String token) {
-        log.info("sending reset password link to {}", email);
+        log.info("Sending reset password link to {}", email);
+        String subject = "Thay đổi mật khẩu";
+        String template = "forgot-password-email.html";
+
+        Context context = new Context();
+        context.setVariable("linkResetPassword", resetPasswordUrl + "?token=" + token);
+
+        sendEmail(email, subject, template, context);
+    }
+
+    @Override
+    @Async
+    public void sendAddMemberToRepo(String email, String repoName, String ownerName, String token) {
+//        log.info("sending invitation repository to {}", email);
+//        try {
+//            MimeMessage message = mailSender.createMimeMessage();
+//            MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
+//            Context context = new Context();
+//            String linkAccept = String.format(invitationRepoUrl + "/%s/accept?token=%s", email,token);
+//            Map<String, Object> properties = new HashMap<>();
+//            String linkReject = String.format(invitationRepoUrl + "/%s/reject?token=%s",email, token);
+//            properties.put("linkReject", linkReject);
+//            properties.put("linkAccept", linkAccept);
+//            properties.put("repoName", repoName);
+//            properties.put("ownerName", ownerName);
+//
+//            context.setVariables(properties);
+//
+//            helper.setFrom(emailFrom, "Ta Dang Thanh");
+//            helper.setTo(email);
+//            helper.setSubject("Lời mời tham gia");
+//            String html = springTemplateEngine.process("invitation-repo.html", context);
+//            helper.setText(html, true);
+//            mailSender.send(message);
+//        } catch (MessagingException | UnsupportedEncodingException e) {
+//            throw new RuntimeException(e);
+//        }
+//        log.info("sent  invitation repository to {} success", email);
+        log.info("Sending invitation repository to {}", email);
+        String subject = "Lời mời tham gia";
+        String template = "invitation-repo.html";
+
+        Context context = new Context();
+        context.setVariable("linkAccept", formatUrl(invitationRepoUrl, email, "accept", token));
+        context.setVariable("linkReject", formatUrl(invitationRepoUrl, email, "reject", token));
+        context.setVariable("repoName", repoName);
+        context.setVariable("ownerName", ownerName);
+
+        sendEmail(email, subject, template, context);
+    }
+
+    private void sendEmail(String recipient, String subject, String template, Context context) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
-            Context context = new Context();
 
-            String linkResetPassword = String.format(resetPasswordUrl + "?token=%s",token);
-            Map<String, Object> properties = Map.of("linkResetPassword", linkResetPassword);
-            context.setVariables(properties);
             helper.setFrom(emailFrom, "Ta Dang Thanh");
-            helper.setTo(email);
-            helper.setSubject("Thay đổi mật khẩu");
-            String html = springTemplateEngine.process("forgot-password-email.html", context);
-            helper.setText(html, true);
+            helper.setTo(recipient);
+            helper.setSubject(subject);
+            helper.setText(springTemplateEngine.process(template, context), true);
+
             mailSender.send(message);
+            log.info("Email sent to {} successfully", recipient);
         } catch (MessagingException | UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
+            log.error("Failed to send email to {}", recipient, e);
+            throw new RuntimeException("Email sending failed", e);
         }
-        log.info("sent reset password link to {} success", email);
     }
 
+    private String formatUrl(String baseUrl, String email, String action, String token) {
+        return String.format("%s/%s/%s?token=%s", baseUrl, email, action, token);
+    }
 
 }

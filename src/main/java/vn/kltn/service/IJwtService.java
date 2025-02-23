@@ -1,10 +1,9 @@
 package vn.kltn.service;
 
-import org.springframework.security.core.GrantedAuthority;
 import vn.kltn.common.TokenType;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 public interface IJwtService {
     String generateAccessToken(long userId, String email, List<String> authorities);
@@ -16,7 +15,9 @@ public interface IJwtService {
     String extractSecret(String token);
 
     String generateTokenConfirmEmail(String email);
+
     String generateTokenResetPassword(String email);
 
     boolean isTokenValid(String token, TokenType type);
+     String generateToken(TokenType tokenType, Map<String, Object> claims, String email);
 }

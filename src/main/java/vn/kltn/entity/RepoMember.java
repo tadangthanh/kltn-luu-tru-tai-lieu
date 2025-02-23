@@ -3,6 +3,7 @@ package vn.kltn.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import vn.kltn.common.MemberStatus;
 import vn.kltn.common.RepoPermission;
 
 import java.util.HashSet;
@@ -12,8 +13,8 @@ import java.util.Set;
 @Setter
 @Entity
 @Table(name = "repo_member",
-    uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"user_id", "repo_id"})}
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"user_id", "repo_id"})}
 )
 public class RepoMember extends BaseEntity {
     @ManyToOne
@@ -30,4 +31,8 @@ public class RepoMember extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "permission")
     private Set<RepoPermission> permissions = new HashSet<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private MemberStatus status;
 }

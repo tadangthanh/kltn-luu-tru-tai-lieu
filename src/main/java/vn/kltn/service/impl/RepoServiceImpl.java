@@ -9,8 +9,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import vn.kltn.common.MemberStatus;
 import vn.kltn.common.RepoPermission;
 import vn.kltn.common.RepoPermissionDefaults;
+import vn.kltn.common.TokenType;
 import vn.kltn.dto.request.RepoRequestDto;
 import vn.kltn.dto.response.RepoResponseDto;
 import vn.kltn.entity.Repo;
@@ -24,8 +26,11 @@ import vn.kltn.repository.RepoMemberRepo;
 import vn.kltn.repository.RepositoryRepo;
 import vn.kltn.repository.UserRepo;
 import vn.kltn.service.IAzureStorageService;
+import vn.kltn.service.IJwtService;
+import vn.kltn.service.IMailService;
 import vn.kltn.service.IRepoService;
 
+import java.util.HashMap;
 import java.util.Set;
 import java.util.UUID;
 
@@ -34,6 +39,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional
 public class RepoServiceImpl implements IRepoService {
+    private final IMailService gmailService;
     @Value("${repo.max-size-gb}")
     private int maxSizeInGB;
     private final IAzureStorageService azureStorageService;
@@ -41,6 +47,7 @@ public class RepoServiceImpl implements IRepoService {
     private final RepositoryRepo repositoryRepo;
     private final UserRepo userRepo;
     private final RepoMemberRepo repoMemberRepo;
+    private final IJwtService jwtService;
 
     @Override
     public RepoResponseDto createRepository(RepoRequestDto repoRequestDto) {
@@ -87,7 +94,7 @@ public class RepoServiceImpl implements IRepoService {
 
     @Override
     public RepoResponseDto addMemberToRepository(Long repoId, Long userId, Set<RepoPermission> permissionRequest) {
-        // validate quyen cua thanh vien dang dang nhap
+        // chi co chu so huu moi co quyen them thanh vien
         Repo repo = getRepositoryByIdOrThrow(repoId);
         if (!isOwnerRepo(repo, getAuthUser())) {
             log.error("Không có quyền thêm thành viên, repoId: {}", repoId);
@@ -100,11 +107,17 @@ public class RepoServiceImpl implements IRepoService {
         // set permission cho thanh vien
         Set<RepoPermission> permissions = determinePermissions(repo, permissionRequest);
         // tao sas token cho thanh vien
-        String sasToken = azureStorageService.generatePermissionForMemberRepo(repo.getContainerName(), permissions);
+//        String sasToken = azureStorageService.generatePermissionForMemberRepo(repo.getContainerName(), permissions);
         User memberAdd = getUserByIdOrThrow(userId);
         // save vao database
-        addMemberToRepository(repo, memberAdd, permissions, sasToken);
+        addMemberToRepository(repo, memberAdd, permissions);
+        sendInvitationEmail(memberAdd, repo);
         return convertRepositoryToResponse(repo);
+    }
+
+    private void sendInvitationEmail(User memberAdd, Repo repo) {
+        String token = jwtService.generateToken(TokenType.INVITATION_TOKEN, new HashMap<>(), memberAdd.getEmail());
+        gmailService.sendAddMemberToRepo(memberAdd.getEmail(), repo.getName(), repo.getOwner().getFullName(), token);
     }
 
     /**
@@ -177,12 +190,13 @@ public class RepoServiceImpl implements IRepoService {
         });
     }
 
-    private RepoMember addMemberToRepository(Repo repo, User user, Set<RepoPermission> permissions, String sasToken) {
+    private RepoMember addMemberToRepository(Repo repo, User user, Set<RepoPermission> permissions) {
         RepoMember repoMember = new RepoMember();
         repoMember.setUser(user);
-        repoMember.setSasToken(sasToken);
+//        repoMember.setSasToken(sasToken);
         repoMember.setRepo(repo);
         repoMember.setPermissions(permissions);
+        repoMember.setStatus(MemberStatus.PENDING);
         return repoMemberRepo.save(repoMember);
     }
 
@@ -211,11 +225,10 @@ public class RepoServiceImpl implements IRepoService {
      * @param repoId : id của repository mà user sẽ tham gia
      */
     private void validateMemberNotExists(Long userId, Long repoId) {
-        repoMemberRepo.findRepoMemberByUserIdAndRepoId(userId, repoId)
-                .ifPresent(repoMember -> {
-                    log.error("Thành viên đã tồn tại, userId: {}, repoId: {}", userId, repoId);
-                    throw new ConflictResourceException("Người dùng này đã là thành viên");
-                });
+        repoMemberRepo.findRepoMemberByUserIdAndRepoId(userId, repoId).ifPresent(repoMember -> {
+            log.error("Thành viên đã tồn tại, userId: {}, repoId: {}", userId, repoId);
+            throw new ConflictResourceException("Người dùng này đã là thành viên");
+        });
         Repo repo = getRepositoryByIdOrThrow(repoId);
         if (repo.getOwner().getId().equals(userId)) {
             log.error("Thành viên đã tồn tại, userId: {}, repoId: {}", userId, repoId);

@@ -6,5 +6,8 @@ public interface IMailService {
     String sendEmail(String recipients, String subject, String content, MultipartFile[] files);
 
     void sendConfirmLink(String email, Long id, String token);
+
     void sendForgotPasswordLink(String email, String token);
+
+    void sendAddMemberToRepo(String receiverEmail, String repoName, String ownerName,  String token);
 }

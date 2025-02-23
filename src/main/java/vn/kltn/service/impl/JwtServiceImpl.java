@@ -34,6 +34,8 @@ public class JwtServiceImpl implements IJwtService {
     private long expiryMinutes;
     @Value("${jwt.accessKey}")
     private String accessKey;
+    @Value("${jwt.invitationKey}")
+    private String invitationKey;
     @Value("${jwt.resetPasswordKey}")
     private String resetPasswordKey;
     @Value("${jwt.refreshKey}")
@@ -46,6 +48,9 @@ public class JwtServiceImpl implements IJwtService {
     private long expiryMinutesConfirm;
     @Value("${jwt.expirationMinutesResetPassword}")
     private long expiryMinutesResetPassword;
+    @Value("${jwt.expirationDayInvitation}")
+    private long expiryDayInvitation;
+
 
     @Override
     public String generateAccessToken(long userId, String email, List<String> authorities) {
@@ -83,7 +88,8 @@ public class JwtServiceImpl implements IJwtService {
         return generateToken(CONFIRMATION_TOKEN, null, email);
     }
 
-    private String generateToken(TokenType tokenType, Map<String, Object> claims, String email) {
+    @Override
+    public String generateToken(TokenType tokenType, Map<String, Object> claims, String email) {
         log.info("Generate token {} for email: {}", tokenType, email);
         return Jwts.builder()
                 .claims(claims)
@@ -100,6 +106,7 @@ public class JwtServiceImpl implements IJwtService {
             case REFRESH_TOKEN -> new Date(System.currentTimeMillis() + 1000 * 60 * expiryDay * 24 * 60);
             case CONFIRMATION_TOKEN -> new Date(System.currentTimeMillis() + 1000 * 60 * expiryMinutesConfirm);
             case RESET_PASSWORD_TOKEN -> new Date(System.currentTimeMillis() + 1000 * 60 * expiryMinutesResetPassword);
+            case INVITATION_TOKEN -> new Date(System.currentTimeMillis() + 1000 * 60 * expiryDayInvitation * 24 * 60);
             default -> throw new UnauthorizedException("Invalid token type");
         };
     }
@@ -152,6 +159,7 @@ public class JwtServiceImpl implements IJwtService {
             case REFRESH_TOKEN -> refreshKey;
             case RESET_PASSWORD_TOKEN -> resetPasswordKey;
             case CONFIRMATION_TOKEN -> confirmationKey;
+            case INVITATION_TOKEN -> invitationKey;
             default -> throw new InvalidDataException("Invalid token type");
         };
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(key));
