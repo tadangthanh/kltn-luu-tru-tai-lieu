@@ -16,8 +16,6 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 import vn.kltn.service.IMailService;
 
 import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -67,26 +65,6 @@ public class GmailServiceImpl implements IMailService {
     @Override
     @Async
     public void sendConfirmLink(String email, Long id, String token) {
-//        log.info("sending confirm link to {}", email);
-//        try {
-//            MimeMessage message = mailSender.createMimeMessage();
-//            MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
-//            Context context = new Context();
-//
-//            String linkConfirm = String.format(confirmUrl + "/%s?token=%s", id, token);
-//            Map<String, Object> properties = Map.of("linkConfirm", linkConfirm);
-//            context.setVariables(properties);
-//
-//            helper.setFrom(emailFrom, "Ta Dang Thanh");
-//            helper.setTo(email);
-//            helper.setSubject("Kích hoạt tài khoản");
-//            String html = springTemplateEngine.process("confirm-email.html", context);
-//            helper.setText(html, true);
-//            mailSender.send(message);
-//        } catch (MessagingException | UnsupportedEncodingException e) {
-//            throw new RuntimeException(e);
-//        }
-//        log.info("sent confirm link to {} success", email);
         log.info("Sending confirm link to {}", email);
         String subject = "Kích hoạt tài khoản";
         String template = "confirm-email.html";
@@ -113,31 +91,6 @@ public class GmailServiceImpl implements IMailService {
     @Override
     @Async
     public void sendAddMemberToRepo(String email, String repoName, String ownerName, String token) {
-//        log.info("sending invitation repository to {}", email);
-//        try {
-//            MimeMessage message = mailSender.createMimeMessage();
-//            MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
-//            Context context = new Context();
-//            String linkAccept = String.format(invitationRepoUrl + "/%s/accept?token=%s", email,token);
-//            Map<String, Object> properties = new HashMap<>();
-//            String linkReject = String.format(invitationRepoUrl + "/%s/reject?token=%s",email, token);
-//            properties.put("linkReject", linkReject);
-//            properties.put("linkAccept", linkAccept);
-//            properties.put("repoName", repoName);
-//            properties.put("ownerName", ownerName);
-//
-//            context.setVariables(properties);
-//
-//            helper.setFrom(emailFrom, "Ta Dang Thanh");
-//            helper.setTo(email);
-//            helper.setSubject("Lời mời tham gia");
-//            String html = springTemplateEngine.process("invitation-repo.html", context);
-//            helper.setText(html, true);
-//            mailSender.send(message);
-//        } catch (MessagingException | UnsupportedEncodingException e) {
-//            throw new RuntimeException(e);
-//        }
-//        log.info("sent  invitation repository to {} success", email);
         log.info("Sending invitation repository to {}", email);
         String subject = "Lời mời tham gia";
         String template = "invitation-repo.html";
@@ -149,6 +102,7 @@ public class GmailServiceImpl implements IMailService {
         context.setVariable("ownerName", ownerName);
 
         sendEmail(email, subject, template, context);
+
     }
 
     private void sendEmail(String recipient, String subject, String template, Context context) {
