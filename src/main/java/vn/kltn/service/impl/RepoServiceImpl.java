@@ -179,6 +179,17 @@ public class RepoServiceImpl implements IRepoService {
         throw new InvalidDataException("Không thể chấp nhận lời mời");
     }
 
+    @Override
+    public RepoResponseDto rejectInvitation(Long repoId, String email) {
+        User userMember = getUserByEmailOrThrow(email);
+        RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(userMember.getId(), repoId);
+        if (repoMember.getStatus().equals(MemberStatus.PENDING)) {
+            repoMemberRepo.delete(repoMember);
+            return convertRepositoryToResponse(repoMember.getRepo());
+        }
+        throw new InvalidDataException("Dữ liệu không hợp lệ");
+    }
+
     private User getUserByEmailOrThrow(String email) {
         return userRepo.findByEmail(email).orElseThrow(() -> {
             log.error("Không tìm thấy user, email: {}", email);
