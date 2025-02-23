@@ -17,5 +17,4 @@ public class RepoResponseDto extends BaseDto {
     private String ownerEmail;
     private int memberCount;
     private String ownerName;
-//    private Set<RepoPermission> permissions;
 }

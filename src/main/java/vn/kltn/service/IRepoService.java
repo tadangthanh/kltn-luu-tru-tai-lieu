@@ -2,6 +2,7 @@ package vn.kltn.service;
 
 import vn.kltn.common.RepoPermission;
 import vn.kltn.dto.request.RepoRequestDto;
+import vn.kltn.dto.response.RepoMemberInfoResponse;
 import vn.kltn.dto.response.RepoResponseDto;
 
 import java.util.Set;
@@ -20,6 +21,9 @@ public interface IRepoService {
     RepoResponseDto acceptInvitation(Long repoId, String token);
 
     RepoResponseDto rejectInvitation(Long repoId, String email);
+
+    Set<RepoMemberInfoResponse> getListMember(Long repoId);
+
 
 //    Quản lý repo: Cập nhật repo, chuyển quyền sở hữu.
 //            ✅ Quản lý thành viên: Xem danh sách, kiểm tra quyền, mời qua email.

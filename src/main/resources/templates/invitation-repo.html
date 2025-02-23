@@ -5,128 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lời mời tham gia Repository</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-        }
+        /* Giữ nguyên các phần CSS hiện có và thêm style mới */
 
-        body {
-            background-color: #f6f8fa;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 16px;
-        }
-
-        .invitation-container {
-            background: white;
-            border: 1px solid #d0d7de;
-            border-radius: 12px;
-            padding: 24px;
-            max-width: 600px;
-            width: 100%;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-        }
-
-        .repo-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 16px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid #d0d7de;
-        }
-
-        .repo-icon {
-            width: 40px;
-            height: 40px;
-            background-color: #0969da;
-            border-radius: 6px;
-            margin-right: 12px;
-        }
-
-        .repo-name {
-            font-size: 20px;
-            font-weight: 600;
-            color: #0969da;
-        }
-
-        .repo-owner {
-            color: #656d76;
-            font-weight: 400;
-        }
-
-        .invitation-content {
-            margin: 20px 0;
-        }
-
-        .invite-text {
-            font-size: 16px;
-            color: #24292f;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .repo-details {
+        .repo-description {
             background-color: #f6f8fa;
             border: 1px solid #d0d7de;
             border-radius: 6px;
             padding: 16px;
             margin: 16px 0;
+            color: #57606a;
+            line-height: 1.5;
         }
 
-        .detail-item {
+        .description-title {
+            font-weight: 600;
+            color: #24292f;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
-            margin-bottom: 8px;
-            color: #57606a;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 12px;
-            margin-top: 24px;
-        }
-
-        .accept-button {
-            background-color: #2da44e;
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .accept-button:hover {
-            background-color: #22863a;
-        }
-
-        .footer-links {
-            margin-top: 24px;
-            font-size: 14px;
-            color: #57606a;
-        }
-
-        .footer-links a {
-            color: #0969da;
-            text-decoration: none;
-            margin-right: 16px;
-        }
-
-        .footer-links a:hover {
-            text-decoration: underline;
-        }
-
-        @media (max-width: 768px) {
-            .invitation-container {
-                padding: 16px;
-            }
+            gap: 8px;
         }
     </style>
 </head>
@@ -135,8 +32,8 @@
     <div class="repo-header">
         <div class="repo-icon"></div>
         <div>
-            <span class="repo-name" th:text="${repoName}">awesome-project</span>
-            <span class="repo-owner" th:text="${ownerName}"> / ownerName </span>
+            <span class="repo-name" th:text="${repo.name}">awesome-project</span>
+            <span class="repo-owner" th:text="${repo.ownerName}"> / ownerName </span>
         </div>
     </div>
 
@@ -148,13 +45,26 @@
 
         <div class="repo-details">
             <div class="detail-item">
-                <span>👤 Owner: <span th:text="${ownerName}"></span></span>
+                <span>👤 Owner: <span th:text="${repo.ownerName}"></span></span>
             </div>
             <div class="detail-item">
-                <span>🔒 Repository: <span th:text="${repoName}"></span></span>
+                <span>🔒 Repository: <span th:text="${repo.name}"></span></span>
             </div>
             <div class="detail-item">
-                <span>📅 Created: <span th:text="${createdAt}"></span></span>
+                <span>📅 Created: <span th:text="${repo.createdAt}"></span></span>
+            </div>
+        </div>
+
+        <!-- Thêm phần mô tả repository -->
+        <div class="repo-description">
+            <div class="description-title">
+                <span>📝</span>
+                Mô tả Repository
+            </div>
+            <div th:text="${repo.description}">
+                Đây là một repository tuyệt vời với nhiều tính năng hữu ích.
+                Repository này chứa các tài nguyên và mã nguồn quan trọng
+                cho dự án của chúng tôi.
             </div>
         </div>
 

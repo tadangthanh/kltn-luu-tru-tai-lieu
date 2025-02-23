@@ -14,6 +14,7 @@ import vn.kltn.common.RepoPermission;
 import vn.kltn.common.RepoPermissionDefaults;
 import vn.kltn.common.TokenType;
 import vn.kltn.dto.request.RepoRequestDto;
+import vn.kltn.dto.response.RepoMemberInfoResponse;
 import vn.kltn.dto.response.RepoResponseDto;
 import vn.kltn.entity.Repo;
 import vn.kltn.entity.RepoMember;
@@ -31,6 +32,7 @@ import vn.kltn.service.IMailService;
 import vn.kltn.service.IRepoService;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -113,13 +115,14 @@ public class RepoServiceImpl implements IRepoService {
         // save vao database
         addMemberToRepository(repo, memberAdd, permissions);
         // gui email moi thanh vien
-        sendInvitationEmail(memberAdd, repo);
-        return convertRepositoryToResponse(repo);
+        RepoResponseDto repoResponseDto = convertRepositoryToResponse(repo);
+        sendInvitationEmail(memberAdd, repoResponseDto);
+        return repoResponseDto;
     }
 
-    private void sendInvitationEmail(User memberAdd, Repo repo) {
+    private void sendInvitationEmail(User memberAdd, RepoResponseDto repo) {
         String token = jwtService.generateToken(TokenType.INVITATION_TOKEN, new HashMap<>(), memberAdd.getEmail());
-        gmailService.sendAddMemberToRepo(memberAdd.getEmail(), repo.getId(), repo.getName(), repo.getCreatedAt(), expiryDayInvitation, repo.getOwner().getFullName(), token);
+        gmailService.sendAddMemberToRepo(memberAdd.getEmail(), repo, expiryDayInvitation, token);
     }
 
     /**
@@ -188,6 +191,13 @@ public class RepoServiceImpl implements IRepoService {
             return convertRepositoryToResponse(repoMember.getRepo());
         }
         throw new InvalidDataException("Dữ liệu không hợp lệ");
+    }
+
+    @Override
+    public Set<RepoMemberInfoResponse> getListMember(Long repoId) {
+        Set<RepoMember> members = repoMemberRepo.findAllByRepoId(repoId);
+//        return repoMapper.membersToResponse(members);
+        return null;
     }
 
     private User getUserByEmailOrThrow(String email) {
