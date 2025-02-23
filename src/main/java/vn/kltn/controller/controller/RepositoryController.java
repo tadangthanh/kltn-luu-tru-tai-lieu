@@ -23,6 +23,7 @@ public class RepositoryController {
         RepoResponseDto repoResponseDto = repoService.acceptInvitation(repositoryId, token);
         model.addAttribute("repo", repoResponseDto);
         model.addAttribute("baseUrl", baseUrl);
-        return "invitation-accept";
+
+        return "invitation-accept-success";
     }
 }

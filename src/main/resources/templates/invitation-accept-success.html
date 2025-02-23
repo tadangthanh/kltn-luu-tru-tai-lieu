@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tham gia thành công</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f6f8fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .success-container {
+            background: white;
+            border: 1px solid #d0d7de;
+            border-radius: 12px;
+            padding: 32px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+        }
+
+        .success-icon {
+            width: 64px;
+            height: 64px;
+            background-color: #2da44e;
+            border-radius: 50%;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .checkmark {
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .success-title {
+            font-size: 24px;
+            color: #24292f;
+            margin-bottom: 16px;
+        }
+
+        .success-message {
+            color: #57606a;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .repo-info {
+            background-color: #f6f8fa;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            color: #24292f;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 24px;
+        }
+
+        .repo-button {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .primary-button {
+            background-color: #2da44e;
+            color: white;
+            border: 1px solid #2da44e;
+        }
+
+        .primary-button:hover {
+            background-color: #22863a;
+            border-color: #1f7d34;
+        }
+
+        .secondary-button {
+            background-color: transparent;
+            color: #0969da;
+            border: 1px solid #d0d7de;
+        }
+
+        .secondary-button:hover {
+            background-color: #f6f8fa;
+            border-color: #afb8c1;
+        }
+
+        .footer-links {
+            margin-top: 32px;
+            font-size: 14px;
+            color: #57606a;
+        }
+
+        .footer-links a {
+            color: #0969da;
+            text-decoration: none;
+            margin: 0 8px;
+        }
+
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .success-container {
+                padding: 24px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="success-container">
+    <div class="success-icon">
+        <div class="checkmark">✓</div>
+    </div>
+
+    <h1 class="success-title">Tham gia thành công!</h1>
+
+    <p class="success-message">
+        Bạn đã trở thành collaborator của repository
+        <strong><span th:text="${repo.ownerName}"></span>/<span th:text="${repo.name}"></span></strong>
+    </p>
+
+    <div class="repo-info">
+        <div class="info-item">
+            <span>👤 Chủ sở hữu: <span th:text="${repo.ownerName}"></span> </span>
+        </div>
+        <div class="info-item">
+            <span>📂 Repository: <span th:text="${repo.name}"></span> </span>
+        </div>
+<!--        <div class="info-item">-->
+<!--            <span>🔑 Quyền truy cập: </span>-->
+<!--            <ul>-->
+<!--                <li th:each="permission : ${repo.permissions}" th:text="${permission}"></li>-->
+<!--            </ul>-->
+<!--        </div>-->
+    </div>
+
+    <div class="button-group">
+        <a href="#" class="repo-button primary-button">
+            <span>👉</span>
+            Truy cập Repository
+        </a>
+        <a href="#" class="repo-button secondary-button">
+            <span>🏠</span>
+            Về trang chủ
+        </a>
+    </div>
+
+    <div class="footer-links">
+        <a href="#">Trợ giúp</a> •
+        <a href="#">Liên hệ hỗ trợ</a> •
+        <a href="#">Tài liệu hướng dẫn</a>
+    </div>
+</div>
+</body>
+</html>

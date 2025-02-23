@@ -271,6 +271,7 @@ public class RepoServiceImpl implements IRepoService {
     private RepoResponseDto convertRepositoryToResponse(Repo repo) {
         RepoResponseDto repoResponseDto = repoMapper.entityToResponse(repo);
         repoResponseDto.setMemberCount(repoMemberRepo.countRepoMemberByRepoId(repo.getId()));
+
         return repoResponseDto;
     }
 
