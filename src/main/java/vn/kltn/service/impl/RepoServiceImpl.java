@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.MemberStatus;
 import vn.kltn.common.RepoPermission;
-import vn.kltn.common.RepoPermissionDefaults;
 import vn.kltn.common.TokenType;
 import vn.kltn.dto.request.RepoRequestDto;
 import vn.kltn.dto.response.RepoMemberInfoResponse;
@@ -19,6 +18,7 @@ import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.RepoMapper;
+import vn.kltn.map.RepoMemberMapper;
 import vn.kltn.repository.RepoMemberRepo;
 import vn.kltn.repository.RepositoryRepo;
 import vn.kltn.repository.UserRepo;
@@ -49,6 +49,7 @@ public class RepoServiceImpl implements IRepoService {
     @Value("${jwt.expirationDayInvitation}")
     private long expiryDayInvitation;
     private final IAuthenticationService authenticationService;
+    private final RepoMemberMapper repoMemberMapper;
 
     @Override
     public RepoResponseDto createRepository(RepoRequestDto repoRequestDto) {
@@ -96,11 +97,6 @@ public class RepoServiceImpl implements IRepoService {
         }
     }
 
-    //check owner
-    private boolean isOwnerRepo(Repo repo, User user) {
-        return repo.getOwner().getId().equals(user.getId());
-    }
-
     @Override
     @RequireOwner
     public RepoResponseDto addMemberToRepository(Long repoId, Long userId, Set<RepoPermission> permissionRequest) {
@@ -112,12 +108,10 @@ public class RepoServiceImpl implements IRepoService {
         validateMemberNotExists(userId, repoId);
         //validate so luong gioi han member cua repo
         validateMemberCount(repo);
-        // set permission cho thanh vien
-        Set<RepoPermission> permissions = determinePermissions(repo, permissionRequest);
         // tao sas token cho thanh vien
         User memberAdd = getUserByIdOrThrow(userId);
         // save vao database
-        addMemberToRepository(repo, memberAdd, permissions);
+        saveMember(repo, memberAdd, permissionRequest);
         // gui email moi thanh vien
         RepoResponseDto repoResponseDto = convertRepositoryToResponse(repo);
         sendInvitationEmail(memberAdd, repoResponseDto);
@@ -134,19 +128,6 @@ public class RepoServiceImpl implements IRepoService {
     private void sendInvitationEmail(User memberAdd, RepoResponseDto repo) {
         String token = jwtService.generateToken(TokenType.INVITATION_TOKEN, new HashMap<>(), memberAdd.getEmail());
         gmailService.sendAddMemberToRepo(memberAdd.getEmail(), repo, expiryDayInvitation, token);
-    }
-
-    /**
-     * @param repo                 : repository cua thanh vien
-     * @param requestedPermissions : neu la owner thi dung permission cua request, nguoc lai dung permission mac dinh
-     * @return : nếu authUser là owner thì trả về permission của request, ngược lại trả về permission mặc định
-     */
-    private Set<RepoPermission> determinePermissions(Repo repo, Set<RepoPermission> requestedPermissions) {
-        User authUser = authenticationService.getAuthUser();
-        if (isOwnerRepo(repo, authUser)) {
-            return requestedPermissions;
-        }
-        return RepoPermissionDefaults.DEFAULT_MEMBER_PERMISSIONS;
     }
 
     @Override
@@ -209,7 +190,7 @@ public class RepoServiceImpl implements IRepoService {
     @Override
     public Set<RepoMemberInfoResponse> getListMember(Long repoId) {
         Set<RepoMember> members = repoMemberRepo.findAllByRepoId(repoId);
-        return members.stream().map(this::convertMemberToResponse).collect(Collectors.toSet());
+        return members.stream().map(repoMemberMapper::toRepoMemberInfoResponse).collect(Collectors.toSet());
     }
 
     @Override
@@ -219,16 +200,6 @@ public class RepoServiceImpl implements IRepoService {
         repoMapper.updateEntityFromRequest(repoRequestDto, repo);
         repo = repositoryRepo.save(repo);
         return convertRepositoryToResponse(repo);
-    }
-
-    private RepoMemberInfoResponse convertMemberToResponse(RepoMember member) {
-        RepoMemberInfoResponse response = new RepoMemberInfoResponse();
-        response.setId(member.getId());
-        response.setMemberName(member.getUser().getFullName());
-        response.setMemberEmail(member.getUser().getEmail());
-        response.setPermissions(member.getPermissions());
-        response.setStatus(member.getStatus());
-        return response;
     }
 
     private User getUserByEmailOrThrow(String email) {
@@ -267,13 +238,13 @@ public class RepoServiceImpl implements IRepoService {
         });
     }
 
-    private RepoMember addMemberToRepository(Repo repo, User user, Set<RepoPermission> permissions) {
+    private void saveMember(Repo repo, User user, Set<RepoPermission> permissions) {
         RepoMember repoMember = new RepoMember();
         repoMember.setUser(user);
         repoMember.setRepo(repo);
         repoMember.setPermissions(permissions);
         repoMember.setStatus(MemberStatus.PENDING);
-        return repoMemberRepo.save(repoMember);
+        repoMemberRepo.save(repoMember);
     }
 
 
