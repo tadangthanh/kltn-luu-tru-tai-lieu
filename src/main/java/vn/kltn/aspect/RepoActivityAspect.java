@@ -8,8 +8,11 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.stereotype.Component;
 import vn.kltn.common.RepoAction;
 import vn.kltn.common.RepoPermission;
+import vn.kltn.common.TokenType;
+import vn.kltn.dto.request.RepoRequestDto;
 import vn.kltn.dto.response.RepoResponseDto;
 import vn.kltn.exception.InvalidDataException;
+import vn.kltn.service.IJwtService;
 import vn.kltn.service.IRepoActivityService;
 
 import java.util.Collection;
@@ -21,6 +24,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class RepoActivityAspect {
     private final IRepoActivityService repoActivityService;
+    private final IJwtService jwtService;
 
     @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.addMemberToRepository(..))")
     public void addMemberRepoPointCut() {
@@ -34,12 +38,52 @@ public class RepoActivityAspect {
     public void updatePermissionMember() {
     }
 
-    @AfterReturning(value = "addMemberRepoPointCut()", returning = "repoResponseDto")
-    public void logAddMember(JoinPoint joinPoint, RepoResponseDto repoResponseDto) {
+    @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.acceptInvitation(..))")
+    public void acceptInvitation() {
+    }
+
+    @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.rejectInvitation(..))")
+    public void rejectInvitation() {
+    }
+
+    @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.update(..))")
+    public void updateRepo() {
+    }
+
+    @AfterReturning(value = "updateRepo()", returning = "repoResponseDto")
+    public void logUpdateRepo(JoinPoint joinPoint, RepoResponseDto repoResponseDto) {
+        Object[] args = joinPoint.getArgs();
+        Long repoId = (Long) args[0];
+        RepoRequestDto repoRequestDto = (RepoRequestDto) args[1];
+        repoActivityService.logActivity(repoId, RepoAction.UPDATE_REPOSITORY,
+                String.format("Cập nhật repository %s, new name: %s, new description: %s", repoId, repoRequestDto.getName(), repoRequestDto.getDescription()));
+    }
+
+    @AfterReturning(value = "rejectInvitation()")
+    public void logRejectInvitation(JoinPoint joinPoint) {
+        Object[] args = joinPoint.getArgs();
+        Long repoId = (Long) args[0];
+        String email = (String) args[1];
+        repoActivityService.logActivity(repoId, RepoAction.MEMBER_REJECT_INVITATION,
+                String.format("Từ chối lời mời tham gia repository %s từ email: %s", repoId, email));
+    }
+
+    @AfterReturning(value = "acceptInvitation()")
+    public void logAcceptInvitation(JoinPoint joinPoint) {
+        Object[] args = joinPoint.getArgs();
+        Long repoId = (Long) args[0];
+        String token = (String) args[1];
+        String email = jwtService.extractEmail(token, TokenType.INVITATION_TOKEN);
+        repoActivityService.logActivity(repoId, RepoAction.MEMBER_ACCEPT_INVITATION,
+                String.format("Chấp nhận lời mời tham gia repository %s từ email: %s", repoId, email));
+    }
+
+    @AfterReturning(value = "addMemberRepoPointCut()")
+    public void logAddMember(JoinPoint joinPoint) {
         Object[] args = joinPoint.getArgs();
         Long repoId = (Long) args[0];
         Long userId = (Long) args[1];
-        repoActivityService.logActivity(repoId, RepoAction.ADD_MEMBER, "Thêm thành viên vào repository: " + repoResponseDto.getName() + ", userId: " + userId);
+        repoActivityService.logActivity(repoId, RepoAction.ADD_MEMBER, String.format("Thêm thành viên %s vào repository %s", userId, repoId));
     }
 
     @AfterReturning(value = "removeMemberRepoPointCut()")
@@ -68,7 +112,7 @@ public class RepoActivityAspect {
             throw new InvalidDataException("Expected a Set<RepoPermission>, but got: " + args[2].getClass());
         }
         repoActivityService.logActivity(repoId, RepoAction.UPDATE_PERMISSION,
-                "Cập nhật quyền hạn cho thành viên memberId: " + memberId + ", new permissions: " + requestedPermissions);
+                String.format("Cập nhật quyền hạn cho thành viên memberId: %s, new permissions: %s", memberId, requestedPermissions));
     }
 
 }
