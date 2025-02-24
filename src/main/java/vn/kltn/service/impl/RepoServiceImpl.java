@@ -133,7 +133,8 @@ public class RepoServiceImpl implements IRepoService {
     @Override
     @RequireOwner
     public void removeMemberFromRepository(Long repoId, Long memberId) {
-        repoMemberRepo.deleteById(memberId);
+        RepoMember repoMember = getRepoMemberByIdOrThrow(memberId);
+        repoMember.setStatus(MemberStatus.REMOVED);
     }
 
 
