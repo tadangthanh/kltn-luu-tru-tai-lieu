@@ -10,7 +10,6 @@ import vn.kltn.common.RepoAction;
 import vn.kltn.common.RepoPermission;
 import vn.kltn.common.TokenType;
 import vn.kltn.dto.request.RepoRequestDto;
-import vn.kltn.dto.response.RepoResponseDto;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.service.IJwtService;
 import vn.kltn.service.IRepoActivityService;
@@ -50,8 +49,8 @@ public class RepoActivityAspect {
     public void updateRepo() {
     }
 
-    @AfterReturning(value = "updateRepo()", returning = "repoResponseDto")
-    public void logUpdateRepo(JoinPoint joinPoint, RepoResponseDto repoResponseDto) {
+    @AfterReturning(value = "updateRepo()")
+    public void logUpdateRepo(JoinPoint joinPoint) {
         Object[] args = joinPoint.getArgs();
         Long repoId = (Long) args[0];
         RepoRequestDto repoRequestDto = (RepoRequestDto) args[1];

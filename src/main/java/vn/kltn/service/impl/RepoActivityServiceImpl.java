@@ -30,6 +30,12 @@ public class RepoActivityServiceImpl implements IRepoActivityService {
         saveActivity(repo, action, detail);
     }
 
+    @Override
+    public void deleteActivitiesByRepoId(Long repoId) {
+        log.info("Delete activities by repoId: {}", repoId);
+        activityRepo.deleteByRepoId(repoId);
+    }
+
     private void saveActivity(Repo repo, RepoAction action, String detail) {
         RepoActivity activity = new RepoActivity();
         User authUser = authService.getAuthUser();

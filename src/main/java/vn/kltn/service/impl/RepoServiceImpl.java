@@ -50,7 +50,7 @@ public class RepoServiceImpl implements IRepoService {
     private long expiryDayInvitation;
     private final IAuthenticationService authenticationService;
     private final RepoMemberMapper repoMemberMapper;
-
+    private final IRepoActivityService repoActivityService;
     @Override
     public RepoResponseDto createRepository(RepoRequestDto repoRequestDto) {
         Repo repo = createAndSaveRepository(repoRequestDto);
@@ -91,6 +91,8 @@ public class RepoServiceImpl implements IRepoService {
         User authUser = authenticationService.getAuthUser();
         if (azureStorageService.deleteContainer(repo.getContainerName())) {
             log.info("{} xóa repository thành công, id: {}", authUser.getEmail(), id);
+            // xoa log cua repo
+            repoActivityService.deleteActivitiesByRepoId(id);
             // xoa cac thanh vien truoc khi xoa repo
             repoMemberRepo.deleteByRepoId(id);
             repositoryRepo.delete(repo);
