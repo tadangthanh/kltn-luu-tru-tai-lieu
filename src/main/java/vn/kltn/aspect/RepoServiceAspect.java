@@ -21,7 +21,7 @@ public class RepoServiceAspect {
     private final RepositoryRepo repositoryRepo;
 
     @Before("@annotation(vn.kltn.validation.RequireOwner) && args(repoId,..)")
-    public void checkOwnerPermission(JoinPoint joinPoint, Long repoId) {
+    public void checkOwnerRepoPermission(JoinPoint joinPoint, Long repoId) {
         log.info("Kiểm tra quyền chủ sở hũu repo, repoId: {}", repoId);
         Repo repo = repositoryRepo.findById(repoId).orElseThrow(() -> new ResourceNotFoundException("Repository không tồn tại"));
         String authEmail = authService.getAuthUser().getEmail();

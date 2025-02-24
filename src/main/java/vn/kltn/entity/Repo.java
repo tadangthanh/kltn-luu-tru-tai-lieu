@@ -22,4 +22,6 @@ public class Repo extends BaseEntity {
     private User owner;
     @Column(name = "max_size_in_gb", nullable = false)
     private Integer maxSizeInGB; // dung luong toi da cua repository
+    @Column(name = "available_size_in_gb", nullable = false)
+    private Double availableSizeInGB; // dung luong con lai cua repository
 }

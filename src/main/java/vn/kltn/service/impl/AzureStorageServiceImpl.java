@@ -149,7 +149,6 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
 
     /**
      * @param repoName : tên repository
-     * @return : trả về SAS Token cho container
      */
     @Override
     public void createContainerForRepository(String repoName) {

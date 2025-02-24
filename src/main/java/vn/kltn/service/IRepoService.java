@@ -16,7 +16,7 @@ public interface IRepoService {
 
     void removeMemberFromRepository(Long repoId, Long memberId);
 
-    RepoResponseDto updatePermissionMember(Long repoId, Long memberId, Set<RepoPermission> permissionRequest);
+    RepoResponseDto updatePermissionMember(Long repoId, Long memberId, Set<RepoPermission> requestedPermissions );
 
     RepoResponseDto acceptInvitation(Long repoId, String token);
 

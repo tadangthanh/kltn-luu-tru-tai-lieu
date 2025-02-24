@@ -52,23 +52,34 @@ public class RepoServiceImpl implements IRepoService {
 
     @Override
     public RepoResponseDto createRepository(RepoRequestDto repoRequestDto) {
-        // tao container tuong ung voi repository
-        Repo repo = saveRepoAndCreateContainer(repoRequestDto);
+        Repo repo = createAndSaveRepository(repoRequestDto);
+        createAzureContainerForRepository(repo);
         return convertRepositoryToResponse(repo);
     }
 
-    private Repo saveRepoAndCreateContainer(RepoRequestDto repoRequestDto) {
+    private Repo createAndSaveRepository(RepoRequestDto repoRequestDto) {
+        Repo repo = mapRequestToRepositoryEntity(repoRequestDto);
+        repo.setContainerName(generateContainerName(repoRequestDto.getName()));
+        repo.setMaxSizeInGB(maxSizeInGB);
+        repo.setAvailableSizeInGB(maxSizeInGB * 1.0);
+        return repositoryRepo.save(repo);
+    }
+
+    // ten container phai la duy nhat
+    private String generateContainerName(String repositoryName) {
         String uuid = UUID.randomUUID().toString();
-        String containerName = repoRequestDto.getName() + "-" + uuid;
-        // tao container truoc khi tao repository
-        azureStorageService.createContainerForRepository(containerName);
-        //create repository
+        return repositoryName + "-" + uuid;
+    }
+
+    // tao container tren azure
+    private void createAzureContainerForRepository(Repo repo) {
+        azureStorageService.createContainerForRepository(repo.getContainerName());
+    }
+
+    private Repo mapRequestToRepositoryEntity(RepoRequestDto repoRequestDto) {
         User owner = authenticationService.getAuthUser();
         Repo repo = repoMapper.requestToEntity(repoRequestDto);
         repo.setOwner(owner);
-        repo.setContainerName(containerName);
-        repo.setMaxSizeInGB(maxSizeInGB);
-        repo = repositoryRepo.save(repo);
         return repo;
     }
 
@@ -147,14 +158,22 @@ public class RepoServiceImpl implements IRepoService {
 
     @Override
     @RequireOwner
-    public RepoResponseDto updatePermissionMember(Long repoId, Long memberId, Set<RepoPermission> permissionRequest) {
+    public RepoResponseDto updatePermissionMember(Long repoId, Long memberId, Set<RepoPermission> requestedPermissions) {
         Repo repo = getRepositoryByIdOrThrow(repoId);
         RepoMember repoMember = getRepoMemberByIdOrThrow(memberId);
-        String sasToken = azureStorageService.generatePermissionForMemberRepo(repo.getContainerName(), permissionRequest);
-        repoMember.setPermissions(permissionRequest);
+        updateMemberPermissions(repoMember, requestedPermissions, repo.getContainerName());
+        return convertRepositoryToResponse(repo);
+    }
+
+    private void updateMemberPermissions(RepoMember repoMember, Set<RepoPermission> requestedPermissions, String containerName) {
+        String sasToken = generateSasTokenForMember(containerName, requestedPermissions);
+        repoMember.setPermissions(requestedPermissions);
         repoMember.setSasToken(sasToken);
         repoMemberRepo.save(repoMember);
-        return convertRepositoryToResponse(repo);
+    }
+
+    private String generateSasTokenForMember(String containerName, Set<RepoPermission> permissions) {
+        return azureStorageService.generatePermissionForMemberRepo(containerName, permissions);
     }
 
     @Override
@@ -162,15 +181,18 @@ public class RepoServiceImpl implements IRepoService {
         // trich xuat email cua thanh vien tu token
         String emailMemberAdd = jwtService.extractEmail(token, TokenType.INVITATION_TOKEN);
         User memberAdd = getUserByEmailOrThrow(emailMemberAdd);
-        Repo repo = getRepositoryByIdOrThrow(repoId);
         RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(memberAdd.getId(), repoId);
         if (repoMember.getStatus().equals(MemberStatus.PENDING)) {
-            repoMember.setStatus(MemberStatus.ACCEPTED);
-            repoMember.setSasToken(azureStorageService.generatePermissionForMemberRepo(repo.getContainerName(), repoMember.getPermissions()));
-            repoMemberRepo.save(repoMember);
-            return convertRepositoryToResponse(repo);
+            updateStatusMember(repoMember, MemberStatus.ACCEPTED);
+            updatePermissionMember(repoId, repoMember.getId(), repoMember.getPermissions());
+            return convertRepositoryToResponse(repoMember.getRepo());
         }
         throw new InvalidDataException("Không thể chấp nhận lời mời");
+    }
+
+    private void updateStatusMember(RepoMember repoMember, MemberStatus status) {
+        repoMember.setStatus(status);
+        repoMemberRepo.save(repoMember);
     }
 
     @Override
