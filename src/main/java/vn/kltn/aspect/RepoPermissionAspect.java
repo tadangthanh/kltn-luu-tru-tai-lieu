@@ -22,11 +22,12 @@ public class RepoPermissionAspect {
 
     @Before("@annotation(vn.kltn.validation.RequireOwner) && args(repoId,..)")
     public void checkOwnerPermission(JoinPoint joinPoint, Long repoId) {
-        log.info("Kiểm tra quyền cập nhật repository, repoId: {}", repoId);
+        log.info("Kiểm tra quyền chủ sở hũu repo, repoId: {}", repoId);
         Repo repo = repositoryRepo.findById(repoId).orElseThrow(() -> new ResourceNotFoundException("Repository không tồn tại"));
-        if (!repo.getOwner().getEmail().equals(authService.getAuthUser().getEmail())) {
-            log.error("Không có quyền cập nhật repository, repoId: {}", repoId);
-            throw new AccessDeniedException("Bạn không có quyền cập nhật repository");
+        String authEmail = authService.getAuthUser().getEmail();
+        if (!repo.getOwner().getEmail().equals(authEmail)) {
+            log.error("{} Không phải chủ sở hữu repo, repoId: {}", authEmail, repoId);
+            throw new AccessDeniedException("Bạn không có quyền thực hiện hành động này");
         }
     }
 }
