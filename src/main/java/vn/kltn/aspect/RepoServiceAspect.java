@@ -15,8 +15,8 @@ import vn.kltn.service.IAuthenticationService;
 @Aspect
 @Component
 @RequiredArgsConstructor
-@Slf4j(topic = "vn.kltn.aspect.RepoPermissionAspect")
-public class RepoPermissionAspect {
+@Slf4j(topic = "vn.kltn.aspect.RepoServiceAspect")
+public class RepoServiceAspect {
     private final IAuthenticationService authService;
     private final RepositoryRepo repositoryRepo;
 
