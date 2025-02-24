@@ -16,7 +16,7 @@ public interface IRepoService {
 
     void removeMemberFromRepository(Long repoId, Long memberId);
 
-    RepoResponseDto updatePermissionMember(Long repoId, Long memberId, Set<RepoPermission> requestedPermissions );
+    RepoResponseDto updatePermissionMember(Long repoId, Long memberId, Set<RepoPermission> requestedPermissions);
 
     RepoResponseDto acceptInvitation(Long repoId, String token);
 
@@ -24,7 +24,7 @@ public interface IRepoService {
 
     Set<RepoMemberInfoResponse> getListMember(Long repoId);
 
-    RepoResponseDto update(Long repoId,RepoRequestDto repoRequestDto);
+    RepoResponseDto update(Long repoId, RepoRequestDto repoRequestDto);
 
 
 //    Quản lý repo: Cập nhật repo, chuyển quyền sở hữu.

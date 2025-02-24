@@ -1,0 +1,12 @@
+package vn.kltn.common;
+
+public enum RepoAction {
+    ADD_FILE,
+    DELETE_FILE,
+    ADD_MEMBER,
+    REMOVE_MEMBER,
+    UPDATE_REPOSITORY,
+    UPDATE_PERMISSION,
+    MEMBER_ACCEPT_INVITATION,
+    MEMBER_REJECT_INVITATION,
+}
