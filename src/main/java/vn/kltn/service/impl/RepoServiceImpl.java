@@ -4,10 +4,6 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.MemberStatus;
 import vn.kltn.common.RepoPermission;
@@ -26,10 +22,7 @@ import vn.kltn.map.RepoMapper;
 import vn.kltn.repository.RepoMemberRepo;
 import vn.kltn.repository.RepositoryRepo;
 import vn.kltn.repository.UserRepo;
-import vn.kltn.service.IAzureStorageService;
-import vn.kltn.service.IJwtService;
-import vn.kltn.service.IMailService;
-import vn.kltn.service.IRepoService;
+import vn.kltn.service.*;
 import vn.kltn.validation.RequireOwner;
 
 import java.util.HashMap;
@@ -55,6 +48,7 @@ public class RepoServiceImpl implements IRepoService {
     private final IJwtService jwtService;
     @Value("${jwt.expirationDayInvitation}")
     private long expiryDayInvitation;
+    private final IAuthenticationService authenticationService;
 
     @Override
     public RepoResponseDto createRepository(RepoRequestDto repoRequestDto) {
@@ -69,7 +63,7 @@ public class RepoServiceImpl implements IRepoService {
         // tao container truoc khi tao repository
         azureStorageService.createContainerForRepository(containerName);
         //create repository
-        User owner = getAuthUser();
+        User owner = authenticationService.getAuthUser();
         Repo repo = repoMapper.requestToEntity(repoRequestDto);
         repo.setOwner(owner);
         repo.setContainerName(containerName);
@@ -79,13 +73,10 @@ public class RepoServiceImpl implements IRepoService {
     }
 
     @Override
+    @RequireOwner
     public void deleteRepository(Long id) {
         Repo repo = getRepositoryByIdOrThrow(id);
-        User authUser = getAuthUser();
-        if (!isOwnerRepo(repo, authUser)) {
-            log.error("{} Không có quyền xóa repository, id: {}", authUser.getEmail(), id);
-            throw new AccessDeniedException("Bạn không có quyền xóa repository này");
-        }
+        User authUser = authenticationService.getAuthUser();
         if (azureStorageService.deleteContainer(repo.getContainerName())) {
             log.info("{} xóa repository thành công, id: {}", authUser.getEmail(), id);
             // xoa cac thanh vien truoc khi xoa repo
@@ -100,13 +91,10 @@ public class RepoServiceImpl implements IRepoService {
     }
 
     @Override
+    @RequireOwner
     public RepoResponseDto addMemberToRepository(Long repoId, Long userId, Set<RepoPermission> permissionRequest) {
         // chi co chu so huu moi co quyen them thanh vien
         Repo repo = getRepositoryByIdOrThrow(repoId);
-        if (!isOwnerRepo(repo, getAuthUser())) {
-            log.error("Không có quyền thêm thành viên, repoId: {}", repoId);
-            throw new AccessDeniedException("Bạn không có quyền thêm thành viên");
-        }
         // ko the thuc hien hanh dong voi chinh minh
         validateNotSelfRepoMember(userId);
         // validate thanh vien se them da ton tai hay chua
@@ -143,7 +131,7 @@ public class RepoServiceImpl implements IRepoService {
      * @return : nếu authUser là owner thì trả về permission của request, ngược lại trả về permission mặc định
      */
     private Set<RepoPermission> determinePermissions(Repo repo, Set<RepoPermission> requestedPermissions) {
-        User authUser = getAuthUser();
+        User authUser = authenticationService.getAuthUser();
         if (isOwnerRepo(repo, authUser)) {
             return requestedPermissions;
         }
@@ -151,25 +139,16 @@ public class RepoServiceImpl implements IRepoService {
     }
 
     @Override
+    @RequireOwner
     public void removeMemberFromRepository(Long repoId, Long memberId) {
-        //kiem tra owner
-        Repo repo = getRepositoryByIdOrThrow(repoId);
-        if (!isOwnerRepo(repo, getAuthUser())) {
-            log.error("Không có quyền xóa thành viên, repoId: {}", repoId);
-            throw new AccessDeniedException("Bạn không có quyền xóa thành viên");
-        }
         repoMemberRepo.deleteById(memberId);
     }
 
 
     @Override
+    @RequireOwner
     public RepoResponseDto updatePermissionMember(Long repoId, Long memberId, Set<RepoPermission> permissionRequest) {
         Repo repo = getRepositoryByIdOrThrow(repoId);
-        //chi co chu so huu moi co quyen thay doi quyen cua thanh vien
-        if (!isOwnerRepo(repo, getAuthUser())) {
-            log.error("Không có quyền thay đổi quyền thành viên, repoId: {}", repoId);
-            throw new AccessDeniedException("Bạn không có quyền thay đổi quyền thành viên");
-        }
         RepoMember repoMember = getRepoMemberByIdOrThrow(memberId);
         String sasToken = azureStorageService.generatePermissionForMemberRepo(repo.getContainerName(), permissionRequest);
         repoMember.setPermissions(permissionRequest);
@@ -215,10 +194,6 @@ public class RepoServiceImpl implements IRepoService {
     @RequireOwner
     public RepoResponseDto update(Long repoId, RepoRequestDto repoRequestDto) {
         Repo repo = getRepositoryByIdOrThrow(repoId);
-//        if (!isOwnerRepo(repo, getAuthUser())) {
-//            log.error("Không có quyền cập nhật repository, repoId: {}", repoId);
-//            throw new AccessDeniedException("Bạn không có quyền cập nhật repository");
-//        }
         repoMapper.updateEntityFromRequest(repoRequestDto, repo);
         repo = repositoryRepo.save(repo);
         return convertRepositoryToResponse(repo);
@@ -250,7 +225,7 @@ public class RepoServiceImpl implements IRepoService {
 
 
     private void validateNotSelfRepoMember(Long userIdToCheck) {
-        User authUser = getAuthUser(); // Lấy user đang đăng nhập
+        User authUser = authenticationService.getAuthUser(); // Lấy user đang đăng nhập
         if (authUser.getId().equals(userIdToCheck)) {
             throw new InvalidDataException("Không thể thực hiện hành động này với chính mình");
         }
@@ -273,32 +248,12 @@ public class RepoServiceImpl implements IRepoService {
     private RepoMember addMemberToRepository(Repo repo, User user, Set<RepoPermission> permissions) {
         RepoMember repoMember = new RepoMember();
         repoMember.setUser(user);
-//        repoMember.setSasToken(sasToken);
         repoMember.setRepo(repo);
         repoMember.setPermissions(permissions);
         repoMember.setStatus(MemberStatus.PENDING);
         return repoMemberRepo.save(repoMember);
     }
 
-    /**
-     * @param repoId     : repo mà thành viên tham gia
-     * @param permission : quyền hạn cần kiểm tra với repo và thành viên xác định
-     */
-    private void validateSelfPermission(Long repoId, RepoPermission permission) {
-        User authUser = getAuthUser(); // lay user dang nhap
-        Repo repo = getRepositoryByIdOrThrow(repoId);
-        // kiem tra xem user co phai la owner cua repository hay khong, neu phai thi tra ve luon, mac dinh owner la co all permission
-        if (isOwnerRepo(repo, authUser)) {
-            return;
-        }
-        // kiem tra xem user co phai la member cua repository hay khong
-        RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(authUser.getId(), repoId);
-        // kiem tra xem quyen can kiem tra co ton tai trong danh sach quyen cua thanh vien hay khong
-        if (!repoMember.getPermissions().contains(permission)) {
-            log.error("{} Không có quyền thực hiện hành động này, userId: {}, repoId: {}", authUser.getEmail(), authUser.getId(), repoId);
-            throw new AccessDeniedException("Bạn không có quyền thực hiện hành động này");
-        }
-    }
 
     /**
      * @param userId : id của user sẽ thêm vào repository
@@ -328,22 +283,6 @@ public class RepoServiceImpl implements IRepoService {
         repoResponseDto.setMemberCount(repoMemberRepo.countRepoMemberByRepoId(repo.getId()));
 
         return repoResponseDto;
-    }
-
-    private User getAuthUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new ResourceNotFoundException("User not authenticated");
-        }
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof User user) {
-            return user; //  Trả về entity User nếu principal là User
-        } else if (principal instanceof UserDetails userDetails) {
-            //  Nếu không phải User, lấy email rồi tìm trong DB
-            log.info("Principal is UserDetails");
-            return userRepo.findByEmail(userDetails.getUsername()).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        }
-        throw new ResourceNotFoundException("User not found");
     }
 
 }
