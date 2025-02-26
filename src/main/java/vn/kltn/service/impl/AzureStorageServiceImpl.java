@@ -64,9 +64,9 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     }
 
     @Override
-    public String uploadChunked(InputStream data, String originalFileName,String containerName,String sasToken, long length, int chunkSize) {
+    public String uploadChunked(InputStream data, String originalFileName, String containerName, String sasToken, long length, int chunkSize) {
         try {
-            String containerUrl= String.format("https://%s.blob.core.windows.net/%s?%s",
+            String containerUrl = String.format("https://%s.blob.core.windows.net/%s?%s",
                     accountName, containerName, sasToken);
             BlobContainerClient blobContainerClient = new BlobServiceClientBuilder()
                     .endpoint(containerUrl)
@@ -96,7 +96,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
             return blockBlobClient.getBlobUrl();
         } catch (IOException | BlobStorageException e) {
             log.error("Error uploading file from InputStream: {}", e.getMessage());
-            throw new CustomBlobStorageException("Lỗi upload file");
+            throw new CustomBlobStorageException("Lỗi upload file ");
         }
     }
 
@@ -173,8 +173,8 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     @Override
     public String generatePermissionForMemberRepo(String containerName, Set<RepoPermission> permissionList) {
         BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
-        // Thiết lập thời gian hết hạn (ví dụ: 24 giờ)
-        OffsetDateTime expiryTime = OffsetDateTime.now().plusHours(24);
+        // Thiết lập thời gian hết hạn cho SAS Token
+        OffsetDateTime expiryTime = OffsetDateTime.now().plusMinutes(1);
         // Tạo SAS Token với quyền hạn tùy vào từng thành viên
         BlobServiceSasSignatureValues sasValues = new BlobServiceSasSignatureValues(expiryTime, generatePermissionForMember(permissionList))
                 .setProtocol(SasProtocol.HTTPS_HTTP);  //  cho phép truy cập qua HTTPS_HTTP
