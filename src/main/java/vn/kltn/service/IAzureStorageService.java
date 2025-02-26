@@ -4,7 +4,6 @@ import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.RepoPermission;
 
 import java.io.InputStream;
-import java.util.List;
 import java.util.Set;
 
 public interface IAzureStorageService {
@@ -12,7 +11,7 @@ public interface IAzureStorageService {
 
     String upload(InputStream data, String originalFileName, long length);
 
-    String uploadChunked(InputStream data, String originalFileName, String containerName,String sasToken,long length, int chunkSize);
+    String uploadChunked(InputStream data, String originalFileName, String containerName, String sasToken, long length, int chunkSize);
 
     String getBlobUrl(String blobName);
 
@@ -24,7 +23,7 @@ public interface IAzureStorageService {
 
     void createContainerForRepository(String repoName);
 
-    String generatePermissionForMemberRepo(String containerName, Set<RepoPermission> permissionList);
+    String generatePermissionRepo(String containerName, Set<RepoPermission> permissionList);
 
     boolean deleteContainer(String containerName);
 }

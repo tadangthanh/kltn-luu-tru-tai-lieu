@@ -171,7 +171,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
      * @return : trả về SAS Token của thành viên với container này
      */
     @Override
-    public String generatePermissionForMemberRepo(String containerName, Set<RepoPermission> permissionList) {
+    public String generatePermissionRepo(String containerName, Set<RepoPermission> permissionList) {
         BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
         // Thiết lập thời gian hết hạn cho SAS Token
         OffsetDateTime expiryTime = OffsetDateTime.now().plusMinutes(1);

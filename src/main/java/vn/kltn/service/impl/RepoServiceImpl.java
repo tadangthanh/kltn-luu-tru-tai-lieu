@@ -55,8 +55,11 @@ public class RepoServiceImpl implements IRepoService {
     public RepoResponseDto createRepository(RepoRequestDto repoRequestDto) {
         Repo repo = createAndSaveRepository(repoRequestDto);
         createAzureContainerForRepository(repo);
+        // them chu so huu vao bang thanh vien voi tat ca cac quyen
+        addMemberToRepository(repo.getId(), repo.getOwner().getId(), Set.of(RepoPermission.values()));
         return convertRepositoryToResponse(repo);
     }
+
 
     private Repo createAndSaveRepository(RepoRequestDto repoRequestDto) {
         Repo repo = mapRequestToRepositoryEntity(repoRequestDto);
@@ -157,7 +160,7 @@ public class RepoServiceImpl implements IRepoService {
     }
 
     private String generateSasTokenForMember(String containerName, Set<RepoPermission> permissions) {
-        return azureStorageService.generatePermissionForMemberRepo(containerName, permissions);
+        return azureStorageService.generatePermissionRepo(containerName, permissions);
     }
 
     @Override

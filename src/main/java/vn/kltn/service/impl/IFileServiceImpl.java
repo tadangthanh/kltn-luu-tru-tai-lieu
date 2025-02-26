@@ -81,7 +81,7 @@ public class IFileServiceImpl implements IFileService {
         User authUser = authenticationService.getAuthUser();
         Repo repo = getRepoByIdOrThrow(repoId);
         if (repoService.isOwner(repoId, authUser.getId())) {
-            return azureStorageService.generatePermissionForMemberRepo(repo.getContainerName(), Set.of(RepoPermission.values()));
+            return azureStorageService.generatePermissionRepo(repo.getContainerName(), Set.of(RepoPermission.values()));
         }
         RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(authUser.getId(), repoId);
         String sasToken = repoMember.getSasToken();
@@ -94,7 +94,7 @@ public class IFileServiceImpl implements IFileService {
     private RepoMember updateSasTokenMember(Long repoId, Long userId) {
         RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(userId, repoId);
         Repo repo = getRepoByIdOrThrow(repoId);
-        String newSasToken = azureStorageService.generatePermissionForMemberRepo(repo.getContainerName(), repoMember.getPermissions());
+        String newSasToken = azureStorageService.generatePermissionRepo(repo.getContainerName(), repoMember.getPermissions());
         repoMember.setSasToken(newSasToken);
         return repoMemberRepo.save(repoMember);
     }
