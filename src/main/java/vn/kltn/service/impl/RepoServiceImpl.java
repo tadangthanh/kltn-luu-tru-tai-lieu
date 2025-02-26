@@ -51,12 +51,13 @@ public class RepoServiceImpl implements IRepoService {
     private final IAuthenticationService authenticationService;
     private final RepoMemberMapper repoMemberMapper;
     private final IRepoActivityService repoActivityService;
+
     @Override
     public RepoResponseDto createRepository(RepoRequestDto repoRequestDto) {
         Repo repo = createAndSaveRepository(repoRequestDto);
-        createAzureContainerForRepository(repo);
         // them chu so huu vao bang thanh vien voi tat ca cac quyen
         addMemberToRepository(repo.getId(), repo.getOwner().getId(), Set.of(RepoPermission.values()));
+        createAzureContainerForRepository(repo);
         return convertRepositoryToResponse(repo);
     }
 
@@ -107,8 +108,6 @@ public class RepoServiceImpl implements IRepoService {
     public RepoResponseDto addMemberToRepository(Long repoId, Long userId, Set<RepoPermission> permissionRequest) {
         // chi co chu so huu moi co quyen them thanh vien
         Repo repo = getRepositoryByIdOrThrow(repoId);
-        // ko the thuc hien hanh dong voi chinh minh
-        validateNotSelfRepoMember(userId);
         // validate thanh vien se them da ton tai hay chua
         validateMemberNotExists(userId, repoId);
         //validate so luong gioi han member cua repo
@@ -119,7 +118,9 @@ public class RepoServiceImpl implements IRepoService {
         saveMember(repo, memberAdd, permissionRequest);
         // gui email moi thanh vien
         RepoResponseDto repoResponseDto = convertRepositoryToResponse(repo);
-        sendInvitationEmail(memberAdd, repoResponseDto);
+        if (!repo.getOwner().getId().equals(userId)) {
+            sendInvitationEmail(memberAdd, repoResponseDto);
+        }
         return repoResponseDto;
     }
 
@@ -269,11 +270,6 @@ public class RepoServiceImpl implements IRepoService {
             log.error("Thành viên đã tồn tại, userId: {}, repoId: {}", userId, repoId);
             throw new ConflictResourceException("Người dùng này đã là thành viên");
         });
-        Repo repo = getRepositoryByIdOrThrow(repoId);
-        if (repo.getOwner().getId().equals(userId)) {
-            log.error("Thành viên đã tồn tại, userId: {}, repoId: {}", userId, repoId);
-            throw new ConflictResourceException("Người dùng này đã là thành viên");
-        }
     }
 
     private RepoMember getRepoMemberByUserIdAndRepoIdOrThrow(Long userId, Long repoId) {
