@@ -26,11 +26,7 @@ public interface IRepoService {
 
     RepoResponseDto update(Long repoId, RepoRequestDto repoRequestDto);
 
-
-//    Quản lý repo: Cập nhật repo, chuyển quyền sở hữu.
-//            ✅ Quản lý thành viên: Xem danh sách, kiểm tra quyền, mời qua email.
 //✅ Quản lý dung lượng: Kiểm tra dung lượng sử dụng, đặt giới hạn.
-//            ✅ Lịch sử hoạt động: Theo dõi thay đổi, audit logs.
 //✅ Tìm kiếm và lọc: Dễ dàng tìm và quản lý repo.
 //✅ Sao lưu và phục hồi: Đảm bảo an toàn dữ liệu.
 }
