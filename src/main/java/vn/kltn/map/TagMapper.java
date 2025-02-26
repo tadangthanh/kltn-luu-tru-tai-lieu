@@ -10,6 +10,7 @@ import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 @Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = IGNORE)
 public interface TagMapper {
     Tag requestToEntity(TagRequest request);
+
     TagResponse entityToResponse(Tag entity);
 
     Tag responseToEntity(TagResponse response);

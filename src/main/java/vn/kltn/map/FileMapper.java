@@ -14,6 +14,7 @@ public interface FileMapper {
     @Mapping(target = "repoName", source = "repo.name")
     @Mapping(target = "repoId", source = "repo.id")
     @Mapping(target = "uploadedBy", source = "uploadedBy.user.fullName")
+    @Mapping(target = "public",source = "public")
     FileResponse entityToResponse(File file);
 
     File requestToEntity(FileRequest request);
