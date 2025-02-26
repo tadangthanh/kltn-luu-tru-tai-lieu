@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.request.FileRequest;
 import vn.kltn.dto.request.TagRequest;
 import vn.kltn.dto.response.FileResponse;
+import vn.kltn.dto.response.TagResponse;
 import vn.kltn.entity.*;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.map.FileMapper;
@@ -15,10 +16,10 @@ import vn.kltn.map.TagMapper;
 import vn.kltn.repository.FileRepo;
 import vn.kltn.repository.RepoMemberRepo;
 import vn.kltn.repository.RepositoryRepo;
-import vn.kltn.repository.TagRepo;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IFileService;
+import vn.kltn.service.ITagService;
 import vn.kltn.util.SasTokenValidator;
 
 import java.io.IOException;
@@ -34,17 +35,18 @@ import java.util.Set;
 @Slf4j(topic = "FILE_SERVICE")
 public class IFileServiceImpl implements IFileService {
     private final FileRepo fileRepo;
-    private final TagMapper tagMapper;
     private final FileMapper fileMapper;
     private final RepositoryRepo repositoryRepo;
     private final IAzureStorageService azureStorageService;
-    private final TagRepo tagRepo;
     private final RepoMemberRepo repoMemberRepo;
     private final IAuthenticationService authenticationService;
+    private final ITagService tagService;
+    private final TagMapper tagMapper;
 
     @Override
     public FileResponse uploadFile(Long repoId, FileRequest fileRequest, MultipartFile file) {
         File fileEntity = mapToEntity(repoId, fileRequest, file);
+        fileEntity.setVersion(1);
         File savedFile = fileRepo.save(fileEntity);
         return fileMapper.entityToResponse(savedFile);
     }
@@ -62,18 +64,23 @@ public class IFileServiceImpl implements IFileService {
         File fileEntity = fileMapper.requestToEntity(fileRequest);
         fileEntity.setCheckSum(calculateChecksum(file));
         fileEntity.setTags(mapToTag(fileRequest));
+        fileEntity.setFileSize(file.getSize());
+        fileEntity.setFileType(file.getContentType());
+        fileEntity.setPublic(fileRequest.isPublic());
         Repo repo = getRepoByIdOrThrow(repoId);
         // upload file to cloud
         String fileBlobName = uploadFileToCloud(file, repo.getContainerName(), getSasToken(repoId));
         fileEntity.setFileBlobName(fileBlobName);
         fileEntity.setRepo(repo);
+        RepoMember uploadedBy = getAuthMemberByRepoId(repoId);
+        fileEntity.setUploadedBy(uploadedBy);
         return fileEntity;
     }
 
 
     private String getSasToken(Long repoId) {
         User authUser = authenticationService.getAuthUser();
-        RepoMember repoMember = getRepoMemberByUserIdAndRepoId(authUser.getId(), repoId);
+        RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(authUser.getId(), repoId);
         String sasToken = repoMember.getSasToken();
         if (!SasTokenValidator.isSasTokenValid(sasToken)) {
             repoMember = updateSasTokenMember(repoId, authUser.getId());
@@ -82,14 +89,19 @@ public class IFileServiceImpl implements IFileService {
     }
 
     private RepoMember updateSasTokenMember(Long repoId, Long userId) {
-        RepoMember repoMember = getRepoMemberByUserIdAndRepoId(userId, repoId);
+        RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(userId, repoId);
         Repo repo = getRepoByIdOrThrow(repoId);
         String newSasToken = azureStorageService.generatePermissionForMemberRepo(repo.getContainerName(), repoMember.getPermissions());
         repoMember.setSasToken(newSasToken);
         return repoMemberRepo.save(repoMember);
     }
 
-    private RepoMember getRepoMemberByUserIdAndRepoId(Long userId, Long repoId) {
+    private RepoMember getAuthMemberByRepoId(Long repoId) {
+        User authUser = authenticationService.getAuthUser();
+        return getRepoMemberByUserIdAndRepoIdOrThrow(authUser.getId(), repoId);
+    }
+
+    private RepoMember getRepoMemberByUserIdAndRepoIdOrThrow(Long userId, Long repoId) {
         return repoMemberRepo.findRepoMemberByUserIdAndRepoId(userId, repoId)
                 .orElseThrow(() -> {
                     log.error("Không tìm thấy repo member với user id: {} và repo id: {}", userId, repoId);
@@ -108,9 +120,8 @@ public class IFileServiceImpl implements IFileService {
     private Set<Tag> mapToTag(FileRequest fileRequest) {
         Set<Tag> tags = new HashSet<>();
         for (TagRequest tagRequest : fileRequest.getTags()) {
-            Tag tag = tagMapper.requestToEntity(tagRequest);
-            tag = tagRepo.save(tag);
-            tags.add(tag);
+            TagResponse tagResponse = tagService.createTag(tagRequest);
+            tags.add(tagMapper.responseToEntity(tagResponse));
         }
         return tags;
     }
