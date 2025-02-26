@@ -230,13 +230,6 @@ public class RepoServiceImpl implements IRepoService {
     }
 
 
-    private void validateNotSelfRepoMember(Long userIdToCheck) {
-        User authUser = authenticationService.getAuthUser(); // Lấy user đang đăng nhập
-        if (authUser.getId().equals(userIdToCheck)) {
-            throw new InvalidDataException("Không thể thực hiện hành động này với chính mình");
-        }
-    }
-
     private User getUserByIdOrThrow(Long id) {
         return userRepo.findById(id).orElseThrow(() -> {
             log.error("Không tìm thấy user, id: {}", id);
