@@ -205,6 +205,12 @@ public class RepoServiceImpl implements IRepoService {
         return convertRepositoryToResponse(repo);
     }
 
+    @Override
+    public boolean isOwner(Long repoId, Long userId) {
+        Repo repo = getRepositoryByIdOrThrow(repoId);
+        return repo.getOwner().getId().equals(userId);
+    }
+
     private User getUserByEmailOrThrow(String email) {
         return userRepo.findByEmail(email).orElseThrow(() -> {
             log.error("Không tìm thấy user, email: {}", email);

@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import vn.kltn.common.RepoPermission;
 import vn.kltn.dto.request.FileRequest;
 import vn.kltn.dto.request.TagRequest;
 import vn.kltn.dto.response.FileResponse;
@@ -16,10 +17,7 @@ import vn.kltn.map.TagMapper;
 import vn.kltn.repository.FileRepo;
 import vn.kltn.repository.RepoMemberRepo;
 import vn.kltn.repository.RepositoryRepo;
-import vn.kltn.service.IAuthenticationService;
-import vn.kltn.service.IAzureStorageService;
-import vn.kltn.service.IFileService;
-import vn.kltn.service.ITagService;
+import vn.kltn.service.*;
 import vn.kltn.util.SasTokenValidator;
 
 import java.io.IOException;
@@ -42,6 +40,7 @@ public class IFileServiceImpl implements IFileService {
     private final IAuthenticationService authenticationService;
     private final ITagService tagService;
     private final TagMapper tagMapper;
+    private final IRepoService repoService;
 
     @Override
     public FileResponse uploadFile(Long repoId, FileRequest fileRequest, MultipartFile file) {
@@ -80,6 +79,10 @@ public class IFileServiceImpl implements IFileService {
 
     private String getSasToken(Long repoId) {
         User authUser = authenticationService.getAuthUser();
+        Repo repo = getRepoByIdOrThrow(repoId);
+        if (repoService.isOwner(repoId, authUser.getId())) {
+            return azureStorageService.generatePermissionForMemberRepo(repo.getContainerName(), Set.of(RepoPermission.values()));
+        }
         RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(authUser.getId(), repoId);
         String sasToken = repoMember.getSasToken();
         if (!SasTokenValidator.isSasTokenValid(sasToken)) {

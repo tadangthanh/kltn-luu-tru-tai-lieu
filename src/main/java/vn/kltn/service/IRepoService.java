@@ -26,6 +26,7 @@ public interface IRepoService {
 
     RepoResponseDto update(Long repoId, RepoRequestDto repoRequestDto);
 
+    boolean isOwner(Long repoId, Long userId);
 //✅ Quản lý dung lượng: Kiểm tra dung lượng sử dụng, đặt giới hạn.
 //✅ Tìm kiếm và lọc: Dễ dàng tìm và quản lý repo.
 //✅ Sao lưu và phục hồi: Đảm bảo an toàn dữ liệu.
