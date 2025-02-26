@@ -1,38 +1,24 @@
 package vn.kltn.controller.rest;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import vn.kltn.service.IAzureStorageService;
-
-import java.io.IOException;
-import java.io.InputStream;
+import vn.kltn.dto.request.FileRequest;
+import vn.kltn.dto.response.FileResponse;
+import vn.kltn.dto.response.ResponseData;
+import vn.kltn.service.IFileService;
 
 @RestController
-@RequestMapping("/api/blob")
+@RequestMapping("/api/v1/file")
 @RequiredArgsConstructor
 public class FileRest {
-    private final IAzureStorageService azureFileStorageService;
+    private final IFileService fileService;
 
-    @PostMapping("/{upload}")
-    public ResponseEntity<String> upload(@RequestParam MultipartFile file) throws IOException {
-        try (InputStream inputStream = file.getInputStream()) {
-            String blobName = this.azureFileStorageService.uploadChunked(inputStream, file.getOriginalFilename(), file.getSize(), 10 * 1024 * 1024);
-            return ResponseEntity.ok(blobName);
-        }
+    @PostMapping("/repo/{repoId}/upload")
+    public ResponseData<FileResponse> upload(@RequestPart("file") MultipartFile file,
+                                             @RequestPart("data") FileRequest request, @PathVariable Long repoId) {
+        return new ResponseData<>(201, "Upload file successfully", fileService.uploadFile(repoId, request,file));
     }
 
-    @GetMapping("/list")
-    @PreAuthorize("hasAnyAuthority('manager', 'admin')")
-    public String getList() {
-        return "get List";
-    }
 
-    @GetMapping("/detail")
-    @PreAuthorize("hasAnyAuthority('user')")
-    public String getUserDetail() {
-        return "get User Detail";
-    }
 }

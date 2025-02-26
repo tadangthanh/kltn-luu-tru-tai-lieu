@@ -32,6 +32,8 @@ import java.util.*;
 public class AzureStorageServiceImpl implements IAzureStorageService {
     @Value("${spring.cloud.azure.storage.blob.container-name}")
     private String containerName;
+    @Value("${azure.blob-storage.account-name}")
+    private String accountName;
     private final BlobServiceClient blobServiceClient;
     @Value("${azure.blob-storage.connection-string}")
     private String connectionString;
@@ -62,10 +64,14 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     }
 
     @Override
-    public String uploadChunked(InputStream data, String originalFileName, long length, int chunkSize) {
+    public String uploadChunked(InputStream data, String originalFileName,String containerName,String sasToken, long length, int chunkSize) {
         try {
-
-            BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
+            String containerUrl= String.format("https://%s.blob.core.windows.net/%s?%s",
+                    accountName, containerName, sasToken);
+            BlobContainerClient blobContainerClient = new BlobServiceClientBuilder()
+                    .endpoint(containerUrl)
+                    .buildClient()
+                    .getBlobContainerClient(containerName);
             String newFileName = UUID.randomUUID() + "_" + originalFileName;
             BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(newFileName).getBlockBlobClient();
 

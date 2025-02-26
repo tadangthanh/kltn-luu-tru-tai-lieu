@@ -1,0 +1,131 @@
+package vn.kltn.service.impl;
+
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import vn.kltn.dto.request.FileRequest;
+import vn.kltn.dto.request.TagRequest;
+import vn.kltn.dto.response.FileResponse;
+import vn.kltn.entity.File;
+import vn.kltn.entity.Repo;
+import vn.kltn.entity.Tag;
+import vn.kltn.entity.User;
+import vn.kltn.exception.InvalidDataException;
+import vn.kltn.map.FileMapper;
+import vn.kltn.map.TagMapper;
+import vn.kltn.repository.FileRepo;
+import vn.kltn.repository.RepoMemberRepo;
+import vn.kltn.repository.RepositoryRepo;
+import vn.kltn.repository.TagRepo;
+import vn.kltn.service.IAuthenticationService;
+import vn.kltn.service.IAzureStorageService;
+import vn.kltn.service.IFileService;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashSet;
+import java.util.Set;
+
+@Service
+@Transactional
+@RequiredArgsConstructor
+@Slf4j(topic = "FILE_SERVICE")
+public class IFileServiceImpl implements IFileService {
+    private final FileRepo fileRepo;
+    private final TagMapper tagMapper;
+    private final FileMapper fileMapper;
+    private final RepositoryRepo repositoryRepo;
+    private final IAzureStorageService azureStorageService;
+    private final TagRepo tagRepo;
+    private final RepoMemberRepo repoMemberRepo;
+    private final IAuthenticationService authenticationService;
+
+    @Override
+    public FileResponse uploadFile(Long repoId, FileRequest fileRequest, MultipartFile file) {
+        File fileEntity = mapToEntity(repoId, fileRequest,file);
+        File savedFile = fileRepo.save(fileEntity);
+        return fileMapper.entityToResponse(savedFile);
+    }
+
+
+    private Repo getRepoByIdOrThrow(Long repoId) {
+        return repositoryRepo.findById(repoId)
+                .orElseThrow(() -> {
+                    log.error("Không tìm thấy repository id: {}", repoId);
+                    return new RuntimeException("Không tìm thấy repository id: " + repoId);
+                });
+    }
+
+    private File mapToEntity(Long repoId, FileRequest fileRequest,MultipartFile file) {
+        File fileEntity = fileMapper.requestToEntity(fileRequest);
+        fileEntity.setCheckSum(calculateChecksum(file));
+        fileEntity.setTags(mapToTag(fileRequest));
+        Repo repo = getRepoByIdOrThrow(repoId);
+        // upload file to cloud
+        String fileBlobName = uploadFileToCloud(fileRequest,file, repo.getContainerName(), getSasToken(repoId));
+        fileEntity.setFileBlobName(fileBlobName);
+        fileEntity.setRepo(repo);
+        return fileEntity;
+    }
+
+
+    private String getSasToken(Long repoId) {
+        User authUser = authenticationService.getAuthUser();
+        return repoMemberRepo.getSasTokenByUserIdAndRepoId(authUser.getId(), repoId);
+    }
+
+    private String uploadFileToCloud(FileRequest fileRequest, MultipartFile file,String containerName, String sasToken) {
+        try (InputStream inputStream =file.getInputStream()) {
+            return azureStorageService.uploadChunked(inputStream, file.getOriginalFilename(), containerName, sasToken, file.getSize(), 10 * 1024 * 1024);
+        } catch (IOException e) {
+            throw new InvalidDataException(e.getMessage());
+        }
+    }
+
+    private Set<Tag> mapToTag(FileRequest fileRequest) {
+        Set<Tag> tags = new HashSet<>();
+        for (TagRequest tagRequest : fileRequest.getTags()) {
+            Tag tag = tagMapper.requestToEntity(tagRequest);
+            tag = tagRepo.save(tag);
+            tags.add(tag);
+        }
+        return tags;
+    }
+
+    @Override
+    public String calculateChecksum(MultipartFile file) {
+        try {
+            // Tạo instance của MessageDigest với thuật toán SHA-256
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+            // Lấy InputStream từ MultipartFile
+            try (InputStream is = file.getInputStream()) {
+                byte[] byteArray = new byte[1024];
+                int bytesCount;
+
+                // Đọc từng đoạn của file và cập nhật vào MessageDigest
+                while ((bytesCount = is.read(byteArray)) != -1) {
+                    digest.update(byteArray, 0, bytesCount);
+                }
+            }
+
+            // Tính toán giá trị hash
+            byte[] hashedBytes = digest.digest();
+
+            // Chuyển byte sang dạng hex string
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hashedBytes) {
+                sb.append(String.format("%02x", b));
+            }
+
+            return sb.toString();
+        } catch (NoSuchAlgorithmException | IOException e) {
+            throw new InvalidDataException(e.getMessage());
+        }
+    }
+
+}

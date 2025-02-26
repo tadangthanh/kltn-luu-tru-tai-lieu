@@ -1,11 +1,11 @@
 package vn.kltn.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -28,4 +28,12 @@ public class File extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "uploaded_by")
     private RepoMember uploadedBy;
+
+    @ManyToMany
+    @JoinTable(
+            name = "file_tags",
+            joinColumns = @JoinColumn(name = "file_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<Tag> tags = new HashSet<>();
 }

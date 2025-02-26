@@ -12,7 +12,7 @@ public interface IAzureStorageService {
 
     String upload(InputStream data, String originalFileName, long length);
 
-    String uploadChunked(InputStream data, String originalFileName, long length, int chunkSize);
+    String uploadChunked(InputStream data, String originalFileName, String containerName,String sasToken,long length, int chunkSize);
 
     String getBlobUrl(String blobName);
 
