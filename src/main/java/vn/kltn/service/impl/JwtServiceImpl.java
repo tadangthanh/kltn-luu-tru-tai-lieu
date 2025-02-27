@@ -77,12 +77,6 @@ public class JwtServiceImpl implements IJwtService {
     }
 
     @Override
-    public String extractSecret(String token) {
-        log.info("Extract secret from token: {}", token);
-        return extractClaims(TokenType.CONFIRMATION_TOKEN, token, claims -> claims.get("secret", String.class));
-    }
-
-    @Override
     public String generateTokenConfirmEmail(String email) {
         log.info("Generate token confirm email for email: {}", email);
         return generateToken(CONFIRMATION_TOKEN, null, email);

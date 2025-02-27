@@ -26,4 +26,6 @@ public class Repo extends BaseEntity {
     private Double availableSizeInGB; // dung luong con lai cua repository
     @OneToMany(mappedBy = "repo", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<File> files;
+    @OneToMany(mappedBy = "repo", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<RepoMember> members;
 }

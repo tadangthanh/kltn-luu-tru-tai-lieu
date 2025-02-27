@@ -11,6 +11,7 @@ import vn.kltn.common.TokenType;
 import vn.kltn.dto.request.RepoRequestDto;
 import vn.kltn.dto.response.RepoMemberInfoResponse;
 import vn.kltn.dto.response.RepoResponseDto;
+import vn.kltn.entity.File;
 import vn.kltn.entity.Repo;
 import vn.kltn.entity.RepoMember;
 import vn.kltn.entity.User;
@@ -19,13 +20,12 @@ import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.RepoMapper;
 import vn.kltn.map.RepoMemberMapper;
-import vn.kltn.repository.RepoMemberRepo;
-import vn.kltn.repository.RepositoryRepo;
-import vn.kltn.repository.UserRepo;
+import vn.kltn.repository.*;
 import vn.kltn.service.*;
 import vn.kltn.validation.RequireOwner;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 @Transactional
 public class RepoServiceImpl implements IRepoService {
     private final IMailService gmailService;
+    private final FileHasTagRepo fileHasTagRepo;
     @Value("${repo.max-size-gb}")
     private int maxSizeInGB;
     @Value("${repo.max-members}")
@@ -51,10 +52,13 @@ public class RepoServiceImpl implements IRepoService {
     private final IAuthenticationService authenticationService;
     private final RepoMemberMapper repoMemberMapper;
     private final IRepoActivityService repoActivityService;
+    private final IFileService fileService;
+    private final TagRepo tagRepo;
+    private final FileRepo fileRepo;
 
     @Override
     public RepoResponseDto createRepository(RepoRequestDto repoRequestDto) {
-        Repo repo = createAndSaveRepository(repoRequestDto);
+        Repo repo = saveRepo(repoRequestDto);
         // them chu so huu vao bang thanh vien voi tat ca cac quyen
         addMemberToRepository(repo.getId(), repo.getOwner().getId(), Set.of(RepoPermission.values()));
         createAzureContainerForRepository(repo);
@@ -62,9 +66,10 @@ public class RepoServiceImpl implements IRepoService {
     }
 
 
-    private Repo createAndSaveRepository(RepoRequestDto repoRequestDto) {
+    private Repo saveRepo(RepoRequestDto repoRequestDto) {
         Repo repo = mapRequestToRepositoryEntity(repoRequestDto);
-        repo.setContainerName(generateContainerName(repoRequestDto.getName()));
+        String containerName = generateContainerName(repoRequestDto.getName());
+        repo.setContainerName(containerName);
         repo.setMaxSizeInGB(maxSizeInGB);
         repo.setAvailableSizeInGB(maxSizeInGB * 1.0);
         return repositoryRepo.save(repo);
@@ -73,7 +78,7 @@ public class RepoServiceImpl implements IRepoService {
     // ten container phai la duy nhat
     private String generateContainerName(String repositoryName) {
         String uuid = UUID.randomUUID().toString();
-        return repositoryName + "-" + uuid;
+        return repositoryName + "-" + uuid + "-" + System.currentTimeMillis();
     }
 
     // tao container tren azure
@@ -92,16 +97,13 @@ public class RepoServiceImpl implements IRepoService {
     @RequireOwner
     public void deleteRepository(Long id) {
         Repo repo = getRepositoryByIdOrThrow(id);
-        User authUser = authenticationService.getAuthUser();
-        if (azureStorageService.deleteContainer(repo.getContainerName())) {
-            log.info("{} xóa repository thành công, id: {}", authUser.getEmail(), id);
-            // xoa log cua repo
-            repoActivityService.deleteActivitiesByRepoId(id);
-            // xoa cac thanh vien truoc khi xoa repo
-            repoMemberRepo.deleteByRepoId(id);
-            repositoryRepo.delete(repo);
-        }
+        // xoa log cua repo
+        repoActivityService.deleteActivitiesByRepoId(id);
+        String containerName = repo.getContainerName();
+        repositoryRepo.delete(repo);
+        azureStorageService.deleteContainer(containerName);
     }
+
 
     @Override
     @RequireOwner
@@ -112,12 +114,11 @@ public class RepoServiceImpl implements IRepoService {
         validateMemberNotExists(userId, repoId);
         //validate so luong gioi han member cua repo
         validateMemberCount(repo);
-        // tao sas token cho thanh vien
         User memberAdd = getUserByIdOrThrow(userId);
         // save vao database
         saveMember(repo, memberAdd, permissionRequest);
-        // gui email moi thanh vien
         RepoResponseDto repoResponseDto = convertRepositoryToResponse(repo);
+        // neu thanh vien them vao khong phai la chu so huu thi gui email moi
         if (!repo.getOwner().getId().equals(userId)) {
             sendInvitationEmail(memberAdd, repoResponseDto);
         }
@@ -249,8 +250,28 @@ public class RepoServiceImpl implements IRepoService {
         repoMember.setUser(user);
         repoMember.setRepo(repo);
         repoMember.setPermissions(permissions);
-        repoMember.setStatus(MemberStatus.PENDING);
+        MemberStatus status = getMemberStatus(repo, user);
+        repoMember.setStatus(status);
+        if (status.equals(MemberStatus.ACCEPTED)) {
+            repoMember.setSasToken(getSasToken(repo, permissions));
+        }
         repoMemberRepo.save(repoMember);
+    }
+
+    private boolean isOwner(Repo repo, User user) {
+        return repo.getOwner().getId().equals(user.getId());
+    }
+
+    private String getSasToken(Repo repo, Set<RepoPermission> permissions) {
+        return azureStorageService.generatePermissionRepo(repo.getContainerName(), permissions);
+    }
+
+    private MemberStatus getMemberStatus(Repo repo, User user) {
+        // neu member la chu so huu thi luon la accepted
+        if (isOwner(repo, user)) {
+            return MemberStatus.ACCEPTED;
+        }
+        return MemberStatus.PENDING;
     }
 
 
@@ -275,7 +296,6 @@ public class RepoServiceImpl implements IRepoService {
     private RepoResponseDto convertRepositoryToResponse(Repo repo) {
         RepoResponseDto repoResponseDto = repoMapper.entityToResponse(repo);
         repoResponseDto.setMemberCount(repoMemberRepo.countRepoMemberByRepoId(repo.getId()));
-
         return repoResponseDto;
     }
 

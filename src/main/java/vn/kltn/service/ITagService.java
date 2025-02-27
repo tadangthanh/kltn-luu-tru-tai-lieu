@@ -5,5 +5,4 @@ import vn.kltn.dto.response.TagResponse;
 
 public interface ITagService {
     TagResponse createTag(TagRequest tagRequest);
-
 }

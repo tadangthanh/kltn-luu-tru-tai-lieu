@@ -20,7 +20,6 @@ public class File extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "repo_id")
     private Repo repo;
-
     private boolean isPublic;
     private Integer version;
     private String description;
@@ -28,12 +27,6 @@ public class File extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "uploaded_by")
     private RepoMember uploadedBy;
-
-    @ManyToMany
-    @JoinTable(
-            name = "file_tags",
-            joinColumns = @JoinColumn(name = "file_id"),
-            inverseJoinColumns = @JoinColumn(name = "tag_id")
-    )
-    private Set<Tag> tags = new HashSet<>();
+    @OneToMany(mappedBy = "file", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
+    private Set<FileHasTag> tags = new HashSet<>();
 }

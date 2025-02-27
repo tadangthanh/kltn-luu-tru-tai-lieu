@@ -58,24 +58,6 @@ public class RepoActivityAspect {
                 String.format("Cập nhật repository %s, new name: %s, new description: %s", repoId, repoRequestDto.getName(), repoRequestDto.getDescription()));
     }
 
-    @AfterReturning(value = "rejectInvitation()")
-    public void logRejectInvitation(JoinPoint joinPoint) {
-        Object[] args = joinPoint.getArgs();
-        Long repoId = (Long) args[0];
-        String email = (String) args[1];
-        repoActivityService.logActivity(repoId, RepoAction.MEMBER_REJECT_INVITATION,
-                String.format("Từ chối lời mời tham gia repository %s từ email: %s", repoId, email));
-    }
-
-    @AfterReturning(value = "acceptInvitation()")
-    public void logAcceptInvitation(JoinPoint joinPoint) {
-        Object[] args = joinPoint.getArgs();
-        Long repoId = (Long) args[0];
-        String token = (String) args[1];
-        String email = jwtService.extractEmail(token, TokenType.INVITATION_TOKEN);
-        repoActivityService.logActivity(repoId, RepoAction.MEMBER_ACCEPT_INVITATION,
-                String.format("Chấp nhận lời mời tham gia repository %s từ email: %s", repoId, email));
-    }
 
     @AfterReturning(value = "addMemberRepoPointCut()")
     public void logAddMember(JoinPoint joinPoint) {

@@ -9,22 +9,20 @@ import vn.kltn.common.RepoPermission;
 import vn.kltn.dto.request.FileRequest;
 import vn.kltn.dto.request.TagRequest;
 import vn.kltn.dto.response.FileResponse;
-import vn.kltn.dto.response.TagResponse;
 import vn.kltn.entity.*;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.map.FileMapper;
 import vn.kltn.map.TagMapper;
-import vn.kltn.repository.FileRepo;
-import vn.kltn.repository.RepoMemberRepo;
-import vn.kltn.repository.RepositoryRepo;
-import vn.kltn.service.*;
+import vn.kltn.repository.*;
+import vn.kltn.service.IAuthenticationService;
+import vn.kltn.service.IAzureStorageService;
+import vn.kltn.service.IFileService;
 import vn.kltn.util.SasTokenValidator;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashSet;
 import java.util.Set;
 
 @Service
@@ -38,31 +36,30 @@ public class IFileServiceImpl implements IFileService {
     private final IAzureStorageService azureStorageService;
     private final RepoMemberRepo repoMemberRepo;
     private final IAuthenticationService authenticationService;
-    private final ITagService tagService;
+    private final FileHasTagRepo fileHasTagRepo;
+    private final TagRepo tagRepo;
     private final TagMapper tagMapper;
-    private final IRepoService repoService;
 
     @Override
     public FileResponse uploadFile(Long repoId, FileRequest fileRequest, MultipartFile file) {
         File fileEntity = mapToEntity(repoId, fileRequest, file);
         fileEntity.setVersion(1);
-        File savedFile = fileRepo.save(fileEntity);
-        return fileMapper.entityToResponse(savedFile);
+        fileEntity = fileRepo.save(fileEntity);
+        saveFileHasTag(fileRequest.getTags(), fileEntity);
+        return fileMapper.entityToResponse(fileEntity);
     }
 
 
     private Repo getRepoByIdOrThrow(Long repoId) {
-        return repositoryRepo.findById(repoId)
-                .orElseThrow(() -> {
-                    log.error("Không tìm thấy repository id: {}", repoId);
-                    return new RuntimeException("Không tìm thấy repository id: " + repoId);
-                });
+        return repositoryRepo.findById(repoId).orElseThrow(() -> {
+            log.error("Không tìm thấy repository id: {}", repoId);
+            return new RuntimeException("Không tìm thấy repository id: " + repoId);
+        });
     }
 
     private File mapToEntity(Long repoId, FileRequest fileRequest, MultipartFile file) {
         File fileEntity = fileMapper.requestToEntity(fileRequest);
         fileEntity.setCheckSum(calculateChecksum(file));
-        fileEntity.setTags(mapToTag(fileRequest));
         fileEntity.setFileSize(file.getSize());
         fileEntity.setFileType(file.getContentType());
         fileEntity.setPublic(fileRequest.isPublic());
@@ -80,7 +77,7 @@ public class IFileServiceImpl implements IFileService {
     private String getSasToken(Long repoId) {
         User authUser = authenticationService.getAuthUser();
         Repo repo = getRepoByIdOrThrow(repoId);
-        if (repoService.isOwner(repoId, authUser.getId())) {
+        if (repo.getOwner().getId().equals(authUser.getId())) {
             return azureStorageService.generatePermissionRepo(repo.getContainerName(), Set.of(RepoPermission.values()));
         }
         RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(authUser.getId(), repoId);
@@ -105,11 +102,10 @@ public class IFileServiceImpl implements IFileService {
     }
 
     private RepoMember getRepoMemberByUserIdAndRepoIdOrThrow(Long userId, Long repoId) {
-        return repoMemberRepo.findRepoMemberByUserIdAndRepoId(userId, repoId)
-                .orElseThrow(() -> {
-                    log.error("Không tìm thấy repo member với user id: {} và repo id: {}", userId, repoId);
-                    return new RuntimeException("Không tìm thấy repo member với user id: " + userId + " và repo id: " + repoId);
-                });
+        return repoMemberRepo.findRepoMemberByUserIdAndRepoId(userId, repoId).orElseThrow(() -> {
+            log.error("Không tìm thấy repo member với user id: {} và repo id: {}", userId, repoId);
+            return new RuntimeException("Không tìm thấy repo member với user id: " + userId + " và repo id: " + repoId);
+        });
     }
 
     private String uploadFileToCloud(MultipartFile file, String containerName, String sasToken) {
@@ -120,14 +116,26 @@ public class IFileServiceImpl implements IFileService {
         }
     }
 
-    private Set<Tag> mapToTag(FileRequest fileRequest) {
-        Set<Tag> tags = new HashSet<>();
-        for (TagRequest tagRequest : fileRequest.getTags()) {
-            TagResponse tagResponse = tagService.createTag(tagRequest);
-            tags.add(tagMapper.responseToEntity(tagResponse));
+    private void saveFileHasTag(TagRequest[] tags, File fileEntity) {
+        for (TagRequest tagRequest : tags) {
+            if (tagRepo.existsByName(tagRequest.getName())) {
+                Tag tag = tagRepo.findByName(tagRequest.getName()).orElse(null);
+                saveFileHasTag(fileEntity, tag);
+            } else {
+                Tag tag = tagMapper.requestToEntity(tagRequest);
+                tag = tagRepo.save(tag);
+                saveFileHasTag(fileEntity, tag);
+            }
         }
-        return tags;
     }
+
+    private void saveFileHasTag(File file, Tag tag) {
+        FileHasTag fileHasTag = new FileHasTag();
+        fileHasTag.setFile(file);
+        fileHasTag.setTag(tag);
+        fileHasTagRepo.save(fileHasTag);
+    }
+
 
     @Override
     public String calculateChecksum(MultipartFile file) {
@@ -160,5 +168,15 @@ public class IFileServiceImpl implements IFileService {
             throw new InvalidDataException(e.getMessage());
         }
     }
+
+    @Override
+    public void deleteAllFilesByRepoId(Long repoId) {
+        Set<File> files = fileRepo.findAllByRepoId(repoId);
+        for (File file : files) {
+            fileHasTagRepo.deleteByFileId(file.getId());
+        }
+        fileRepo.deleteAll(files);
+    }
+
 
 }

@@ -7,19 +7,7 @@ import java.io.InputStream;
 import java.util.Set;
 
 public interface IAzureStorageService {
-    String upload(MultipartFile file);
-
-    String upload(InputStream data, String originalFileName, long length);
-
     String uploadChunked(InputStream data, String originalFileName, String containerName, String sasToken, long length, int chunkSize);
-
-    String getBlobUrl(String blobName);
-
-    boolean deleteBlob(String blobName);
-
-    String upload(InputStream data, long length, String fileName, String contentType);
-
-    InputStream downloadBlob(String blobName); // Tải blob về
 
     void createContainerForRepository(String repoName);
 

@@ -107,7 +107,14 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
             log.info("Principal is UserDetails");
             return userRepo.findByEmail(userDetails.getUsername()).orElseThrow(() -> new ResourceNotFoundException("User not found"));
         }
+        log.error("Principal is not User or UserDetails");
         throw new ResourceNotFoundException("User not found");
+    }
+
+    @Override
+    public boolean isAuth() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.isAuthenticated();
     }
 
     private String removeToken(HttpServletRequest request) {
