@@ -11,7 +11,6 @@ import vn.kltn.common.TokenType;
 import vn.kltn.dto.request.RepoRequestDto;
 import vn.kltn.dto.response.RepoMemberInfoResponse;
 import vn.kltn.dto.response.RepoResponseDto;
-import vn.kltn.entity.File;
 import vn.kltn.entity.Repo;
 import vn.kltn.entity.RepoMember;
 import vn.kltn.entity.User;
@@ -20,12 +19,14 @@ import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.RepoMapper;
 import vn.kltn.map.RepoMemberMapper;
-import vn.kltn.repository.*;
+import vn.kltn.repository.FileHasTagRepo;
+import vn.kltn.repository.RepoMemberRepo;
+import vn.kltn.repository.RepositoryRepo;
+import vn.kltn.repository.UserRepo;
 import vn.kltn.service.*;
 import vn.kltn.validation.RequireOwner;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -52,9 +53,6 @@ public class RepoServiceImpl implements IRepoService {
     private final IAuthenticationService authenticationService;
     private final RepoMemberMapper repoMemberMapper;
     private final IRepoActivityService repoActivityService;
-    private final IFileService fileService;
-    private final TagRepo tagRepo;
-    private final FileRepo fileRepo;
 
     @Override
     public RepoResponseDto createRepository(RepoRequestDto repoRequestDto) {
@@ -172,17 +170,14 @@ public class RepoServiceImpl implements IRepoService {
         User memberAdd = getUserByEmailOrThrow(emailMemberAdd);
         RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(memberAdd.getId(), repoId);
         if (repoMember.getStatus().equals(MemberStatus.PENDING)) {
-            updateStatusMember(repoMember, MemberStatus.ACCEPTED);
+            repoMember.setStatus(MemberStatus.ACCEPTED);
             updatePermissionMember(repoId, repoMember.getId(), repoMember.getPermissions());
             return convertRepositoryToResponse(repoMember.getRepo());
         }
+        log.error("Không thể chấp nhận lời mời");
         throw new InvalidDataException("Không thể chấp nhận lời mời");
     }
 
-    private void updateStatusMember(RepoMember repoMember, MemberStatus status) {
-        repoMember.setStatus(status);
-        repoMemberRepo.save(repoMember);
-    }
 
     @Override
     public RepoResponseDto rejectInvitation(Long repoId, String email) {
@@ -192,6 +187,7 @@ public class RepoServiceImpl implements IRepoService {
             repoMemberRepo.delete(repoMember);
             return convertRepositoryToResponse(repoMember.getRepo());
         }
+        log.error("Dữ liệu không hợp lệ");
         throw new InvalidDataException("Dữ liệu không hợp lệ");
     }
 
@@ -210,11 +206,6 @@ public class RepoServiceImpl implements IRepoService {
         return convertRepositoryToResponse(repo);
     }
 
-    @Override
-    public boolean isOwner(Long repoId, Long userId) {
-        Repo repo = getRepositoryByIdOrThrow(repoId);
-        return repo.getOwner().getId().equals(userId);
-    }
 
     private User getUserByEmailOrThrow(String email) {
         return userRepo.findByEmail(email).orElseThrow(() -> {

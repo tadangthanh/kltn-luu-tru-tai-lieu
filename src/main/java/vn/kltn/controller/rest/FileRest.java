@@ -17,7 +17,7 @@ public class FileRest {
     @PostMapping("/repo/{repoId}/upload")
     public ResponseData<FileResponse> upload(@RequestPart("file") MultipartFile file,
                                              @RequestPart("data") FileRequest request, @PathVariable Long repoId) {
-        return new ResponseData<>(201, "Upload file successfully", fileService.uploadFile(repoId, request,file));
+        return new ResponseData<>(201, "Upload file successfully", fileService.uploadFile(repoId, request, file));
     }
 
 

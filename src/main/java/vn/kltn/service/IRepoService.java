@@ -26,6 +26,5 @@ public interface IRepoService {
 
     RepoResponseDto update(Long repoId, RepoRequestDto repoRequestDto);
 
-    boolean isOwner(Long repoId, Long userId);
 
 }

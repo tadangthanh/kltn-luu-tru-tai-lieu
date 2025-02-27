@@ -31,7 +31,7 @@ public class RepositoryRest {
     @DeleteMapping("/{repositoryId}")
     public ResponseData<Void> deleteRepository(@PathVariable Long repositoryId) {
         repositoryService.deleteRepository(repositoryId);
-        return new ResponseData<>(HttpStatus.OK.value(), "Xóa kho lưu trữ thành công", null);
+        return new ResponseData<>(HttpStatus.NO_CONTENT.value(), "Xóa kho lưu trữ thành công", null);
     }
 
     @PostMapping("/{repositoryId}/member")
@@ -52,7 +52,7 @@ public class RepositoryRest {
     @DeleteMapping("/{repositoryId}/member/{memberId}")
     public ResponseData<Void> removeMemberFromRepository(@PathVariable Long repositoryId, @PathVariable Long memberId) {
         repositoryService.removeMemberFromRepository(repositoryId, memberId);
-        return new ResponseData<>(HttpStatus.OK.value(), "Xóa thành viên khỏi kho lưu trữ thành công", null);
+        return new ResponseData<>(HttpStatus.NO_CONTENT.value(), "Xóa thành viên khỏi kho lưu trữ thành công", null);
     }
 
     @GetMapping("/list-member")
