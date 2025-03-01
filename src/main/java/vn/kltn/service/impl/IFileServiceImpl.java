@@ -17,6 +17,7 @@ import vn.kltn.repository.*;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IFileService;
+import vn.kltn.service.IRepoService;
 import vn.kltn.util.SasTokenValidator;
 
 import java.io.IOException;
@@ -39,6 +40,7 @@ public class IFileServiceImpl implements IFileService {
     private final FileHasTagRepo fileHasTagRepo;
     private final TagRepo tagRepo;
     private final TagMapper tagMapper;
+    private final IRepoService repoService;
 
     @Override
     public FileResponse uploadFile(Long repoId, FileRequest fileRequest, MultipartFile file) {
