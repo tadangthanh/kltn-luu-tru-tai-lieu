@@ -5,7 +5,10 @@ import vn.kltn.dto.request.FileRequest;
 import vn.kltn.dto.response.FileResponse;
 
 public interface IFileService {
-    FileResponse uploadFile(Long repoId, FileRequest fileRequest,MultipartFile file);
+    FileResponse uploadFile(Long repoId, FileRequest fileRequest, MultipartFile file);
+
     String calculateChecksum(MultipartFile file);
-    void deleteAllFilesByRepoId(Long repoId);
+
+    void deleteFile(Long fileId);
+
 }

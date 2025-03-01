@@ -19,10 +19,8 @@ import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.RepoMapper;
 import vn.kltn.map.RepoMemberMapper;
-import vn.kltn.repository.FileHasTagRepo;
 import vn.kltn.repository.RepoMemberRepo;
 import vn.kltn.repository.RepositoryRepo;
-import vn.kltn.repository.UserRepo;
 import vn.kltn.service.*;
 import vn.kltn.validation.RequireOwner;
 
@@ -37,7 +35,6 @@ import java.util.stream.Collectors;
 @Transactional
 public class RepoServiceImpl implements IRepoService {
     private final IMailService gmailService;
-    private final FileHasTagRepo fileHasTagRepo;
     @Value("${repo.max-size-gb}")
     private int maxSizeInGB;
     @Value("${repo.max-members}")
@@ -45,7 +42,7 @@ public class RepoServiceImpl implements IRepoService {
     private final IAzureStorageService azureStorageService;
     private final RepoMapper repoMapper;
     private final RepositoryRepo repositoryRepo;
-    private final UserRepo userRepo;
+    private IUserService userService;
     private final RepoMemberRepo repoMemberRepo;
     private final IJwtService jwtService;
     @Value("${jwt.expirationDayInvitation}")
@@ -112,7 +109,7 @@ public class RepoServiceImpl implements IRepoService {
         validateMemberNotExists(userId, repoId);
         //validate so luong gioi han member cua repo
         validateMemberCount(repo);
-        User memberAdd = getUserByIdOrThrow(userId);
+        User memberAdd = userService.getUserById(userId);
         // save vao database
         saveMember(repo, memberAdd, permissionRequest);
         RepoResponseDto repoResponseDto = convertRepositoryToResponse(repo);
@@ -176,7 +173,7 @@ public class RepoServiceImpl implements IRepoService {
     public RepoResponseDto acceptInvitation(Long repoId, String token) {
         // trich xuat email cua thanh vien tu token
         String emailMemberAdd = jwtService.extractEmail(token, TokenType.INVITATION_TOKEN);
-        User memberAdd = getUserByEmailOrThrow(emailMemberAdd);
+        User memberAdd = userService.getUserByEmail(emailMemberAdd);
         RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(memberAdd.getId(), repoId);
         if (repoMember.getStatus().equals(MemberStatus.PENDING)) {
             repoMember.setStatus(MemberStatus.ACCEPTED);
@@ -190,7 +187,7 @@ public class RepoServiceImpl implements IRepoService {
 
     @Override
     public RepoResponseDto rejectInvitation(Long repoId, String email) {
-        User userMember = getUserByEmailOrThrow(email);
+        User userMember = userService.getUserByEmail(email);
         RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(userMember.getId(), repoId);
         if (repoMember.getStatus().equals(MemberStatus.PENDING)) {
             repoMemberRepo.delete(repoMember);
@@ -216,13 +213,6 @@ public class RepoServiceImpl implements IRepoService {
     }
 
 
-    private User getUserByEmailOrThrow(String email) {
-        return userRepo.findByEmail(email).orElseThrow(() -> {
-            log.error("Không tìm thấy user, email: {}", email);
-            return new ResourceNotFoundException("User not found");
-        });
-    }
-
     private RepoMember getRepoMemberByIdOrThrow(Long memberId) {
         return repoMemberRepo.findById(memberId).orElseThrow(() -> {
             log.error("Không tìm thấy thành viên, id: {}", memberId);
@@ -230,13 +220,6 @@ public class RepoServiceImpl implements IRepoService {
         });
     }
 
-
-    private User getUserByIdOrThrow(Long id) {
-        return userRepo.findById(id).orElseThrow(() -> {
-            log.error("Không tìm thấy user, id: {}", id);
-            return new ResourceNotFoundException("User not found");
-        });
-    }
 
     private Repo getRepositoryByIdOrThrow(Long id) {
         return repositoryRepo.findById(id).orElseThrow(() -> {

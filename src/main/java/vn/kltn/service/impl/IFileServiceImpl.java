@@ -170,12 +170,8 @@ public class IFileServiceImpl implements IFileService {
     }
 
     @Override
-    public void deleteAllFilesByRepoId(Long repoId) {
-        Set<File> files = fileRepo.findAllByRepoId(repoId);
-        for (File file : files) {
-            fileHasTagRepo.deleteByFileId(file.getId());
-        }
-        fileRepo.deleteAll(files);
+    public void deleteFile(Long fileId) {
+        fileRepo.deleteById(fileId);
     }
 
 

@@ -124,6 +124,22 @@ public class UserServiceImpl implements IUserService {
         userRepo.save(currentUser);
     }
 
+    @Override
+    public User getUserByEmail(String email) {
+        return userRepo.findByEmail(email).orElseThrow(() -> {
+            log.warn("User not found by email: {}", email);
+            return new ResourceNotFoundException("Không tìm thấy user {}"+ email);
+        });
+    }
+
+    @Override
+    public User getUserById(Long id) {
+        return userRepo.findById(id).orElseThrow(() -> {
+            log.warn("User not found by id: {}", id);
+            return new ResourceNotFoundException("Không tìm thấy user {}"+ id);
+        });
+    }
+
     private void validateUpdatePassword(AuthChangePassword authChangePassword, User currentUser) {
         String currentPassword = authChangePassword.getCurrentPassword();
         String newPassword = authChangePassword.getNewPassword();

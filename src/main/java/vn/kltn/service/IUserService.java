@@ -4,6 +4,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import vn.kltn.dto.request.AuthChangePassword;
 import vn.kltn.dto.request.AuthResetPassword;
 import vn.kltn.dto.request.UserRegister;
+import vn.kltn.entity.User;
 
 
 public interface IUserService extends UserDetailsService {
@@ -17,5 +18,8 @@ public interface IUserService extends UserDetailsService {
     void forgotPassword(String email);
 
     void resetPassword(AuthResetPassword authResetPassword);
+
     void updatePassword(AuthChangePassword authChangePassword);
+    User getUserByEmail(String email);
+    User getUserById(Long id);
 }
