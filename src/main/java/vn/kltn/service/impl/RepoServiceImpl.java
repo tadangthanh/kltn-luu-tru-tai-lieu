@@ -139,7 +139,16 @@ public class RepoServiceImpl implements IRepoService {
     @RequireOwner
     public void removeMemberFromRepository(Long repoId, Long memberId) {
         RepoMember repoMember = getRepoMemberByIdOrThrow(memberId);
+        validateSelfMember(repoId, repoMember);
         repoMember.setStatus(MemberStatus.REMOVED);
+    }
+
+    private void validateSelfMember(Long repoId, RepoMember member) {
+        User userAuth = authenticationService.getAuthUser();
+        if (userAuth.getId().equals(member.getUser().getId())) {
+            log.error("email {} không thể thực hiện hành động này với mình", userAuth.getEmail());
+            throw new InvalidDataException("Bạn không thể thực hiện hành động này với mình");
+        }
     }
 
 
