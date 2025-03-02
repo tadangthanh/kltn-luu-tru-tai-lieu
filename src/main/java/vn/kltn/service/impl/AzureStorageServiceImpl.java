@@ -56,7 +56,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
             // Ghép các phần lại
             blockBlobClient.commitBlockList(blockIds);
 
-            return blockBlobClient.getBlobUrl();
+            return blockBlobClient.getBlobName();
         } catch (IOException | BlobStorageException e) {
             log.error("Error uploading file from InputStream: {}", e.getMessage());
             throw new CustomBlobStorageException("Lỗi upload file ");
@@ -108,6 +108,39 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
             return false;
         }
     }
+
+    @Override
+    public boolean deleteBlob(String containerName, String blobName) {
+        log.info("Deleting blob '{}' in container '{}'", blobName, containerName);
+
+        try {
+            BlockBlobClient blobClient = getBlobClient(containerName, blobName);
+
+            if (!blobClient.exists()) {
+                log.warn("Blob '{}' does not exist in container '{}'", blobName, containerName);
+                return false;
+            }
+
+            blobClient.delete();
+            log.info("Deleted blob '{}' successfully", blobName);
+            return true;
+
+        } catch (Exception e) {
+            log.error("Failed to delete blob '{}' in container '{}': {}", blobName, containerName, e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Helper method to get BlockBlobClient
+     */
+    private BlockBlobClient getBlobClient(String containerName, String blobName) {
+        return blobServiceClient
+                .getBlobContainerClient(containerName)
+                .getBlobClient(blobName)
+                .getBlockBlobClient();
+    }
+
 
     /**
      * Tạo quyền cho thành viên của container

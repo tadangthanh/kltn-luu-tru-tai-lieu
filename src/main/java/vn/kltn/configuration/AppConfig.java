@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -20,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class AppConfig {
     @Value("${google.api-key}")
     private String googleApiKey;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -27,7 +27,7 @@ public class AppConfig {
 
 
     @Bean
-    public Client client(){
+    public Client client() {
         // Use the builder class for instantiation.
         return Client.builder().apiKey(googleApiKey).build();
     }

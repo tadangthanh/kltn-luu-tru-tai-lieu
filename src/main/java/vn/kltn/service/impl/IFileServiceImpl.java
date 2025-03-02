@@ -11,9 +11,13 @@ import vn.kltn.dto.request.TagRequest;
 import vn.kltn.dto.response.FileResponse;
 import vn.kltn.entity.*;
 import vn.kltn.exception.InvalidDataException;
+import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.FileMapper;
 import vn.kltn.map.TagMapper;
-import vn.kltn.repository.*;
+import vn.kltn.repository.FileHasTagRepo;
+import vn.kltn.repository.FileRepo;
+import vn.kltn.repository.RepoMemberRepo;
+import vn.kltn.repository.TagRepo;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IFileService;
@@ -34,7 +38,6 @@ import java.util.Set;
 public class IFileServiceImpl implements IFileService {
     private final FileRepo fileRepo;
     private final FileMapper fileMapper;
-    private final RepositoryRepo repositoryRepo;
     private final IAzureStorageService azureStorageService;
     private final RepoMemberRepo repoMemberRepo;
     private final IAuthenticationService authenticationService;
@@ -42,6 +45,7 @@ public class IFileServiceImpl implements IFileService {
     private final TagRepo tagRepo;
     private final TagMapper tagMapper;
     private final IRepoService repoService;
+
 
     @Override
     @ValidatePermissionMember(RepoPermission.CREATE)
@@ -169,7 +173,25 @@ public class IFileServiceImpl implements IFileService {
     @Override
     @ValidatePermissionMember(RepoPermission.DELETE)
     public void deleteFile(Long fileId) {
+        File file = getFileById(fileId);
+        String containerName = file.getRepo().getContainerName();
+        String fileBlobName = file.getFileBlobName();
         fileRepo.deleteById(fileId);
+        azureStorageService.deleteBlob(containerName, fileBlobName);
+    }
+
+    @Override
+    public File getFileById(Long fileId) {
+        return fileRepo.findById(fileId).orElseThrow(() -> {
+            log.warn("Không tìm thấy file với id: {}", fileId);
+            return new ResourceNotFoundException("File không tồn tại");
+        });
+    }
+
+    @Override
+    public Long getRepoIdByFileId(Long fileId) {
+        File file = getFileById(fileId);
+        return file.getRepo().getId();
     }
 
 

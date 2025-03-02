@@ -20,5 +20,10 @@ public class FileRest {
         return new ResponseData<>(201, "Upload file successfully", fileService.uploadFile(repoId, request, file));
     }
 
+    @DeleteMapping("/{fileId}")
+    public ResponseData<Void> delete(@PathVariable Long fileId) {
+        fileService.deleteFile(fileId);
+        return new ResponseData<>(200, "Delete file successfully", null);
+    }
 
 }
