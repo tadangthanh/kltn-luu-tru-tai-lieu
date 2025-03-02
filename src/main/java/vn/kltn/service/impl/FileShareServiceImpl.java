@@ -3,6 +3,7 @@ package vn.kltn.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.parameters.P;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.FileShareRequest;
@@ -38,7 +39,7 @@ public class FileShareServiceImpl implements IFileShareService {
     @Override
     public FileShareResponse createFileShareLink(Long fileId, FileShareRequest fileShareRequest) {
         File file = fileService.getFileById(fileId);
-        FileShare fileShare = mapFileShare(fileShareRequest);
+        FileShare fileShare = mapFileShareRequestToFileShare(fileShareRequest);
         fileShare.setToken(UUID.randomUUID().toString());
         fileShare = fileShareRepo.save(fileShare);
         fileShare.setFile(file);
@@ -46,10 +47,14 @@ public class FileShareServiceImpl implements IFileShareService {
         return fileShareMapper.toResponse(fileShare);
     }
 
-    private FileShare mapFileShare(FileShareRequest fileShareRequest) {
+    private FileShare mapFileShareRequestToFileShare(FileShareRequest fileShareRequest) {
         FileShare fileShare = new FileShare();
         fileShare.setExpireAt(fileShareRequest.getExpireAt());
-        fileShare.setPasswordHash(passwordEncoder.encode(fileShareRequest.getPassword()));
+        if (fileShareRequest.getPassword() != null) {
+            fileShare.setPasswordHash(passwordEncoder.encode(fileShareRequest.getPassword()));
+        } else {
+            fileShare.setPasswordHash(null);
+        }
         return fileShare;
     }
 
