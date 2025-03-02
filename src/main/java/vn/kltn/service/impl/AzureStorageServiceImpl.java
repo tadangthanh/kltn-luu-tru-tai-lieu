@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.RepoPermission;
 import vn.kltn.exception.CustomBlobStorageException;
+import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.service.IAzureStorageService;
 
 import java.io.ByteArrayInputStream;
@@ -91,26 +92,23 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     }
 
     @Override
-    public boolean deleteContainer(String containerName) {
+    public void deleteContainer(String containerName) {
         try {
             log.info("Deleting container:  {}", containerName);
             BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
             if (containerClient.exists()) {
                 containerClient.delete();
                 log.info("Container {} delete success", containerName);
-                return true;
             } else {
                 log.warn("Container {} not exist", containerName);
-                return false;
             }
         } catch (BlobStorageException e) {
             log.error("error delete container name: {}: {}", containerName, e.getMessage());
-            return false;
         }
     }
 
     @Override
-    public boolean deleteBlob(String containerName, String blobName) {
+    public void deleteBlob(String containerName, String blobName) {
         log.info("Deleting blob '{}' in container '{}'", blobName, containerName);
 
         try {
@@ -118,16 +116,31 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
 
             if (!blobClient.exists()) {
                 log.warn("Blob '{}' does not exist in container '{}'", blobName, containerName);
-                return false;
+                return;
             }
 
             blobClient.delete();
             log.info("Deleted blob '{}' successfully", blobName);
-            return true;
 
         } catch (Exception e) {
             log.error("Failed to delete blob '{}' in container '{}': {}", blobName, containerName, e.getMessage(), e);
-            return false;
+        }
+    }
+
+    @Override
+    public InputStream downloadBlob(String containerName, String blobName) {
+        try {
+            BlockBlobClient blobClient = getBlobClient(containerName, blobName);
+
+            if (!blobClient.exists()) {
+                log.error("Blob not found: {}", blobName);
+                throw new ResourceNotFoundException("Blob không tồn tại: " + blobName);
+            }
+
+            return blobClient.openInputStream();
+        } catch (Exception e) {
+            log.error("Error downloading blob: {}", e.getMessage());
+            throw new ResourceNotFoundException("Lỗi khi tải blob: " + blobName);
         }
     }
 

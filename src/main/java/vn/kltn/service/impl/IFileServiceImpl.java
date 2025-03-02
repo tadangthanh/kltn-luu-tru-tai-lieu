@@ -7,8 +7,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.RepoPermission;
 import vn.kltn.dto.request.FileRequest;
+import vn.kltn.dto.request.FileShareRequest;
 import vn.kltn.dto.request.TagRequest;
 import vn.kltn.dto.response.FileResponse;
+import vn.kltn.dto.response.FileShareResponse;
 import vn.kltn.entity.*;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
@@ -18,10 +20,7 @@ import vn.kltn.repository.FileHasTagRepo;
 import vn.kltn.repository.FileRepo;
 import vn.kltn.repository.RepoMemberRepo;
 import vn.kltn.repository.TagRepo;
-import vn.kltn.service.IAuthenticationService;
-import vn.kltn.service.IAzureStorageService;
-import vn.kltn.service.IFileService;
-import vn.kltn.service.IRepoService;
+import vn.kltn.service.*;
 import vn.kltn.util.SasTokenValidator;
 import vn.kltn.validation.ValidatePermissionMember;
 
@@ -45,6 +44,7 @@ public class IFileServiceImpl implements IFileService {
     private final TagRepo tagRepo;
     private final TagMapper tagMapper;
     private final IRepoService repoService;
+    private final IFileShareService fileShareService;
 
 
     @Override
@@ -192,6 +192,12 @@ public class IFileServiceImpl implements IFileService {
     public Long getRepoIdByFileId(Long fileId) {
         File file = getFileById(fileId);
         return file.getRepo().getId();
+    }
+
+    @Override
+    public FileShareResponse createFileShareLink(Long fileId, FileShareRequest fileShareRequest) {
+        fileShareRequest.setFileId(fileId);
+        return fileShareService.shareFile(fileShareRequest);
     }
 
 

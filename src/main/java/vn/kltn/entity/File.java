@@ -29,4 +29,6 @@ public class File extends BaseEntity {
     private RepoMember uploadedBy;
     @OneToMany(mappedBy = "file", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
     private Set<FileHasTag> tags = new HashSet<>();
+    @OneToOne(mappedBy = "file",cascade = CascadeType.REMOVE)
+    private FileShare fileShare;
 }

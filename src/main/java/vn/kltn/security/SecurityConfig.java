@@ -43,6 +43,7 @@ public class SecurityConfig implements WebMvcConfigurer {
             "/api/v1/user/forgot-password",
             "/api/v1/user/reset-password",
             "/repository/invitation/**",
+            "/api/v1/file-share/**"
     };
 
     @Override

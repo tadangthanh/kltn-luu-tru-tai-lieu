@@ -1,6 +1,5 @@
 package vn.kltn.service;
 
-import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.RepoPermission;
 
 import java.io.InputStream;
@@ -13,6 +12,9 @@ public interface IAzureStorageService {
 
     String generatePermissionRepo(String containerName, Set<RepoPermission> permissionList);
 
-    boolean deleteContainer(String containerName);
-    boolean deleteBlob(String containerName, String blobName);
+    void deleteContainer(String containerName);
+
+    void deleteBlob(String containerName, String blobName);
+
+    InputStream downloadBlob(String containerName,String blobName); // Tải blob về
 }

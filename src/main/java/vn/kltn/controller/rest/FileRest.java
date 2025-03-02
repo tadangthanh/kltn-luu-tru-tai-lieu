@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.request.FileRequest;
+import vn.kltn.dto.request.FileShareRequest;
 import vn.kltn.dto.response.FileResponse;
+import vn.kltn.dto.response.FileShareResponse;
 import vn.kltn.dto.response.ResponseData;
 import vn.kltn.service.IFileService;
 
@@ -24,6 +26,11 @@ public class FileRest {
     public ResponseData<Void> delete(@PathVariable Long fileId) {
         fileService.deleteFile(fileId);
         return new ResponseData<>(200, "Delete file successfully", null);
+    }
+
+    @PostMapping("/{fileId}/share")
+    public ResponseData<FileShareResponse> share(@PathVariable Long fileId, @RequestBody FileShareRequest fileShareRequest) {
+        return new ResponseData<>(200, "Share file successfully", fileService.createFileShareLink(fileId, fileShareRequest));
     }
 
 }
