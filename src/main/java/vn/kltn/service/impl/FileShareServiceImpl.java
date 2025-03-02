@@ -114,6 +114,11 @@ public class FileShareServiceImpl implements IFileShareService {
         });
     }
 
+    @Override
+    public void deleteFileShareById(Long id) {
+        fileShareRepo.deleteById(id);
+    }
+
     private boolean isExpired(FileShare fileShare) {
         return fileShare.getExpireAt() != null && fileShare.getExpireAt().isBefore(LocalDateTime.now());
     }

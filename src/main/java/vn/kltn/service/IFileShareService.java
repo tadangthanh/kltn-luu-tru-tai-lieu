@@ -9,5 +9,8 @@ public interface IFileShareService {
     FileShareResponse createFileShareLink(Long fileId, FileShareRequest fileShareRequest);
 
     FileShareView viewFile(String token, String password);
+
     FileShare getShareFileByToken(String token);
+
+    void deleteFileShareById(Long id);
 }

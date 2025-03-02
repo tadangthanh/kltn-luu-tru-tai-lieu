@@ -79,7 +79,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
                                 .requestMatchers(WHITE_LIST).permitAll()
-                                .requestMatchers(HttpMethod.GET,"/api/v1/file-share/**").permitAll()
+                                .requestMatchers(HttpMethod.GET,"/api/v1/file-share/*").permitAll()
                                 .anyRequest().authenticated()
                 ).sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(provider()).addFilterBefore(requestFilter, UsernamePasswordAuthenticationFilter.class);
