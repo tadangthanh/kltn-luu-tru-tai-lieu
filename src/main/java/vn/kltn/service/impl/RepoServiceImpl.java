@@ -227,6 +227,12 @@ public class RepoServiceImpl implements IRepoService {
         });
     }
 
+    @Override
+    public boolean hasPermission(Long repoId, Long userId, RepoPermission permission) {
+        RepoMember repoMember = getRepoMemberByUserIdAndRepoId(userId, repoId);
+        return repoMember.getPermissions().contains(permission);
+    }
+
 
     @Override
     public Repo getRepositoryById(Long id) {

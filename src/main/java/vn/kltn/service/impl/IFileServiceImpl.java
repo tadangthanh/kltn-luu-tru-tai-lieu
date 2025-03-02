@@ -19,6 +19,7 @@ import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IFileService;
 import vn.kltn.service.IRepoService;
 import vn.kltn.util.SasTokenValidator;
+import vn.kltn.validation.ValidatePermissionMember;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,6 +44,7 @@ public class IFileServiceImpl implements IFileService {
     private final IRepoService repoService;
 
     @Override
+    @ValidatePermissionMember(RepoPermission.CREATE)
     public FileResponse uploadFile(Long repoId, FileRequest fileRequest, MultipartFile file) {
         File fileEntity = mapToEntity(repoId, fileRequest, file);
         fileEntity.setVersion(1);
@@ -52,20 +54,13 @@ public class IFileServiceImpl implements IFileService {
     }
 
 
-    private Repo getRepoByIdOrThrow(Long repoId) {
-        return repositoryRepo.findById(repoId).orElseThrow(() -> {
-            log.error("Không tìm thấy repository id: {}", repoId);
-            return new RuntimeException("Không tìm thấy repository id: " + repoId);
-        });
-    }
-
     private File mapToEntity(Long repoId, FileRequest fileRequest, MultipartFile file) {
         File fileEntity = fileMapper.requestToEntity(fileRequest);
         fileEntity.setCheckSum(calculateChecksum(file));
         fileEntity.setFileSize(file.getSize());
         fileEntity.setFileType(file.getContentType());
         fileEntity.setPublic(fileRequest.isPublic());
-        Repo repo = getRepoByIdOrThrow(repoId);
+        Repo repo = repoService.getRepositoryById(repoId);
         // upload file to cloud
         String fileBlobName = uploadFileToCloud(file, repo.getContainerName(), getSasToken(repoId));
         fileEntity.setFileBlobName(fileBlobName);
@@ -78,7 +73,7 @@ public class IFileServiceImpl implements IFileService {
 
     private String getSasToken(Long repoId) {
         User authUser = authenticationService.getAuthUser();
-        Repo repo = getRepoByIdOrThrow(repoId);
+        Repo repo = repoService.getRepositoryById(repoId);
         if (repo.getOwner().getId().equals(authUser.getId())) {
             return azureStorageService.generatePermissionRepo(repo.getContainerName(), Set.of(RepoPermission.values()));
         }
@@ -92,7 +87,7 @@ public class IFileServiceImpl implements IFileService {
 
     private RepoMember updateSasTokenMember(Long repoId, Long userId) {
         RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(userId, repoId);
-        Repo repo = getRepoByIdOrThrow(repoId);
+        Repo repo = repoService.getRepositoryById(repoId);
         String newSasToken = azureStorageService.generatePermissionRepo(repo.getContainerName(), repoMember.getPermissions());
         repoMember.setSasToken(newSasToken);
         return repoMemberRepo.save(repoMember);
@@ -172,6 +167,7 @@ public class IFileServiceImpl implements IFileService {
     }
 
     @Override
+    @ValidatePermissionMember(RepoPermission.DELETE)
     public void deleteFile(Long fileId) {
         fileRepo.deleteById(fileId);
     }
