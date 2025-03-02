@@ -30,7 +30,7 @@ public class FileShareRest {
         byte[] data = fileShareView.getFileBytes();
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileShareView.getFileName() + "\"")
-                .contentType(MediaType.APPLICATION_PDF)
+                .contentType(MediaType.parseMediaType(fileType))
                 .body(new InputStreamResource(new ByteArrayInputStream(data)));
     }
 
@@ -42,6 +42,6 @@ public class FileShareRest {
     @DeleteMapping("/{id}")
     public ResponseData<Void> delete(@PathVariable Long id) {
         fileShareService.deleteFileShareById(id);
-        return new ResponseData<>(204, "Delete file share successfully", null);
+        return new ResponseData<>(200, "Delete file share successfully", null);
     }
 }

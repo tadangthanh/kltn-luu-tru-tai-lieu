@@ -8,23 +8,8 @@ import com.azure.storage.blob.sas.BlobContainerSasPermission;
 import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
 import com.azure.storage.blob.specialized.BlockBlobClient;
 import com.azure.storage.common.sas.SasProtocol;
-import com.itextpdf.text.BaseColor;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.Font;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.pdf.BaseFont;
-import com.itextpdf.text.pdf.PdfWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.xslf.usermodel.XMLSlideShow;
-import org.apache.poi.xslf.usermodel.XSLFShape;
-import org.apache.poi.xslf.usermodel.XSLFSlide;
-import org.apache.poi.xslf.usermodel.XSLFTextShape;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.RepoPermission;
@@ -33,7 +18,6 @@ import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.service.IAzureStorageService;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.OffsetDateTime;
@@ -154,87 +138,11 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
             }
 
             // Đọc file từ Azure Blob Storage
-            InputStream inputStream = blobClient.openInputStream();
-
-            // Chuyển đổi file nếu cần thiết
-            if (blobName.endsWith(".docx")) {
-                return convertDocxToPdf(inputStream);
-            } else if (blobName.endsWith(".xlsx")) {
-                return convertXlsxToPdf(inputStream);
-            } else if (blobName.endsWith(".pptx")) {
-                return convertPptxToPdf(inputStream);
-            } else {
-                return inputStream; // Các file khác trả về nguyên bản
-            }
+            return blobClient.openInputStream();
         } catch (Exception e) {
             log.error("Error downloading blob: {}", e.getMessage());
             throw new ResourceNotFoundException("Lỗi khi tải blob: " + blobName);
         }
-    }
-    private InputStream convertXlsxToPdf(InputStream xlsxInputStream) throws Exception {
-        XSSFWorkbook workbook = new XSSFWorkbook(xlsxInputStream);
-        ByteArrayOutputStream pdfOutputStream = new ByteArrayOutputStream();
-
-        Document pdfDocument = new Document();
-        PdfWriter.getInstance(pdfDocument, pdfOutputStream);
-        pdfDocument.open();
-
-
-        for (Sheet sheet : workbook) {
-            for (Row row : sheet) {
-                StringBuilder rowData = new StringBuilder();
-                for (Cell cell : row) {
-                    rowData.append(cell.toString()).append("\t");
-                }
-                pdfDocument.add(new Paragraph(rowData.toString()));
-            }
-        }
-
-        pdfDocument.close();
-        workbook.close();
-
-        return new ByteArrayInputStream(pdfOutputStream.toByteArray());
-    }
-    private InputStream convertPptxToPdf(InputStream pptxInputStream) throws Exception {
-        XMLSlideShow ppt = new XMLSlideShow(pptxInputStream);
-        ByteArrayOutputStream pdfOutputStream = new ByteArrayOutputStream();
-
-        Document pdfDocument = new Document();
-        PdfWriter.getInstance(pdfDocument, pdfOutputStream);
-        pdfDocument.open();
-
-
-        for (XSLFSlide slide : ppt.getSlides()) {
-            pdfDocument.add(new Paragraph("Slide: "));
-            for (XSLFShape shape : slide.getShapes()) {
-                if (shape instanceof XSLFTextShape textShape) {
-                    pdfDocument.add(new Paragraph(textShape.getText()));
-                }
-            }
-            pdfDocument.newPage();
-        }
-
-        pdfDocument.close();
-        ppt.close();
-
-        return new ByteArrayInputStream(pdfOutputStream.toByteArray());
-    }
-
-    private InputStream convertDocxToPdf(InputStream docxInputStream) throws Exception {
-        XWPFDocument document = new XWPFDocument(docxInputStream);
-        ByteArrayOutputStream pdfOutputStream = new ByteArrayOutputStream();
-        Document pdfDocument = new Document();
-        PdfWriter.getInstance(pdfDocument, pdfOutputStream);
-        pdfDocument.open();
-
-        for (var para : document.getParagraphs()) {
-            pdfDocument.add(new Paragraph(para.getText()));
-        }
-
-        pdfDocument.close();
-        document.close();
-
-        return new ByteArrayInputStream(pdfOutputStream.toByteArray()); // Trả về PDF dưới dạng InputStream
     }
 
     /**
