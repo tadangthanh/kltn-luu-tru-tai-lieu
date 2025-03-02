@@ -5,6 +5,8 @@ import vn.kltn.entity.FileShare;
 
 import java.util.Optional;
 
-public interface FileShareRepo extends JpaRepository<FileShare,Long> {
+public interface FileShareRepo extends JpaRepository<FileShare, Long> {
     Optional<FileShare> findByToken(String token);
+
+    Optional<FileShare> findByFileId(Long fileId);
 }

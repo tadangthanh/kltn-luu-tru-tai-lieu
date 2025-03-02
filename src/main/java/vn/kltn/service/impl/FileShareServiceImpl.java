@@ -37,26 +37,31 @@ public class FileShareServiceImpl implements IFileShareService {
     private final IFileService fileService;
 
     @Override
-    public FileShareResponse createFileShareLink(Long fileId, FileShareRequest fileShareRequest) {
+    public FileShareResponse createFileShareLink(Long fileId, FileShareRequest request) {
         File file = fileService.getFileById(fileId);
-        FileShare fileShare = mapFileShareRequestToFileShare(fileShareRequest);
-        fileShare.setToken(UUID.randomUUID().toString());
-        fileShare = fileShareRepo.save(fileShare);
-        fileShare.setFile(file);
+        FileShare fileShare = fileShareRepo.findByFileId(fileId).orElseGet(() -> createNewFileShare(file, request));
+
+        updateFileShare(fileShare, request);
+        fileShareRepo.save(fileShare);
 
         return fileShareMapper.toResponse(fileShare);
     }
 
-    private FileShare mapFileShareRequestToFileShare(FileShareRequest fileShareRequest) {
+    private FileShare createNewFileShare(File file, FileShareRequest request) {
         FileShare fileShare = new FileShare();
-        fileShare.setExpireAt(fileShareRequest.getExpireAt());
-        if (fileShareRequest.getPassword() != null) {
-            fileShare.setPasswordHash(passwordEncoder.encode(fileShareRequest.getPassword()));
-        } else {
-            fileShare.setPasswordHash(null);
-        }
+        fileShare.setToken(UUID.randomUUID().toString());
+        fileShare.setFile(file);
+        updateFileShare(fileShare, request);
         return fileShare;
     }
+
+    private void updateFileShare(FileShare fileShare, FileShareRequest request) {
+        fileShare.setExpireAt(request.getExpireAt());
+        fileShare.setPasswordHash(
+                request.getPassword() != null ? passwordEncoder.encode(request.getPassword()) : null
+        );
+    }
+
 
     @Override
     public FileShareView viewFile(String token, String password) {

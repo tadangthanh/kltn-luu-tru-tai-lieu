@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Table(name = "file_share")
 public class FileShare extends BaseEntity {
     @OneToOne
-    @JoinColumn(name = "file_id")
+    @JoinColumn(name = "file_id", unique = true)
     private File file;
 
     private String token;
