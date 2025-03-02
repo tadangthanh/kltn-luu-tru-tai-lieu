@@ -18,7 +18,6 @@ public interface IFileService {
 
     Long getRepoIdByFileId(Long fileId);
 
-    FileShareResponse createFileShareLink(Long fileId, FileShareRequest fileShareRequest);
 
 //    Versioning cho File
 //

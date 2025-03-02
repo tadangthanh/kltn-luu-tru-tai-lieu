@@ -3,11 +3,11 @@ package vn.kltn.service;
 import vn.kltn.dto.request.FileShareRequest;
 import vn.kltn.dto.response.FileShareResponse;
 import vn.kltn.dto.response.FileShareView;
-
-import java.io.InputStream;
+import vn.kltn.entity.FileShare;
 
 public interface IFileShareService {
-    FileShareResponse shareFile(FileShareRequest fileShareRequest);
+    FileShareResponse createFileShareLink(Long fileId, FileShareRequest fileShareRequest);
 
     FileShareView viewFile(String token, String password);
+    FileShare getShareFileByToken(String token);
 }

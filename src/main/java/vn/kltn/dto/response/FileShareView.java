@@ -9,6 +9,6 @@ import vn.kltn.dto.BaseDto;
 public class FileShareView extends BaseDto {
     private byte[] fileBytes;
     private String fileName;
-    private String contentType;
+    private String fileType;
 
 }

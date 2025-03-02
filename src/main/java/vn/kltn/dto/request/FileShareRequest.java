@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
 @Setter
 public class FileShareRequest implements Serializable {
     private String password;
-    private Long fileId;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime expireAt;
 }

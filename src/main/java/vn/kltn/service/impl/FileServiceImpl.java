@@ -34,7 +34,7 @@ import java.util.Set;
 @Transactional
 @RequiredArgsConstructor
 @Slf4j(topic = "FILE_SERVICE")
-public class IFileServiceImpl implements IFileService {
+public class FileServiceImpl implements IFileService {
     private final FileRepo fileRepo;
     private final FileMapper fileMapper;
     private final IAzureStorageService azureStorageService;
@@ -194,11 +194,7 @@ public class IFileServiceImpl implements IFileService {
         return file.getRepo().getId();
     }
 
-    @Override
-    public FileShareResponse createFileShareLink(Long fileId, FileShareRequest fileShareRequest) {
-        fileShareRequest.setFileId(fileId);
-        return fileShareService.shareFile(fileShareRequest);
-    }
+
 
 
 }

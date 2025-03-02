@@ -27,10 +27,10 @@ public class FileRest {
         fileService.deleteFile(fileId);
         return new ResponseData<>(200, "Delete file successfully", null);
     }
-
-    @PostMapping("/{fileId}/share")
-    public ResponseData<FileShareResponse> share(@PathVariable Long fileId, @RequestBody FileShareRequest fileShareRequest) {
-        return new ResponseData<>(200, "Share file successfully", fileService.createFileShareLink(fileId, fileShareRequest));
-    }
+//
+//    @PostMapping("/{fileId}/share")
+//    public ResponseData<FileShareResponse> share(@PathVariable Long fileId, @RequestBody FileShareRequest fileShareRequest) {
+//        return new ResponseData<>(200, "Share file successfully", fileService.createFileShareLink(fileId, fileShareRequest));
+//    }
 
 }

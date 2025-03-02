@@ -10,17 +10,17 @@ import vn.kltn.dto.response.FileShareView;
 import vn.kltn.service.IFileShareService;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1/file-share")
 @RequiredArgsConstructor
 public class FileShareRest {
     private final IFileShareService fileShareService;
+
     @GetMapping("/{token}")
-    public ResponseEntity<InputStreamResource> getAudio(@PathVariable("token") String token, @RequestParam("password") String password) throws IOException {
+    public ResponseEntity<InputStreamResource> getAudio(@PathVariable("token") String token, @RequestParam("password") String password) {
         FileShareView fileShareView = fileShareService.viewFile(token, password);
-        String contentType = fileShareView.getContentType();
+        String contentType = fileShareView.getFileType();
         byte[] data = fileShareView.getFileBytes();
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileShareView.getFileName() + "\"")
