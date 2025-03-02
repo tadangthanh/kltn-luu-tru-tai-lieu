@@ -23,7 +23,7 @@ public class FileRest {
     @DeleteMapping("/{fileId}")
     public ResponseData<Void> delete(@PathVariable Long fileId) {
         fileService.deleteFile(fileId);
-        return new ResponseData<>(200, "Delete file successfully", null);
+        return new ResponseData<>(204, "Delete file successfully", null);
     }
 
 
