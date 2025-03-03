@@ -17,16 +17,10 @@ import vn.kltn.dto.response.TokenResponse;
 import vn.kltn.entity.RedisToken;
 import vn.kltn.entity.Role;
 import vn.kltn.entity.User;
-import vn.kltn.entity.UserHasRole;
 import vn.kltn.exception.*;
 import vn.kltn.map.UserMapper;
-import vn.kltn.repository.RoleRepo;
-import vn.kltn.repository.UserHasRoleRepo;
 import vn.kltn.repository.UserRepo;
-import vn.kltn.service.IJwtService;
-import vn.kltn.service.IMailService;
-import vn.kltn.service.IRedisTokenService;
-import vn.kltn.service.IUserService;
+import vn.kltn.service.*;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -40,13 +34,13 @@ import static vn.kltn.common.TokenType.RESET_PASSWORD_TOKEN;
 @Transactional
 public class UserServiceImpl implements IUserService {
     private final UserRepo userRepo;
-    private final RoleRepo roleRepo;
     private final IMailService gmailService;
-    private final UserHasRoleRepo userHasRoleRepo;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final IRedisTokenService redisTokenService;
     private final IJwtService jwtService;
+    private final IRoleService roleService;
+    private final IUserHasRoleService userHasRoleService;
 
 
     @Override
@@ -62,9 +56,9 @@ public class UserServiceImpl implements IUserService {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user = userRepo.save(user);
         user.setStatus(UserStatus.NONE);
-        Role role = findRoleByName("user");
+        Role role = roleService.findRoleByName("user");
         // user tao moi se co role la user
-        saveUserHasRole(user, role);
+        userHasRoleService.saveUserHasRole(user, role);
         // Gửi email bất đồng bộ
         gmailService.sendConfirmLink(user.getEmail(), user.getId(), jwtService.generateTokenConfirmEmail(user.getEmail()));
     }
@@ -154,8 +148,8 @@ public class UserServiceImpl implements IUserService {
         }
         user.setStatus(UserStatus.ACTIVE);
         user = userRepo.save(user);
-        Role role = findRoleByName("user");
-        saveUserHasRole(user, role);
+        Role role = roleService.findRoleByName("user");
+        userHasRoleService.saveUserHasRole(user, role);
         return getTokenResponse(user);
     }
 
@@ -233,21 +227,6 @@ public class UserServiceImpl implements IUserService {
         userRepo.save(user);
     }
 
-
-    private UserHasRole saveUserHasRole(User user, Role role) {
-        UserHasRole userHasRole = new UserHasRole();
-        userHasRole.setUser(user);
-        userHasRole.setRole(role);
-        return userHasRoleRepo.save(userHasRole);
-    }
-
-
-    private Role findRoleByName(String name) {
-        return roleRepo.findRoleByName(name).orElseThrow(() -> {
-            log.error("Role not found, name: {}", name);
-            return new ResourceNotFoundException("Role not found");
-        });
-    }
 
     private User findUserByIdOrThrow(Long id) {
         return userRepo.findById(id).orElseThrow(() -> {
