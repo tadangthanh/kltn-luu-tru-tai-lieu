@@ -3,15 +3,17 @@ package vn.kltn.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.TokenType;
 import vn.kltn.common.UserStatus;
 import vn.kltn.dto.request.AuthChangePassword;
 import vn.kltn.dto.request.AuthResetPassword;
 import vn.kltn.dto.request.UserRegister;
+import vn.kltn.dto.response.TokenResponse;
 import vn.kltn.entity.RedisToken;
 import vn.kltn.entity.Role;
 import vn.kltn.entity.User;
@@ -25,6 +27,9 @@ import vn.kltn.service.IJwtService;
 import vn.kltn.service.IMailService;
 import vn.kltn.service.IRedisTokenService;
 import vn.kltn.service.IUserService;
+
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static vn.kltn.common.TokenType.ACCESS_TOKEN;
 import static vn.kltn.common.TokenType.RESET_PASSWORD_TOKEN;
@@ -87,7 +92,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public void reConfirmEmail(String email) {
-        User user = findUserByEmailOrThrow(email);
+        User user = getUserByEmail(email);
         validateUserActivationStatus(user);
         gmailService.sendConfirmLink(user.getEmail(), user.getId(), jwtService.generateTokenConfirmEmail(user.getEmail()));
     }
@@ -128,7 +133,7 @@ public class UserServiceImpl implements IUserService {
     public User getUserByEmail(String email) {
         return userRepo.findByEmail(email).orElseThrow(() -> {
             log.warn("User not found by email: {}", email);
-            return new ResourceNotFoundException("Không tìm thấy user {}"+ email);
+            return new ResourceNotFoundException("Không tìm thấy user {}" + email);
         });
     }
 
@@ -136,7 +141,64 @@ public class UserServiceImpl implements IUserService {
     public User getUserById(Long id) {
         return userRepo.findById(id).orElseThrow(() -> {
             log.warn("User not found by id: {}", id);
-            return new ResourceNotFoundException("Không tìm thấy user {}"+ id);
+            return new ResourceNotFoundException("Không tìm thấy user {}" + id);
+        });
+    }
+
+    @Override
+    public TokenResponse loginWithGoogle(OAuth2User oAuth2User) {
+        User user = mapOAuth2UserToUser(oAuth2User);
+        if (userRepo.existsBySub(user.getSub())) {
+            user = getBySub(user.getSub());
+            return getTokenResponse(user);
+        }
+        user.setStatus(UserStatus.ACTIVE);
+        user = userRepo.save(user);
+        Role role = findRoleByName("user");
+        saveUserHasRole(user, role);
+        return getTokenResponse(user);
+    }
+
+    private TokenResponse getTokenResponse(User user) {
+        return TokenResponse.builder()
+                .accessToken(jwtService.generateAccessToken(user.getId(),
+                        user.getEmail(), user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList())))
+                .refreshToken(jwtService.generateRefreshToken(user.getId(),
+                        user.getEmail(), user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))).build();
+    }
+
+    @Override
+    public User mapOAuth2UserToUser(OAuth2User oAuth2User) {
+        // Lấy tất cả các thuộc tính của người dùng
+        Map<String, Object> attributes = oAuth2User.getAttributes();
+
+        // Lấy các thông tin cụ thể
+        String email = (String) attributes.get("email");
+        String name = (String) attributes.get("name");
+        String picture = (String) attributes.get("picture");
+        String sub = (String) attributes.get("sub");
+
+        User user = new User();
+        user.setEmail(email);
+        user.setFullName(name);
+        user.setAvatarUrl(picture);
+        user.setSub(sub);
+        return user;
+    }
+
+    @Override
+    public User getBySub(String sub) {
+        return userRepo.findBySub(sub).orElseThrow(() -> {
+            log.warn("User not found by sub: {}", sub);
+            return new ResourceNotFoundException("Không tìm thấy user {}" + sub);
+        });
+    }
+
+    @Override
+    public User getByEmail(String email) {
+        return userRepo.findByEmail(email).orElseThrow(() -> {
+            log.error("User not found by email: {}", email);
+            return new ResourceNotFoundException("User not found");
         });
     }
 
@@ -152,18 +214,6 @@ public class UserServiceImpl implements IUserService {
         if (passwordEncoder.matches(newPassword, currentUser.getPassword())) {
             throw new PasswordMismatchException("Mật khẩu mới không được trùng với mật khẩu cũ");
         }
-    }
-
-    private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return findUserByEmailOrThrow(email);
-    }
-
-    private User findUserByEmailOrThrow(String email) {
-        return userRepo.findByEmail(email).orElseThrow(() -> {
-            log.error("User not found by email: {}", email);
-            return new ResourceNotFoundException("User not found");
-        });
     }
 
     private void validateUserActivationStatus(User user) {
@@ -205,7 +255,8 @@ public class UserServiceImpl implements IUserService {
             return new ResourceNotFoundException("User not found");
         });
     }
-    private User validateTokenForUpdatePassword(String token){
+
+    private User validateTokenForUpdatePassword(String token) {
         // validate token
         var email = jwtService.extractEmail(token, ACCESS_TOKEN);
         // check token in redis
