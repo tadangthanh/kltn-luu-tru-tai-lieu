@@ -23,10 +23,6 @@ public interface IFileService {
 //
 //    Mô tả: Lưu lại các phiên bản của file khi người dùng cập nhật.
 //    Lợi ích: Cho phép người dùng xem lịch sử thay đổi, so sánh và phục hồi phiên bản cũ nếu cần.
-//    Chia sẻ File với Link
-//
-//    Mô tả: Tạo các đường link chia sẻ riêng hoặc công khai cho file, với khả năng đặt hạn chế (thời gian hết hạn, mật khẩu, quyền tải xuống, xem trực tuyến, …).
-//    Lợi ích: Nâng cao tính linh hoạt khi người dùng cần chia sẻ file ngoài hệ thống.
 //    Phân Loại và Gắn Tag
 //
 //    Mô tả: Cho phép người dùng gắn tag và phân loại file, repository theo chủ đề hoặc loại tài liệu.
