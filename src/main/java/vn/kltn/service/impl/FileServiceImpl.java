@@ -65,7 +65,7 @@ public class FileServiceImpl implements IFileService {
         fileEntity.setCheckSum(calculateChecksum(file));
         fileEntity.setFileSize(file.getSize());
         fileEntity.setFileType(file.getContentType());
-        fileEntity.setPublic(fileRequest.isPublic());
+//        fileEntity.setPublic(fileRequest.getIsPublic());
         Repo repo = repoService.getRepositoryById(repoId);
         // upload file to cloud
         String fileBlobName = uploadFileToCloud(file, repo.getContainerName(), getSasToken(repoId));

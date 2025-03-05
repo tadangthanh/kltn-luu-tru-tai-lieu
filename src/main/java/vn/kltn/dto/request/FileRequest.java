@@ -15,5 +15,5 @@ public class FileRequest implements Serializable {
     private String fileName;
     private TagRequest[] tags;
     @NotNull(message = "Trạng thái public không được để trống")
-    private boolean isPublic;
+    private Boolean isPublic;
 }

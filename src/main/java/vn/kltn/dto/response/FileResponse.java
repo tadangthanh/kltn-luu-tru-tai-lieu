@@ -14,7 +14,7 @@ public class FileResponse extends BaseDto {
     private Long fileSize;
     private String repoName;
     private Long repoId;
-    private boolean isPublic;
+    private Boolean isPublic;
     private int version;
     private String description;
     private String checkSum;

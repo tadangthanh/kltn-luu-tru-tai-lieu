@@ -15,10 +15,12 @@ public interface FileMapper {
     @Mapping(target = "repoName", source = "repo.name")
     @Mapping(target = "repoId", source = "repo.id")
     @Mapping(target = "uploadedBy", source = "uploadedBy.user.fullName")
-    @Mapping(target = "public", source = "public")
+    @Mapping(target = "isPublic", source = "public")
     FileResponse entityToResponse(File file);
 
+    @Mapping(target = "public", source = "isPublic")
     File requestToEntity(FileRequest request);
 
+    @Mapping(target = "public", source = "isPublic")
     void updateEntity(FileRequest request, @MappingTarget File file);
 }
