@@ -3,6 +3,9 @@ package vn.kltn.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.RepoPermission;
@@ -10,6 +13,7 @@ import vn.kltn.dto.request.FileRequest;
 import vn.kltn.dto.request.TagRequest;
 import vn.kltn.dto.response.FileDataResponse;
 import vn.kltn.dto.response.FileResponse;
+import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.*;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
@@ -19,6 +23,7 @@ import vn.kltn.repository.FileHasTagRepo;
 import vn.kltn.repository.FileRepo;
 import vn.kltn.repository.RepoMemberRepo;
 import vn.kltn.repository.TagRepo;
+import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IFileService;
@@ -32,6 +37,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static java.util.stream.Collectors.toList;
 
 @Service
 @Transactional
@@ -210,11 +219,11 @@ public class FileServiceImpl implements IFileService {
         String containerName = file.getRepo().getContainerName();
         String fileBlobName = file.getFileBlobName();
         try (InputStream inputStream = azureStorageService.downloadBlob(containerName, fileBlobName)) {
-         return  FileDataResponse.builder()
-                 .data(inputStream.readAllBytes())
-                 .fileType(file.getFileType())
-                 .fileName(file.getFileName()+file.getFileBlobName().substring(file.getFileBlobName().lastIndexOf('.')))
-                 .build();
+            return FileDataResponse.builder()
+                    .data(inputStream.readAllBytes())
+                    .fileType(file.getFileType())
+                    .fileName(file.getFileName() + file.getFileBlobName().substring(file.getFileBlobName().lastIndexOf('.')))
+                    .build();
         } catch (IOException e) {
             log.error("Lỗi khi tải file từ cloud: {}", e.getMessage());
             throw new InvalidDataException("Lỗi khi tải file từ cloud");
@@ -222,8 +231,46 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public List<FileResponse> searchFiles(Long repoId, String keyword) {
-        return List.of();
+    public PageResponse<List<FileResponse>> advanceSearchBySpecification(Pageable pageable, String[] file) {
+        log.info("request get all of word with specification");
+        if (file != null && file.length > 0) {
+            EntitySpecificationsBuilder<File> builder = new EntitySpecificationsBuilder<>();
+//            Pattern pattern = Pattern.compile("(\\w+?)([<:>~!])(.*)(\\p{Punct}?)(\\p{Punct}?)");
+            Pattern pattern = Pattern.compile("([a-zA-Z0-9_.]+?)([<:>~!])(.*)(\\p{Punct}?)(\\p{Punct}?)");
+            //patten chia ra thành 5 nhóm
+            // nhóm 1: từ cần tìm kiếm (có thể là tên cột hoặc tên bảng) , ví dụ: name, age, subTopic.id=> subTopic là tên bảng, id là tên cột
+            // nhóm 2: toán tử tìm kiếm
+            // nhóm 3: giá trị cần tìm kiếm
+            // nhóm 4: dấu câu cuối cùng
+            // nhóm 5: dấu câu cuối cùng
+            for (String s : file) {
+                Matcher matcher = pattern.matcher(s);
+                if (matcher.find()) {
+                    builder.with(matcher.group(1), matcher.group(2), matcher.group(3), matcher.group(4), matcher.group(5));
+                }
+            }
+            Specification<File> spec = builder.build();
+            // nó trả trả về 1 spec mới
+//            spec=spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("subTopic").get("id"), subTopicId));
+            Page<File> filePage = fileRepo.findAll(spec, pageable);
+
+            return convertToPageResponse(filePage, pageable);
+        }
+        return convertToPageResponse(fileRepo.findAll(pageable), pageable);
+    }
+
+    @Override
+    public PageResponse<List<FileResponse>> convertToPageResponse(Page<File> filePage, Pageable pageable) {
+        List<FileResponse> response = filePage.stream().map(this.fileMapper::entityToResponse).collect(toList());
+        // Chỉ rõ kiểu dữ liệu là List<WordDto> khi gọi builder
+        return PageResponse.<List<FileResponse>>builder()
+                .items(response)
+                .totalItems(filePage.getTotalElements())
+                .totalPage(filePage.getTotalPages())
+                .hasNext(filePage.hasNext())
+                .pageNo(pageable.getPageNumber())
+                .pageSize(pageable.getPageSize())
+                .build();
     }
 
 

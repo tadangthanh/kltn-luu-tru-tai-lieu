@@ -1,6 +1,7 @@
 package vn.kltn.exception;
 
 import lombok.NonNull;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -51,7 +52,7 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.OK);
     }
 
-    @ExceptionHandler({BadRequestException.class, UploadFailureException.class, InvalidDataException.class, PasswordMismatchException.class})
+    @ExceptionHandler({BadRequestException.class, UploadFailureException.class, InvalidDataException.class, PasswordMismatchException.class, PropertyReferenceException.class})
     public final ResponseEntity<ErrorResponse> handleBadRequestException(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(LocalDateTime.now());

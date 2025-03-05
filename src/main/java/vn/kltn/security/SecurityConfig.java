@@ -51,8 +51,7 @@ public class SecurityConfig implements WebMvcConfigurer {
             "/api/v1/user/re-confirm",
             "/api/v1/user/forgot-password",
             "/api/v1/user/reset-password",
-            "/repository/invitation/**",
-            "/api/v1/file/**",
+            "/repository/invitation/**"
     };
 
     //quan ly cac roles, user truy cap he thong
@@ -82,6 +81,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                         authorizeRequests
                                 .requestMatchers(WHITE_LIST).permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/file-share/*").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/v1/file/download/*").permitAll()
                                 .anyRequest().authenticated()
                 ).sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(provider()).addFilterBefore(requestFilter, UsernamePasswordAuthenticationFilter.class)

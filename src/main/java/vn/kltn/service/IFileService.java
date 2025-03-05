@@ -1,9 +1,12 @@
 package vn.kltn.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.request.FileRequest;
 import vn.kltn.dto.response.FileDataResponse;
 import vn.kltn.dto.response.FileResponse;
+import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.File;
 
 import java.util.List;
@@ -23,8 +26,9 @@ public interface IFileService {
 
     FileDataResponse downloadFile(Long fileId);
 
-    List<FileResponse> searchFiles(Long repoId,String keyword);
+    PageResponse<List<FileResponse>> advanceSearchBySpecification(Pageable pageable, String[] file);
 
+    PageResponse<List<FileResponse>> convertToPageResponse(Page<File> filePage, Pageable pageable);
 
 
 //    Versioning cho File

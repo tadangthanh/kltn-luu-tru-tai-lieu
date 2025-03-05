@@ -2,6 +2,7 @@ package vn.kltn.controller.rest;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -9,11 +10,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.w3c.dom.stylesheets.LinkStyle;
 import vn.kltn.dto.request.FileRequest;
 import vn.kltn.dto.response.FileDataResponse;
 import vn.kltn.dto.response.FileResponse;
+import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
 import vn.kltn.service.IFileService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/file")
@@ -51,6 +56,11 @@ public class FileRest {
     @PutMapping("/{fileId}")
     public ResponseData<FileResponse> update(@Valid @RequestBody FileRequest request, @PathVariable Long fileId) {
         return new ResponseData<>(200, "Update file successfully", fileService.updateFileMetadata(fileId, request));
+    }
+
+    @GetMapping
+    public ResponseData<PageResponse<List<FileResponse>>> searchFile(Pageable pageable, @RequestParam(required = false, value = "file") String[] file) {
+        return new ResponseData<>(200, "Search file successfully", fileService.advanceSearchBySpecification(pageable, file));
     }
 
 
