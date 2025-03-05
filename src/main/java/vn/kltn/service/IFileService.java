@@ -3,9 +3,12 @@ package vn.kltn.service;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.request.FileRequest;
 import vn.kltn.dto.request.FileShareRequest;
+import vn.kltn.dto.response.FileDownloadResponse;
 import vn.kltn.dto.response.FileResponse;
 import vn.kltn.dto.response.FileShareResponse;
 import vn.kltn.entity.File;
+
+import java.util.List;
 
 public interface IFileService {
     FileResponse uploadFile(Long repoId, FileRequest fileRequest, MultipartFile file);
@@ -17,6 +20,13 @@ public interface IFileService {
     File getFileById(Long fileId);
 
     Long getRepoIdByFileId(Long fileId);
+
+    FileResponse updateFileMetadata(Long fileId, FileRequest fileRequest);
+
+    FileDownloadResponse downloadFile(Long fileId);
+
+    List<FileResponse> searchFiles(Long repoId,String keyword);
+
 
 
 //    Versioning cho File

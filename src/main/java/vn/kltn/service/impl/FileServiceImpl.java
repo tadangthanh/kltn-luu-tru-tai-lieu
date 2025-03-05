@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.RepoPermission;
 import vn.kltn.dto.request.FileRequest;
 import vn.kltn.dto.request.TagRequest;
+import vn.kltn.dto.response.FileDownloadResponse;
 import vn.kltn.dto.response.FileResponse;
 import vn.kltn.entity.*;
 import vn.kltn.exception.InvalidDataException;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -192,6 +194,36 @@ public class FileServiceImpl implements IFileService {
     public Long getRepoIdByFileId(Long fileId) {
         File file = getFileById(fileId);
         return file.getRepo().getId();
+    }
+
+    @Override
+    public FileResponse updateFileMetadata(Long fileId, FileRequest fileRequest) {
+        File file = getFileById(fileId);
+        fileMapper.updateEntity(fileRequest, file);
+        file = fileRepo.save(file);
+        return fileMapper.entityToResponse(file);
+    }
+
+    @Override
+    public FileDownloadResponse downloadFile(Long fileId) {
+        File file = getFileById(fileId);
+        String containerName = file.getRepo().getContainerName();
+        String fileBlobName = file.getFileBlobName();
+        try (InputStream inputStream = azureStorageService.downloadBlob(containerName, fileBlobName)) {
+         return  FileDownloadResponse.builder()
+                 .data(inputStream.readAllBytes())
+                 .fileType(file.getFileType())
+                 .fileName(file.getFileName()+file.getFileBlobName().substring(file.getFileBlobName().lastIndexOf('.')))
+                 .build();
+        } catch (IOException e) {
+            log.error("Lỗi khi tải file từ cloud: {}", e.getMessage());
+            throw new InvalidDataException("Lỗi khi tải file từ cloud");
+        }
+    }
+
+    @Override
+    public List<FileResponse> searchFiles(Long repoId, String keyword) {
+        return List.of();
     }
 
 
