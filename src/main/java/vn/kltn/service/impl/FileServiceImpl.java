@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -185,10 +186,7 @@ public class FileServiceImpl implements IFileService {
     @ValidatePermissionMember(RepoPermission.DELETE)
     public void deleteFile(Long fileId) {
         File file = getFileById(fileId);
-        String containerName = file.getRepo().getContainerName();
-        String fileBlobName = file.getFileBlobName();
-        fileRepo.deleteById(fileId);
-        azureStorageService.deleteBlob(containerName, fileBlobName);
+        file.setDeletedAt(LocalDateTime.now());
     }
 
     @Override
@@ -271,7 +269,6 @@ public class FileServiceImpl implements IFileService {
                 .pageSize(pageable.getPageSize())
                 .build();
     }
-
 
 
 }

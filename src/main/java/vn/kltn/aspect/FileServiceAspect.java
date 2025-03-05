@@ -45,7 +45,6 @@ public class FileServiceAspect {
 
         // Duyệt qua danh sách tham số để xác định đâu là `repoId` hoặc `fileId`
         for (int i = 0; i < parameterNames.length; i++) {
-            System.out.println(parameterNames[i]);
             if ("repoId".equals(parameterNames[i]) && args[i] instanceof Long) {
                 repoId = (Long) args[i];  // Nếu method có tham số tên "repoId", thì lấy luôn
             } else if ("fileId".equals(parameterNames[i]) && args[i] instanceof Long) {
