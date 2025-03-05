@@ -251,7 +251,7 @@ public class FileServiceImpl implements IFileService {
             }
             Specification<File> spec = builder.build();
             // nó trả trả về 1 spec mới
-//            spec=spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("subTopic").get("id"), subTopicId));
+//            spec=spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
             Page<File> filePage = fileRepo.findAll(spec, pageable);
 
             return convertToPageResponse(filePage, pageable);
@@ -262,7 +262,6 @@ public class FileServiceImpl implements IFileService {
     @Override
     public PageResponse<List<FileResponse>> convertToPageResponse(Page<File> filePage, Pageable pageable) {
         List<FileResponse> response = filePage.stream().map(this.fileMapper::entityToResponse).collect(toList());
-        // Chỉ rõ kiểu dữ liệu là List<WordDto> khi gọi builder
         return PageResponse.<List<FileResponse>>builder()
                 .items(response)
                 .totalItems(filePage.getTotalElements())
@@ -272,6 +271,7 @@ public class FileServiceImpl implements IFileService {
                 .pageSize(pageable.getPageSize())
                 .build();
     }
+
 
 
 }

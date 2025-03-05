@@ -4,13 +4,14 @@ import lombok.Getter;
 import lombok.Setter;
 import vn.kltn.dto.BaseDto;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 public class FileResponse extends BaseDto {
     private String fileName;
     private String fileType;
     private String fileBlobName;
-    private String fileUrl;
     private Long fileSize;
     private String repoName;
     private Long repoId;
@@ -19,5 +20,6 @@ public class FileResponse extends BaseDto {
     private String description;
     private String checkSum;
     private String uploadedBy;
+    private LocalDateTime deletedAt;
 
 }
