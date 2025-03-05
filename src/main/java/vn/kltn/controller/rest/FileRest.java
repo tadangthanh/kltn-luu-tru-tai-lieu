@@ -10,7 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.w3c.dom.stylesheets.LinkStyle;
 import vn.kltn.dto.request.FileRequest;
 import vn.kltn.dto.response.FileDataResponse;
 import vn.kltn.dto.response.FileResponse;
@@ -63,5 +62,8 @@ public class FileRest {
         return new ResponseData<>(200, "Search file successfully", fileService.advanceSearchBySpecification(pageable, file));
     }
 
-
+    @PatchMapping("/{fileId}/restore")
+    public ResponseData<FileResponse> restore(@PathVariable Long fileId) {
+        return new ResponseData<>(201, "Restore file successfully", fileService.restoreFile(fileId));
+    }
 }
