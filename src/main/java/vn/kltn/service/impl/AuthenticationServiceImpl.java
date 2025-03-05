@@ -19,10 +19,10 @@ import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.exception.UnauthorizedException;
-import vn.kltn.repository.UserRepo;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IJwtService;
 import vn.kltn.service.IRedisTokenService;
+import vn.kltn.service.IUserService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +36,8 @@ import static vn.kltn.common.TokenType.ACCESS_TOKEN;
 public class AuthenticationServiceImpl implements IAuthenticationService {
     private final IJwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final UserRepo userRepo;
+    //    private final UserRepo userRepo;
+    private final IUserService userService;
     private final IRedisTokenService redisTokenService;
 
     @Override
@@ -55,8 +56,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
             log.error("Login fail, message: {}", e.getMessage());
             throw new UnauthorizedException(e.getMessage());
         }
-        var user = userRepo.findByEmail(authRequest.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("Tài khoản hoặc mật khẩu không đúng"));
+        var user = userService.getByEmail(authRequest.getEmail());
         String accessToken = jwtService.generateAccessToken(user.getId(), authRequest.getEmail(), authorities);
         String refreshToken = jwtService.generateRefreshToken(user.getId(), authRequest.getEmail(), authorities);
         // save token to redis
@@ -75,8 +75,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     public TokenResponse getRefreshToken(String token) {
         log.info("Get refresh token");
         String email = jwtService.extractEmail(token, TokenType.REFRESH_TOKEN);
-        var user = userRepo.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại"));
+        var user = userService.getUserByEmail(email);
         List<String> authorities = new ArrayList<>();
         user.getAuthorities().forEach(authority -> authorities.add(authority.getAuthority()));
         String accessToken = jwtService.generateAccessToken(user.getId(), email, authorities);
@@ -105,7 +104,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         } else if (principal instanceof UserDetails userDetails) {
             //  Nếu không phải User, lấy email rồi tìm trong DB
             log.info("Principal is UserDetails");
-            return userRepo.findByEmail(userDetails.getUsername()).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            return userService.getUserByEmail(userDetails.getUsername());
         }
         log.error("Principal is not User or UserDetails");
         throw new ResourceNotFoundException("User not found");
