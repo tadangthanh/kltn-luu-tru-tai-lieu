@@ -9,8 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vn.kltn.dto.request.FileShareRequest;
+import vn.kltn.dto.response.FileDataResponse;
 import vn.kltn.dto.response.FileShareResponse;
-import vn.kltn.dto.response.FileShareView;
 import vn.kltn.dto.response.ResponseData;
 import vn.kltn.service.IFileShareService;
 
@@ -25,13 +25,11 @@ public class FileShareRest {
 
     @GetMapping("/{token}")
     public ResponseEntity<InputStreamResource> viewFile(@PathVariable("token") String token, @RequestParam(value = "password", required = false) String password) {
-        FileShareView fileShareView = fileShareService.viewFile(token, password);
-        String fileType = fileShareView.getFileType();
-        byte[] data = fileShareView.getFileBytes();
+        FileDataResponse fileDataResponse = fileShareService.viewFile(token, password);
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileShareView.getFileName() + "\"")
-                .contentType(MediaType.parseMediaType(fileType))
-                .body(new InputStreamResource(new ByteArrayInputStream(data)));
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileDataResponse.getFileName() + "\"")
+                .contentType(MediaType.parseMediaType(fileDataResponse.getFileType()))
+                .body(new InputStreamResource(new ByteArrayInputStream(fileDataResponse.getData())));
     }
 
     @PostMapping("/{fileId}/share")

@@ -8,7 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.RepoPermission;
 import vn.kltn.dto.request.FileRequest;
 import vn.kltn.dto.request.TagRequest;
-import vn.kltn.dto.response.FileDownloadResponse;
+import vn.kltn.dto.response.FileDataResponse;
 import vn.kltn.dto.response.FileResponse;
 import vn.kltn.entity.*;
 import vn.kltn.exception.InvalidDataException;
@@ -205,12 +205,12 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public FileDownloadResponse downloadFile(Long fileId) {
+    public FileDataResponse downloadFile(Long fileId) {
         File file = getFileById(fileId);
         String containerName = file.getRepo().getContainerName();
         String fileBlobName = file.getFileBlobName();
         try (InputStream inputStream = azureStorageService.downloadBlob(containerName, fileBlobName)) {
-         return  FileDownloadResponse.builder()
+         return  FileDataResponse.builder()
                  .data(inputStream.readAllBytes())
                  .fileType(file.getFileType())
                  .fileName(file.getFileName()+file.getFileBlobName().substring(file.getFileBlobName().lastIndexOf('.')))

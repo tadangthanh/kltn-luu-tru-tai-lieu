@@ -7,7 +7,7 @@ import java.io.Serializable;
 
 @Builder
 @Getter
-public class FileDownloadResponse implements Serializable {
+public class FileDataResponse implements Serializable {
     private byte[] data;
     private String fileName;
     private String fileType;

@@ -3,12 +3,11 @@ package vn.kltn.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.parameters.P;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.FileShareRequest;
+import vn.kltn.dto.response.FileDataResponse;
 import vn.kltn.dto.response.FileShareResponse;
-import vn.kltn.dto.response.FileShareView;
 import vn.kltn.entity.File;
 import vn.kltn.entity.FileShare;
 import vn.kltn.entity.Repo;
@@ -64,7 +63,7 @@ public class FileShareServiceImpl implements IFileShareService {
 
 
     @Override
-    public FileShareView viewFile(String token, String password) {
+    public FileDataResponse viewFile(String token, String password) {
         FileShare fileShare = getShareFileByToken(token);
         // Kiểm tra thời gian hết hạn
         if (isExpired(fileShare)) {
@@ -73,17 +72,20 @@ public class FileShareServiceImpl implements IFileShareService {
         String passwordHash = fileShare.getPasswordHash();
         // validate password
         validatePassword(password, passwordHash);
-        return mapFileToFileShareView(fileShare.getFile());
+        return mapFileToFileDataResponse(fileShare.getFile());
     }
 
-    private FileShareView mapFileToFileShareView(File file) {
+    private FileDataResponse mapFileToFileDataResponse(File file) {
         Repo repo = file.getRepo();
         String containerName = repo.getContainerName();
         String fileBlobName = file.getFileBlobName();
         try (InputStream inputStream = azureStorageService.downloadBlob(containerName, fileBlobName)) {
-            FileShareView fileShareView = fileShareMapper.toFileShareView(file);
-            fileShareView.setFileBytes(inputStream.readAllBytes());
-            return fileShareView;
+
+            return FileDataResponse.builder()
+                    .data(inputStream.readAllBytes())
+                    .fileName(file.getFileName()+file.getFileBlobName().substring(file.getFileBlobName().lastIndexOf('.')))
+                    .fileType(file.getFileType())
+                    .build();
         } catch (IOException e) {
             log.error("Error reading file from Azure Storage: {}", e.getMessage());
             throw new InvalidDataException("Error reading file");

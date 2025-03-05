@@ -10,7 +10,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.request.FileRequest;
-import vn.kltn.dto.response.FileDownloadResponse;
+import vn.kltn.dto.response.FileDataResponse;
 import vn.kltn.dto.response.FileResponse;
 import vn.kltn.dto.response.ResponseData;
 import vn.kltn.service.IFileService;
@@ -36,15 +36,15 @@ public class FileRest {
 
     @GetMapping("/download/{fileId}")
     public ResponseEntity<byte[]> download(@PathVariable Long fileId) {
-        FileDownloadResponse fileDownloadResponse = fileService.downloadFile(fileId);
+        FileDataResponse fileDataResponse = fileService.downloadFile(fileId);
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(fileDownloadResponse.getFileType())); // Kiểu file chung
+        headers.setContentType(MediaType.parseMediaType(fileDataResponse.getFileType())); // Kiểu file chung
         headers.setContentDisposition(ContentDisposition.attachment()
-                .filename(fileDownloadResponse.getFileName())
+                .filename(fileDataResponse.getFileName())
                 .build());
         return ResponseEntity.ok()
                 .headers(headers)
-                .body(fileDownloadResponse.getData());
+                .body(fileDataResponse.getData());
     }
 
 
