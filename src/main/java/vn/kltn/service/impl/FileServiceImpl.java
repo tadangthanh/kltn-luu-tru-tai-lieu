@@ -72,7 +72,7 @@ public class FileServiceImpl implements IFileService {
 
     private File mapToEntity(Long repoId, FileRequest fileRequest, MultipartFile file) {
         File fileEntity = fileMapper.requestToEntity(fileRequest);
-        fileEntity.setCheckSum(calculateChecksum(file));
+        fileEntity.setCheckSum(calculateChecksumFromFile(file));
         fileEntity.setFileSize(file.getSize());
         fileEntity.setFileType(file.getContentType());
 //        fileEntity.setPublic(fileRequest.getIsPublic());
@@ -151,7 +151,7 @@ public class FileServiceImpl implements IFileService {
 
 
     @Override
-    public String calculateChecksum(MultipartFile file) {
+    public String calculateChecksumFromFile(MultipartFile file) {
         try {
             // Tạo instance của MessageDigest với thuật toán SHA-256
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -183,10 +183,35 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
+    public String calculateChecksumFromFileByte(byte[] data) {
+        try {
+            // Tạo instance của MessageDigest với thuật toán SHA-256
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            digest.update(data);
+            byte[] hashedBytes = digest.digest();
+            // Chuyển byte sang dạng hex string
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hashedBytes) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new InvalidDataException(e.getMessage());
+        }
+    }
+
+    @Override
     @ValidatePermissionMember(RepoPermission.DELETE)
     public void deleteFile(Long fileId) {
         File file = getFileById(fileId);
         file.setDeletedAt(LocalDateTime.now());
+    }
+
+    @Override
+    public FileResponse restoreFile(Long fileId) {
+        File file = getFileById(fileId);
+        file.setDeletedAt(null);
+        return fileMapper.entityToResponse(file);
     }
 
     @Override
@@ -217,6 +242,12 @@ public class FileServiceImpl implements IFileService {
         String containerName = file.getRepo().getContainerName();
         String fileBlobName = file.getFileBlobName();
         try (InputStream inputStream = azureStorageService.downloadBlob(containerName, fileBlobName)) {
+            byte[] data = inputStream.readAllBytes();
+            String calculatedChecksum = calculateChecksumFromFileByte(data);
+            if (!calculatedChecksum.equals(file.getCheckSum())) {
+                log.error("Checksum không khớp với file trong cloud");
+                throw new InvalidDataException("Checksum không khớp!");
+            }
             return FileDataResponse.builder()
                     .data(inputStream.readAllBytes())
                     .fileType(file.getFileType())

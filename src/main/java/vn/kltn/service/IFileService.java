@@ -14,9 +14,13 @@ import java.util.List;
 public interface IFileService {
     FileResponse uploadFile(Long repoId, FileRequest fileRequest, MultipartFile file);
 
-    String calculateChecksum(MultipartFile file);
+    String calculateChecksumFromFile(MultipartFile file);
+
+    String calculateChecksumFromFileByte(byte[] data);
 
     void deleteFile(Long fileId);
+
+    FileResponse restoreFile(Long fileId);
 
     File getFileById(Long fileId);
 
