@@ -18,6 +18,8 @@ public interface IFileService {
 
     String calculateChecksumFromFileByte(byte[] data);
 
+    void validateIntegrity (File file); // kiem tra tinh toan ven cua file
+
     void deleteFile(Long fileId);
 
     FileResponse restoreFile(Long fileId);

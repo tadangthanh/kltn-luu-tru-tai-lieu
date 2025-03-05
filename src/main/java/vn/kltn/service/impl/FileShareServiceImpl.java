@@ -79,7 +79,7 @@ public class FileShareServiceImpl implements IFileShareService {
         Repo repo = file.getRepo();
         String containerName = repo.getContainerName();
         String fileBlobName = file.getFileBlobName();
-        try (InputStream inputStream = azureStorageService.downloadBlob(containerName, fileBlobName)) {
+        try (InputStream inputStream = azureStorageService.downloadBlobInputStream(containerName, fileBlobName)) {
 
             return FileDataResponse.builder()
                     .data(inputStream.readAllBytes())

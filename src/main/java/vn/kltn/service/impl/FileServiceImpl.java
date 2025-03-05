@@ -201,6 +201,16 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
+    public void validateIntegrity(File file) {
+        byte[] data = azureStorageService.downloadBlobByteData(file.getRepo().getContainerName(), file.getFileBlobName());
+        String calculatedChecksum = calculateChecksumFromFileByte(data);
+        if (!calculatedChecksum.equals(file.getCheckSum())) {
+            log.error("Checksum không trùng khớp, file đã bị chỉnh sửa");
+            throw new InvalidDataException("Checksum không khớp! file đã bị chỉnh sửa");
+        }
+    }
+
+    @Override
     @ValidatePermissionMember(RepoPermission.DELETE)
     public void deleteFile(Long fileId) {
         File file = getFileById(fileId);
@@ -239,24 +249,16 @@ public class FileServiceImpl implements IFileService {
     @Override
     public FileDataResponse downloadFile(Long fileId) {
         File file = getFileById(fileId);
+        // kiem tra tinh toan ven cua file
+        validateIntegrity(file);
         String containerName = file.getRepo().getContainerName();
         String fileBlobName = file.getFileBlobName();
-        try (InputStream inputStream = azureStorageService.downloadBlob(containerName, fileBlobName)) {
-            byte[] data = inputStream.readAllBytes();
-            String calculatedChecksum = calculateChecksumFromFileByte(data);
-            if (!calculatedChecksum.equals(file.getCheckSum())) {
-                log.error("Checksum không khớp với file trong cloud");
-                throw new InvalidDataException("Checksum không khớp!");
-            }
-            return FileDataResponse.builder()
-                    .data(inputStream.readAllBytes())
-                    .fileType(file.getFileType())
-                    .fileName(file.getFileName() + file.getFileBlobName().substring(file.getFileBlobName().lastIndexOf('.')))
-                    .build();
-        } catch (IOException e) {
-            log.error("Lỗi khi tải file từ cloud: {}", e.getMessage());
-            throw new InvalidDataException("Lỗi khi tải file từ cloud");
-        }
+        byte[] data = azureStorageService.downloadBlobByteData(containerName, fileBlobName);
+        return FileDataResponse.builder()
+                .data(data)
+                .fileType(file.getFileType())
+                .fileName(file.getFileName() + file.getFileBlobName().substring(file.getFileBlobName().lastIndexOf('.')))
+                .build();
     }
 
     @Override

@@ -128,7 +128,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     }
 
     @Override
-    public InputStream downloadBlob(String containerName, String blobName) {
+    public InputStream downloadBlobInputStream(String containerName, String blobName) {
         try {
             BlockBlobClient blobClient = getBlobClient(containerName, blobName);
 
@@ -144,6 +144,24 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
             throw new ResourceNotFoundException("Lỗi khi tải blob: " + blobName);
         }
     }
+
+    @Override
+    public byte[] downloadBlobByteData(String containerName, String blobName) {
+        try (InputStream inputStream = downloadBlobInputStream(containerName, blobName)) {
+            BlockBlobClient blobClient = getBlobClient(containerName, blobName);
+
+            if (!blobClient.exists()) {
+                log.error("Blob not found: {}", blobName);
+                throw new ResourceNotFoundException("File không tồn tại: " + blobName);
+            }
+            // Đọc file từ Azure Blob Storage
+            return inputStream.readAllBytes();
+        } catch (Exception e) {
+            log.error("Error downloading blob: {}", e.getMessage());
+            throw new ResourceNotFoundException("Lỗi khi tải blob: " + blobName);
+        }
+    }
+
 
 
     /**
