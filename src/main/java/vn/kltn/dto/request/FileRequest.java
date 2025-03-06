@@ -16,4 +16,6 @@ public class FileRequest implements Serializable {
     private TagRequest[] tags;
     @NotNull(message = "Trạng thái public không được để trống")
     private Boolean isPublic;
+    @NotBlank(message = "Bạn cần nhập chữ ký")
+    private String signature;
 }

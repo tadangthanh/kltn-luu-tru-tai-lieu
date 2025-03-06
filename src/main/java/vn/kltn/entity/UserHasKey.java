@@ -9,7 +9,7 @@ import lombok.Setter;
 @Entity
 @Table(name = "user_has_key")
 public class UserHasKey extends BaseEntity {
-    @Column(unique = true, nullable = false,columnDefinition = "TEXT")
+    @Column(unique = true, nullable = false, columnDefinition = "TEXT")
     private String publicKey;
     @ManyToOne
     @JoinColumn(name = "user_id")

@@ -6,4 +6,5 @@ import vn.kltn.entity.UserHasKey;
 
 @Repository
 public interface UserHasKeyRepo extends JpaRepository<UserHasKey, Long> {
+
 }

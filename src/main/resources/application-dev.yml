@@ -18,6 +18,17 @@ spring:
       storage:
         blob:
           container-name: luu-tru-tai-lieu
+      keyvault:
+        secret:
+          property-source-enabled: true
+          property-sources:
+            - endpoint: https://luutrutailieukeyvault.vault.azure.net/
+              retry:
+                mode: exponential
+                exponential:
+                  max-retries: 4
+                  base-delay: PT0.0801S
+                  max-delay: PT9S
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/luu-tru-tai-lieu?createDatabaseIfNotExist=true&useUnicode=yes&characterEncoding=UTF-8&useSSL=false
     username: ${MYSQL_USER:root}
@@ -51,7 +62,7 @@ spring:
 
 azure:
   blob-storage:
-    connection-string: ${AZURE_STORAGE_CONNECTION_STRING}
+    connection-string: ${azurestorageconnectionstring}
     account-name: ${AZURE_STORAGE_CONTAINER_NAME:tathanhmycv}
 
 jwt:
@@ -70,7 +81,7 @@ repo:
   max-size-gb: ${REPO_MAX_SIZE_GB:10}
   max-members: ${REPO_MAX_MEMBER:10}
 google:
-  api-key: ${GOOGLE_API_KEY:AIzaSyD}
+  api-key: ${googleapikey}
 
 
 

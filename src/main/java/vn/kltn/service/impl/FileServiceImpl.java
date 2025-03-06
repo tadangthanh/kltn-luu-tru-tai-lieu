@@ -17,6 +17,7 @@ import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.*;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
+import vn.kltn.exception.UploadFailureException;
 import vn.kltn.map.FileMapper;
 import vn.kltn.map.TagMapper;
 import vn.kltn.repository.FileHasTagRepo;
@@ -33,9 +34,12 @@ import vn.kltn.validation.ValidatePermissionMember;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.security.*;
+import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -62,13 +66,46 @@ public class FileServiceImpl implements IFileService {
     @Override
     @ValidatePermissionMember(RepoPermission.CREATE)
     public FileResponse uploadFile(Long repoId, FileRequest fileRequest, MultipartFile file) {
-        File fileEntity = mapToEntity(repoId, fileRequest, file);
-        fileEntity.setVersion(1);
-        fileEntity = fileRepo.save(fileEntity);
-        saveFileHasTag(fileRequest.getTags(), fileEntity);
-        return fileMapper.entityToResponse(fileEntity);
+        try {
+//            PublicKey publicKey = loadPublicKeyFromPEM(fileRequest.getPublicKey());
+//            // 2. Đọc dữ liệu file
+//            byte[] fileBytes = file.getBytes();
+//            // 3. Chuyển đổi chữ ký từ Base64
+//            byte[] signatureBytes = Base64.getDecoder().decode(fileRequest.getSignature());
+//            // 4. Xác minh chữ ký số
+//            boolean isValid = verifySignature(fileBytes, signatureBytes, publicKey);
+//
+//            if (isValid) {
+//                File fileEntity = mapToEntity(repoId, fileRequest, file);
+//                fileEntity.setVersion(1);
+//                fileEntity = fileRepo.save(fileEntity);
+//                saveFileHasTag(fileRequest.getTags(), fileEntity);
+//                return fileMapper.entityToResponse(fileEntity);
+//            } else {
+//                log.error("Invalid signature");
+//                throw new UploadFailureException("Chữ ký không hợp lệ");
+//            }
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return null;
     }
 
+    // Hàm xác minh chữ ký số
+    private boolean verifySignature(byte[] fileBytes, byte[] signature, PublicKey publicKey) throws Exception {
+        Signature sig = Signature.getInstance("SHA256withRSA");
+        sig.initVerify(publicKey);
+        sig.update(fileBytes);
+        return sig.verify(signature);
+    }
+
+    // Hàm chuyển đổi Public Key từ chuỗi PEM
+    private PublicKey loadPublicKeyFromPEM(String pem) throws Exception {
+        byte[] keyBytes = Base64.getDecoder().decode(pem);
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+        return KeyFactory.getInstance("RSA").generatePublic(spec);
+    }
 
     private File mapToEntity(Long repoId, FileRequest fileRequest, MultipartFile file) {
         File fileEntity = fileMapper.requestToEntity(fileRequest);
