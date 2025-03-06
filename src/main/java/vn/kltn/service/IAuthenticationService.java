@@ -10,6 +10,8 @@ public interface IAuthenticationService {
     TokenResponse getRefreshToken(String token);
 
     User getAuthUser();
-    boolean isAuth();
+
+    byte[] getPrivateKey();
+
 
 }

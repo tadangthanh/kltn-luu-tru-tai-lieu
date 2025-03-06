@@ -13,16 +13,14 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.TokenType;
 import vn.kltn.dto.request.AuthRequest;
+import vn.kltn.dto.response.KeysResponse;
 import vn.kltn.dto.response.TokenResponse;
 import vn.kltn.entity.RedisToken;
 import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.exception.UnauthorizedException;
-import vn.kltn.service.IAuthenticationService;
-import vn.kltn.service.IJwtService;
-import vn.kltn.service.IRedisTokenService;
-import vn.kltn.service.IUserService;
+import vn.kltn.service.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,9 +34,9 @@ import static vn.kltn.common.TokenType.ACCESS_TOKEN;
 public class AuthenticationServiceImpl implements IAuthenticationService {
     private final IJwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    //    private final UserRepo userRepo;
     private final IUserService userService;
     private final IRedisTokenService redisTokenService;
+    private final IKeyGenerator rsaKeyGenerator;
 
     @Override
     public TokenResponse getAccessToken(AuthRequest authRequest) {
@@ -111,9 +109,9 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     }
 
     @Override
-    public boolean isAuth() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication != null && authentication.isAuthenticated();
+    public byte[] getPrivateKey() {
+        KeysResponse keysResponse = rsaKeyGenerator.generatePublicAndPrivateKey();
+        return keysResponse.getPrivateKey().getBytes();
     }
 
     private String removeToken(HttpServletRequest request) {
