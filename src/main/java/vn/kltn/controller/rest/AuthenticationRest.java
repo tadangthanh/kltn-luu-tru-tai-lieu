@@ -42,14 +42,5 @@ public class AuthenticationRest {
         return new ResponseData<>(HttpStatus.OK.value(), "Đổi mật khẩu thành công");
     }
 
-    @GetMapping("/private-key")
-    public ResponseEntity<InputStreamResource> getPrivateKey() {
-        // Trả về file để tải xuống
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"private_key.pem\"");
-        byte[] privateKey = authenticationService.getPrivateKey();
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(new InputStreamResource(new ByteArrayInputStream(privateKey)));
-    }
+
 }
