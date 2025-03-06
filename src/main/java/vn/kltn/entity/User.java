@@ -32,6 +32,8 @@ public class User extends BaseEntity implements UserDetails {
     private UserStatus status;
     @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
     private Set<UserHasRole> roles = new HashSet<>();
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private Set<UserHasKey> keys = new HashSet<>();
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

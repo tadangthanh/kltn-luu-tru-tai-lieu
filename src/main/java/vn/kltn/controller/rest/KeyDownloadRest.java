@@ -7,7 +7,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import vn.kltn.service.IAuthenticationService;
+import vn.kltn.service.IKeyGenerator;
 
 import java.io.ByteArrayInputStream;
 
@@ -15,14 +15,14 @@ import java.io.ByteArrayInputStream;
 @RestController
 @RequiredArgsConstructor
 public class KeyDownloadRest {
-    private final IAuthenticationService authenticationService;
+    private final IKeyGenerator keyGenerator;
 
     @GetMapping("/download-private-key")
     public ResponseEntity<InputStreamResource> getPrivateKey() {
         // Trả về file để tải xuống
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"private_key.pem\"");
-        byte[] privateKey = authenticationService.getPrivateKey();
+        byte[] privateKey = keyGenerator.getPrivateKey();
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(new InputStreamResource(new ByteArrayInputStream(privateKey)));

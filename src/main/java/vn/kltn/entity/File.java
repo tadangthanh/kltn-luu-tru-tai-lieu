@@ -18,6 +18,8 @@ public class File extends BaseEntity {
     private String fileBlobName;
     private String fileUrl;
     private Long fileSize;
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String publicKey;
     @ManyToOne
     @JoinColumn(name = "repo_id")
     private Repo repo;

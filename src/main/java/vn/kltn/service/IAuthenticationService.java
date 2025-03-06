@@ -11,7 +11,7 @@ public interface IAuthenticationService {
 
     User getAuthUser();
 
-    byte[] getPrivateKey();
+
 
 
 }

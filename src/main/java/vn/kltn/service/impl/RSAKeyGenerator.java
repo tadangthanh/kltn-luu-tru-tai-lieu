@@ -1,10 +1,15 @@
 package vn.kltn.service.impl;
 
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.response.KeysResponse;
+import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
+import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IKeyGenerator;
+import vn.kltn.service.IUserService;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -12,8 +17,12 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 @Service
-@Slf4j
+@Slf4j(topic = "RSA_KEY_GENERATOR")
+@RequiredArgsConstructor
+@Transactional
 public class RSAKeyGenerator implements IKeyGenerator {
+    private final IAuthenticationService authenticationService;
+    private final IUserService userService;
 
     @Override
     public KeysResponse generatePublicAndPrivateKey() {
@@ -32,4 +41,13 @@ public class RSAKeyGenerator implements IKeyGenerator {
             throw new InvalidDataException(e.getMessage());
         }
     }
+
+    @Override
+    public byte[] getPrivateKey() {
+        KeysResponse keysResponse = generatePublicAndPrivateKey();
+        User authUser = authenticationService.getAuthUser();
+        userService.savePublicKeyByUserId(authUser.getId(), keysResponse.getPublicKey());
+        return keysResponse.getPrivateKey().getBytes();
+    }
+
 }

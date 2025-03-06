@@ -13,14 +13,16 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.TokenType;
 import vn.kltn.dto.request.AuthRequest;
-import vn.kltn.dto.response.KeysResponse;
 import vn.kltn.dto.response.TokenResponse;
 import vn.kltn.entity.RedisToken;
 import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.exception.UnauthorizedException;
-import vn.kltn.service.*;
+import vn.kltn.service.IAuthenticationService;
+import vn.kltn.service.IJwtService;
+import vn.kltn.service.IRedisTokenService;
+import vn.kltn.service.IUserService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +38,6 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final IUserService userService;
     private final IRedisTokenService redisTokenService;
-    private final IKeyGenerator rsaKeyGenerator;
 
     @Override
     public TokenResponse getAccessToken(AuthRequest authRequest) {
@@ -108,11 +109,6 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         throw new ResourceNotFoundException("User not found");
     }
 
-    @Override
-    public byte[] getPrivateKey() {
-        KeysResponse keysResponse = rsaKeyGenerator.generatePublicAndPrivateKey();
-        return keysResponse.getPrivateKey().getBytes();
-    }
 
     private String removeToken(HttpServletRequest request) {
         log.info("---------- removeToken ----------");
