@@ -150,9 +150,6 @@ public class FileServiceImpl implements IFileService {
         fileEntity.setFileSize(file.getSize());
         fileEntity.setFileType(file.getContentType());
         Repo repo = repoService.getRepositoryById(repoId);
-        // upload file to cloud
-//        String fileBlobName = uploadFileToCloud(file, repo.getContainerName(), getSasToken(repoId));
-//        fileEntity.setFileBlobName(fileBlobName);
         fileEntity.setRepo(repo);
         RepoMember uploadedBy = getAuthMemberByRepoId(repoId);
         fileEntity.setUploadedBy(uploadedBy);
