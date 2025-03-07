@@ -9,7 +9,7 @@ import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IKeyGenerator;
-import vn.kltn.service.IUserService;
+import vn.kltn.service.IUserHasKeyService;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -22,7 +22,7 @@ import java.util.Base64;
 @Transactional
 public class RSAKeyGenerator implements IKeyGenerator {
     private final IAuthenticationService authenticationService;
-    private final IUserService userService;
+    private final IUserHasKeyService userHasKeyService;
 
     @Override
     public KeysResponse generatePublicAndPrivateKey() {
@@ -46,7 +46,7 @@ public class RSAKeyGenerator implements IKeyGenerator {
     public byte[] getPrivateKey() {
         KeysResponse keysResponse = generatePublicAndPrivateKey();
         User authUser = authenticationService.getAuthUser();
-        userService.savePublicKeyByUserId(authUser.getId(), keysResponse.getPublicKey());
+        userHasKeyService.savePublicKey(authUser, keysResponse.getPublicKey());
         return keysResponse.getPrivateKey().getBytes();
     }
 

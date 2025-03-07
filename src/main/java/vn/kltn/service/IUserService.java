@@ -35,5 +35,4 @@ public interface IUserService extends UserDetailsService {
 
     User getByEmail(String email);
 
-    User savePublicKeyByUserId(Long id, String publicKey);
 }

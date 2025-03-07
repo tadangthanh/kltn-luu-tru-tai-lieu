@@ -41,7 +41,6 @@ public class UserServiceImpl implements IUserService {
     private final IJwtService jwtService;
     private final IRoleService roleService;
     private final IUserHasRoleService userHasRoleService;
-    private final IUserHasKeyService userHasKeyService;
 
 
     @Override
@@ -193,12 +192,6 @@ public class UserServiceImpl implements IUserService {
         });
     }
 
-    @Override
-    public User savePublicKeyByUserId(Long id, String publicKey) {
-        User user = getUserById(id);
-        userHasKeyService.savePublicKey(user, publicKey);
-        return user;
-    }
 
     private void validateUpdatePassword(AuthChangePassword authChangePassword, User currentUser) {
         String currentPassword = authChangePassword.getCurrentPassword();
