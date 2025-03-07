@@ -18,7 +18,7 @@ public interface IFileService {
 
     String calculateChecksumHexFromFileByte(byte[] data);
 
-    void validateIntegrity(File file); // kiem tra tinh toan ven cua file
+    void validateFileIntegrity(File file); // kiem tra tinh toan ven cua file
 
     void deleteFile(Long fileId);
 
