@@ -325,7 +325,8 @@ public class FileServiceImpl implements IFileService {
         String containerName = file.getRepo().getContainerName();
         String fileBlobName = file.getFileBlobName();
         byte[] data = azureStorageService.downloadBlobByteData(containerName, fileBlobName);
-
+        // Xác minh chữ ký số
+        verifyFileSignature(data, file.getSignature(), file.getPublicKey());
         return FileDataResponse.builder()
                 .data(data)
                 .fileType(file.getFileType())
@@ -333,7 +334,7 @@ public class FileServiceImpl implements IFileService {
                 .build();
     }
 
-    public boolean verifyFileSignature(byte[] data, String signatureBase64, String publicKeyBase64) {
+    public void verifyFileSignature(byte[] data, String signatureBase64, String publicKeyBase64) {
         try {
             // Đọc nội dung file
 
@@ -352,7 +353,7 @@ public class FileServiceImpl implements IFileService {
             return signature.verify(signatureBytes);
         } catch (SignatureException | InvalidKeyException | InvalidKeySpecException |
                  NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+            throw new InvalidDataException("Lỗi xác thực chữ ký: " + e.getMessage());
         }
     }
 
