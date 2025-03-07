@@ -334,7 +334,7 @@ public class FileServiceImpl implements IFileService {
                 .build();
     }
 
-    public void verifyFileSignature(byte[] data, String signatureBase64, String publicKeyBase64) {
+    public boolean verifyFileSignature(byte[] data, String signatureBase64, String publicKeyBase64) {
         try {
             // Đọc nội dung file
 
