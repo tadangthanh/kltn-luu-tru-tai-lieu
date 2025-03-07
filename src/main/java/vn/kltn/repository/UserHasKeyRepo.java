@@ -13,4 +13,7 @@ public interface UserHasKeyRepo extends JpaRepository<UserHasKey, Long> {
     @Modifying
     @Query("update UserHasKey u set u.isActive = false where u.user.id = ?1")
     void disableAllKeyByUserId(Long userId);
+
+    @Query("select u.publicKey from UserHasKey u where u.user.id = ?1 and u.isActive = true")
+    String getPublicKeyActiveByUserId(Long userId);
 }

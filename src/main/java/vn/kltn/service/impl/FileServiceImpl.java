@@ -25,10 +25,7 @@ import vn.kltn.repository.FileRepo;
 import vn.kltn.repository.RepoMemberRepo;
 import vn.kltn.repository.TagRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
-import vn.kltn.service.IAuthenticationService;
-import vn.kltn.service.IAzureStorageService;
-import vn.kltn.service.IFileService;
-import vn.kltn.service.IRepoService;
+import vn.kltn.service.*;
 import vn.kltn.util.SasTokenValidator;
 import vn.kltn.validation.ValidatePermissionMember;
 
@@ -61,35 +58,36 @@ public class FileServiceImpl implements IFileService {
     private final TagRepo tagRepo;
     private final TagMapper tagMapper;
     private final IRepoService repoService;
+    private final IUserHasKeyService userHasKeyService;
 
 
     @Override
     @ValidatePermissionMember(RepoPermission.CREATE)
     public FileResponse uploadFile(Long repoId, FileRequest fileRequest, MultipartFile file) {
         try {
-//            PublicKey publicKey = loadPublicKeyFromPEM(fileRequest.getPublicKey());
-//            // 2. Đọc dữ liệu file
-//            byte[] fileBytes = file.getBytes();
-//            // 3. Chuyển đổi chữ ký từ Base64
-//            byte[] signatureBytes = Base64.getDecoder().decode(fileRequest.getSignature());
-//            // 4. Xác minh chữ ký số
-//            boolean isValid = verifySignature(fileBytes, signatureBytes, publicKey);
-//
-//            if (isValid) {
-//                File fileEntity = mapToEntity(repoId, fileRequest, file);
-//                fileEntity.setVersion(1);
-//                fileEntity = fileRepo.save(fileEntity);
-//                saveFileHasTag(fileRequest.getTags(), fileEntity);
-//                return fileMapper.entityToResponse(fileEntity);
-//            } else {
-//                log.error("Invalid signature");
-//                throw new UploadFailureException("Chữ ký không hợp lệ");
-//            }
+            String publicKeyStr = userHasKeyService.getPublicKeyActiveByUserAuth();
+            PublicKey publicKey = loadPublicKeyFromPEM(publicKeyStr);
+            // 2. Đọc dữ liệu file
+            byte[] fileBytes = file.getBytes();
+            // 3. Chuyển đổi chữ ký từ Base64
+            byte[] signatureBytes = Base64.getDecoder().decode(fileRequest.getSignature());
+            // 4. Xác minh chữ ký số
+            boolean isValid = verifySignature(fileBytes, signatureBytes, publicKey);
 
+            if (isValid) {
+                File fileEntity = mapToEntity(repoId, fileRequest, file);
+                fileEntity.setVersion(1);
+                fileEntity.setPublicKey(publicKeyStr);
+                fileEntity = fileRepo.save(fileEntity);
+                saveFileHasTag(fileRequest.getTags(), fileEntity);
+                return fileMapper.entityToResponse(fileEntity);
+            } else {
+                log.error("Invalid signature");
+                throw new InvalidDataException("Chữ ký không hợp lệ");
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return null;
     }
 
     // Hàm xác minh chữ ký số
