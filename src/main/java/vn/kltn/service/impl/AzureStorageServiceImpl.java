@@ -112,7 +112,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
         log.info("Deleting blob '{}' in container '{}'", blobName, containerName);
 
         try {
-            BlockBlobClient blobClient = getBlobClient(containerName, blobName);
+            BlockBlobClient blobClient = getBlockBlobClient(containerName, blobName);
 
             if (!blobClient.exists()) {
                 log.warn("Blob '{}' does not exist in container '{}'", blobName, containerName);
@@ -130,7 +130,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     @Override
     public InputStream downloadBlobInputStream(String containerName, String blobName) {
         try {
-            BlockBlobClient blobClient = getBlobClient(containerName, blobName);
+            BlockBlobClient blobClient = getBlockBlobClient(containerName, blobName);
 
             if (!blobClient.exists()) {
                 log.error("Blob not found: {}", blobName);
@@ -148,7 +148,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     @Override
     public byte[] downloadBlobByteData(String containerName, String blobName) {
         try (InputStream inputStream = downloadBlobInputStream(containerName, blobName)) {
-            BlockBlobClient blobClient = getBlobClient(containerName, blobName);
+            BlockBlobClient blobClient = getBlockBlobClient(containerName, blobName);
 
             if (!blobClient.exists()) {
                 log.error("Blob not found: {}", blobName);
@@ -163,11 +163,10 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     }
 
 
-
     /**
      * Helper method to get BlockBlobClient
      */
-    private BlockBlobClient getBlobClient(String containerName, String blobName) {
+    private BlockBlobClient getBlockBlobClient(String containerName, String blobName) {
         return blobServiceClient
                 .getBlobContainerClient(containerName)
                 .getBlobClient(blobName)

@@ -19,6 +19,7 @@ public interface FileMapper {
     FileResponse entityToResponse(File file);
 
     @Mapping(target = "public", source = "isPublic")
+    @Mapping(target = "signature",source = "signature")
     File requestToEntity(FileRequest request);
 
     @Mapping(target = "public", source = "isPublic")

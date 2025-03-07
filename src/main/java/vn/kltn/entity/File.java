@@ -27,6 +27,8 @@ public class File extends BaseEntity {
     private Integer version;
     private String description;
     private String checkSum;
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String signature;
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
     @ManyToOne

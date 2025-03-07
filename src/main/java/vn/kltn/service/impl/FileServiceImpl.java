@@ -31,9 +31,8 @@ import vn.kltn.validation.ValidatePermissionMember;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.security.*;
+import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDateTime;
 import java.util.Base64;
@@ -65,56 +64,95 @@ public class FileServiceImpl implements IFileService {
     @ValidatePermissionMember(RepoPermission.CREATE)
     public FileResponse uploadFile(Long repoId, FileRequest fileRequest, MultipartFile file) {
         try {
-            String publicKeyStr = userHasKeyService.getPublicKeyActiveByUserAuth();
-            PublicKey publicKey = loadPublicKeyFromPEM(publicKeyStr);
-            // 2. Đọc dữ liệu file
-            byte[] fileBytes = file.getBytes();
-            // 3. Chuyển đổi chữ ký từ Base64
-            byte[] signatureBytes = Base64.getDecoder().decode(fileRequest.getSignature());
-            // 4. Xác minh chữ ký số
-            boolean isValid = verifySignature(fileBytes, signatureBytes, publicKey);
+            PublicKey publicKey = getUserPublicKey();
+            byte[] fileData = file.getBytes();
+            byte[] signatureBytes = decodeSignature(fileRequest.getSignature());
 
-            if (isValid) {
-                File fileEntity = mapToEntity(repoId, fileRequest, file);
-                fileEntity.setVersion(1);
-                fileEntity.setPublicKey(publicKeyStr);
-                fileEntity = fileRepo.save(fileEntity);
-                saveFileHasTag(fileRequest.getTags(), fileEntity);
-                return fileMapper.entityToResponse(fileEntity);
-            } else {
-                log.error("Invalid signature");
+            if (!verifyFileSignature(fileData, signatureBytes, publicKey)) {
+                log.error("Invalid signature for file: {}", file.getOriginalFilename());
                 throw new InvalidDataException("Chữ ký không hợp lệ");
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+
+            return processValidFile(repoId, fileRequest, file, publicKey);
+        } catch (IOException e) {
+            log.error("Error reading file: {}", file.getOriginalFilename(), e);
+            throw new UploadFailureException("Lỗi khi đọc file: " + e.getMessage());
         }
     }
 
-    // Hàm xác minh chữ ký số
-    private boolean verifySignature(byte[] fileBytes, byte[] signature, PublicKey publicKey) throws Exception {
-        Signature sig = Signature.getInstance("SHA256withRSA");
-        sig.initVerify(publicKey);
-        sig.update(fileBytes);
-        return sig.verify(signature);
+    // 🔹 Lấy public key của user hiện tại
+    private PublicKey getUserPublicKey() {
+        String userPublicKeyPEM = userHasKeyService.getPublicKeyActiveByUserAuth();
+        return loadPublicKeyFromPEM(userPublicKeyPEM);
     }
 
-    // Hàm chuyển đổi Public Key từ chuỗi PEM
-    private PublicKey loadPublicKeyFromPEM(String pem) throws Exception {
-        byte[] keyBytes = Base64.getDecoder().decode(pem);
-        X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
-        return KeyFactory.getInstance("RSA").generatePublic(spec);
+    // 🔹 Giải mã chữ ký từ Base64
+    private byte[] decodeSignature(String signatureBase64) {
+        return Base64.getDecoder().decode(signatureBase64);
     }
 
-    private File mapToEntity(Long repoId, FileRequest fileRequest, MultipartFile file) {
-        File fileEntity = fileMapper.requestToEntity(fileRequest);
-        fileEntity.setCheckSum(calculateChecksumFromFile(file));
-        fileEntity.setFileSize(file.getSize());
-        fileEntity.setFileType(file.getContentType());
-//        fileEntity.setPublic(fileRequest.getIsPublic());
+    // 🔹 Xác minh chữ ký số
+    private boolean verifyFileSignature(byte[] fileData, byte[] signature, PublicKey publicKey) {
+        try {
+            Signature sig = Signature.getInstance("SHA256withRSA");
+            sig.initVerify(publicKey);
+            sig.update(fileData);
+            return sig.verify(signature);
+        } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
+            log.error("Signature verification failed", e);
+            throw new InvalidDataException("Lỗi xác thực chữ ký: " + e.getMessage());
+        }
+    }
+
+    // 🔹 Xử lý khi file hợp lệ và lưu vào database
+    private FileResponse processValidFile(Long repoId, FileRequest fileRequest, MultipartFile file, PublicKey publicKey) {
+        File fileEntity = mapToEntity(repoId, fileRequest, file);
+        fileEntity.setVersion(1);
+        fileEntity.setPublicKey(Base64.getEncoder().encodeToString(publicKey.getEncoded()));
+        fileEntity = fileRepo.save(fileEntity);
+        saveFileHasTag(fileRequest.getTags(), fileEntity);
         Repo repo = repoService.getRepositoryById(repoId);
         // upload file to cloud
         String fileBlobName = uploadFileToCloud(file, repo.getContainerName(), getSasToken(repoId));
         fileEntity.setFileBlobName(fileBlobName);
+        fileEntity.setRepo(repo);
+        return fileMapper.entityToResponse(fileEntity);
+    }
+
+    // Hàm xác minh chữ ký số
+    private boolean verifySignature(byte[] fileBytes, byte[] signature, PublicKey publicKey) {
+        try {
+            Signature sig = Signature.getInstance("SHA256withRSA");
+            sig.initVerify(publicKey);
+            sig.update(fileBytes);
+            return sig.verify(signature);
+        } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
+            log.error(e.getMessage());
+            throw new InvalidDataException(e.getMessage());
+        }
+    }
+
+    // Hàm chuyển đổi Public Key từ chuỗi PEM
+    private PublicKey loadPublicKeyFromPEM(String pem) {
+        try {
+            byte[] keyBytes = Base64.getDecoder().decode(pem);
+            X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+            return KeyFactory.getInstance("RSA").generatePublic(spec);
+        } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
+            log.error(e.getMessage());
+            throw new InvalidDataException(e.getMessage());
+        }
+    }
+
+    private File mapToEntity(Long repoId, FileRequest fileRequest, MultipartFile file) {
+        File fileEntity = fileMapper.requestToEntity(fileRequest);
+        fileEntity.setCheckSum(calculateChecksumHexFromFile(file));
+        fileEntity.setFileSize(file.getSize());
+        fileEntity.setFileType(file.getContentType());
+        Repo repo = repoService.getRepositoryById(repoId);
+        // upload file to cloud
+//        String fileBlobName = uploadFileToCloud(file, repo.getContainerName(), getSasToken(repoId));
+//        fileEntity.setFileBlobName(fileBlobName);
         fileEntity.setRepo(repo);
         RepoMember uploadedBy = getAuthMemberByRepoId(repoId);
         fileEntity.setUploadedBy(uploadedBy);
@@ -186,7 +224,7 @@ public class FileServiceImpl implements IFileService {
 
 
     @Override
-    public String calculateChecksumFromFile(MultipartFile file) {
+    public String calculateChecksumHexFromFile(MultipartFile file) {
         try {
             // Tạo instance của MessageDigest với thuật toán SHA-256
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -217,8 +255,9 @@ public class FileServiceImpl implements IFileService {
         }
     }
 
+
     @Override
-    public String calculateChecksumFromFileByte(byte[] data) {
+    public String calculateChecksumHexFromFileByte(byte[] data) {
         try {
             // Tạo instance của MessageDigest với thuật toán SHA-256
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -238,7 +277,7 @@ public class FileServiceImpl implements IFileService {
     @Override
     public void validateIntegrity(File file) {
         byte[] data = azureStorageService.downloadBlobByteData(file.getRepo().getContainerName(), file.getFileBlobName());
-        String calculatedChecksum = calculateChecksumFromFileByte(data);
+        String calculatedChecksum = calculateChecksumHexFromFileByte(data);
         if (!calculatedChecksum.equals(file.getCheckSum())) {
             log.error("Checksum không trùng khớp, file đã bị chỉnh sửa");
             throw new InvalidDataException("Checksum không khớp! file đã bị chỉnh sửa");
@@ -289,11 +328,35 @@ public class FileServiceImpl implements IFileService {
         String containerName = file.getRepo().getContainerName();
         String fileBlobName = file.getFileBlobName();
         byte[] data = azureStorageService.downloadBlobByteData(containerName, fileBlobName);
+
         return FileDataResponse.builder()
                 .data(data)
                 .fileType(file.getFileType())
                 .fileName(file.getFileName() + file.getFileBlobName().substring(file.getFileBlobName().lastIndexOf('.')))
                 .build();
+    }
+
+    public boolean verifyFileSignature(byte[] data, String signatureBase64, String publicKeyBase64) {
+        try {
+            // Đọc nội dung file
+
+            // Giải mã public key từ Base64
+            byte[] publicKeyBytes = Base64.getDecoder().decode(publicKeyBase64);
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            PublicKey publicKey = keyFactory.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+
+            // Giải mã signature từ Base64
+            byte[] signatureBytes = Base64.getDecoder().decode(signatureBase64);
+
+            // Xác minh chữ ký bằng SHA-256 với RSA
+            Signature signature = Signature.getInstance("SHA256withRSA");
+            signature.initVerify(publicKey);
+            signature.update(data);
+            return signature.verify(signatureBytes);
+        } catch (SignatureException | InvalidKeyException | InvalidKeySpecException |
+                 NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

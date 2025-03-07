@@ -6,7 +6,7 @@ import java.io.InputStream;
 import java.util.Set;
 
 public interface IAzureStorageService {
-    String uploadChunked(InputStream data, String originalFileName, String containerName, String sasToken, long length, int chunkSize);
+    String uploadChunked(InputStream data, String originalFileName, String containerName, String sasToken,long length, int chunkSize);
 
     void createContainerForRepository(String repoName);
 
