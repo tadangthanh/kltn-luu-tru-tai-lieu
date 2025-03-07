@@ -17,10 +17,8 @@ import vn.kltn.dto.response.TokenResponse;
 import vn.kltn.entity.RedisToken;
 import vn.kltn.entity.Role;
 import vn.kltn.entity.User;
-import vn.kltn.entity.UserHasKey;
 import vn.kltn.exception.*;
 import vn.kltn.map.UserMapper;
-import vn.kltn.repository.UserHasKeyRepo;
 import vn.kltn.repository.UserRepo;
 import vn.kltn.service.*;
 
@@ -43,7 +41,7 @@ public class UserServiceImpl implements IUserService {
     private final IJwtService jwtService;
     private final IRoleService roleService;
     private final IUserHasRoleService userHasRoleService;
-    private final UserHasKeyRepo userHasKeyRepo;
+    private final IUserHasKeyService userHasKeyService;
 
 
     @Override
@@ -157,11 +155,7 @@ public class UserServiceImpl implements IUserService {
     }
 
     private TokenResponse getTokenResponse(User user) {
-        return TokenResponse.builder()
-                .accessToken(jwtService.generateAccessToken(user.getId(),
-                        user.getEmail(), user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList())))
-                .refreshToken(jwtService.generateRefreshToken(user.getId(),
-                        user.getEmail(), user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))).build();
+        return TokenResponse.builder().accessToken(jwtService.generateAccessToken(user.getId(), user.getEmail(), user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))).refreshToken(jwtService.generateRefreshToken(user.getId(), user.getEmail(), user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))).build();
     }
 
     @Override
@@ -202,10 +196,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public User savePublicKeyByUserId(Long id, String publicKey) {
         User user = getUserById(id);
-        UserHasKey userHasKey = new UserHasKey();
-        userHasKey.setPublicKey(publicKey);
-        userHasKey.setUser(user);
-        userHasKeyRepo.save(userHasKey);
+        userHasKeyService.savePublicKey(user, publicKey);
         return user;
     }
 
