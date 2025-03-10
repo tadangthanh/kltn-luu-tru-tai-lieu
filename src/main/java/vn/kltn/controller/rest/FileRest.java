@@ -3,6 +3,7 @@ package vn.kltn.controller.rest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -17,6 +18,7 @@ import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
 import vn.kltn.service.IFileService;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -52,9 +54,9 @@ public class FileRest {
         return new ResponseData<>(200, "Update file successfully", fileService.updateFileMetadata(fileId, request));
     }
 
-    @GetMapping
-    public ResponseData<PageResponse<List<FileResponse>>> searchFile(Pageable pageable, @RequestParam(required = false, value = "file") String[] file) {
-        return new ResponseData<>(200, "Search file successfully", fileService.advanceSearchBySpecification(pageable, file));
+    @GetMapping("/repo/{repoId}")
+    public ResponseData<PageResponse<List<FileResponse>>> searchFile(Pageable pageable, @PathVariable Long repoId, @RequestParam(required = false, value = "file") String[] file) {
+        return new ResponseData<>(200, "Search file successfully", fileService.advanceSearchBySpecification(repoId, pageable, file));
     }
 
     @PatchMapping("/{fileId}/restore")
@@ -62,8 +64,14 @@ public class FileRest {
         return new ResponseData<>(201, "Restore file successfully", fileService.restoreFile(fileId));
     }
 
-    @GetMapping("/tag")
-    public ResponseData<PageResponse<List<FileResponse>>> searchByTagName(Pageable pageable, @RequestParam String tagName) {
-        return new ResponseData<>(200, "Search file by tag name successfully", fileService.searchByTagName(pageable, tagName));
+    @GetMapping("/repo/{repoId}/tag")
+    public ResponseData<PageResponse<List<FileResponse>>> searchByTagName(Pageable pageable, @PathVariable Long repoId, @RequestParam String tagName) {
+        return new ResponseData<>(200, "Search file by tag name successfully", fileService.searchByTagName(repoId, tagName, pageable));
+    }
+    @GetMapping("/repo/{repoId}/search-by-date-range")
+    public ResponseData<PageResponse<List<FileResponse>>> searchByStartDateAndEndDate(Pageable pageable, @PathVariable Long repoId,
+                                                                                      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                                                                                      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return new ResponseData<>(200, "Search file by date range successfully", fileService.searchByStartDateAndEndDate(repoId, pageable, startDate, endDate));
     }
 }

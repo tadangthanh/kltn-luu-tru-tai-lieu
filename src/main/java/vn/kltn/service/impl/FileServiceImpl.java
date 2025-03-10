@@ -34,6 +34,7 @@ import java.io.InputStream;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
@@ -310,7 +311,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public PageResponse<List<FileResponse>> advanceSearchBySpecification(Pageable pageable, String[] file) {
+    public PageResponse<List<FileResponse>> advanceSearchBySpecification(Long repoId, Pageable pageable, String[] file) {
         log.info("request get all of word with specification");
         if (file != null && file.length > 0) {
             EntitySpecificationsBuilder<File> builder = new EntitySpecificationsBuilder<>();
@@ -331,6 +332,7 @@ public class FileServiceImpl implements IFileService {
             Specification<File> spec = builder.build();
             // nó trả trả về 1 spec mới
 //            spec=spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
+            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("repo").get("id"), repoId));
             Page<File> filePage = fileRepo.findAll(spec, pageable);
 
             return convertToPageResponse(filePage, pageable);
@@ -352,8 +354,16 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public PageResponse<List<FileResponse>> searchByTagName(Pageable pageable, String tagName) {
-        Page<File> filePage = fileRepo.findByTagName(pageable, tagName.trim());
+    public PageResponse<List<FileResponse>> searchByTagName(Long repoId, String tagName, Pageable pageable) {
+        Page<File> filePage = fileRepo.findByRepoIdAndTagName(repoId, tagName.trim(), pageable);
+        return convertToPageResponse(filePage, pageable);
+    }
+
+    @Override
+    public PageResponse<List<FileResponse>> searchByStartDateAndEndDate(Long repoId, Pageable pageable, LocalDate startDate, LocalDate endDate) {
+        LocalDateTime startOfDay = startDate.atStartOfDay(); // 2025-03-05 00:00:00
+        LocalDateTime endOfDay = endDate.atTime(23, 59, 59); // 2025-03-10 23:59:59
+        Page<File> filePage = fileRepo.findFilesByRepoIdAndUploadDateRange(repoId, startOfDay, endOfDay, pageable);
         return convertToPageResponse(filePage, pageable);
     }
 

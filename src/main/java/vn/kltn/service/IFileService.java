@@ -9,6 +9,7 @@ import vn.kltn.dto.response.FileResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.File;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface IFileService {
@@ -32,12 +33,13 @@ public interface IFileService {
 
     FileDataResponse downloadFile(Long fileId);
 
-    PageResponse<List<FileResponse>> advanceSearchBySpecification(Pageable pageable, String[] file);
+    PageResponse<List<FileResponse>> advanceSearchBySpecification(Long repoId, Pageable pageable, String[] file);
 
     PageResponse<List<FileResponse>> convertToPageResponse(Page<File> filePage, Pageable pageable);
 
-    PageResponse<List<FileResponse>> searchByTagName(Pageable pageable, String tagName);
+    PageResponse<List<FileResponse>> searchByTagName(Long repoId, String tagName, Pageable pageable);
 
+    PageResponse<List<FileResponse>> searchByStartDateAndEndDate(Long repoId, Pageable pageable, LocalDate startDate, LocalDate endDate);
 //    Dùng public key để giải mã chữ ký số, lấy lại giá trị hash ban đầu.
 //    Băm file tải xuống bằng cùng thuật toán (ví dụ: SHA-256) để tạo hash mới.
 //    So sánh hash từ chữ ký với hash mới tính từ file:
