@@ -36,6 +36,8 @@ public interface IFileService {
 
     PageResponse<List<FileResponse>> convertToPageResponse(Page<File> filePage, Pageable pageable);
 
+    PageResponse<List<FileResponse>> searchByTagName(Pageable pageable, String tagName);
+
 //    Dùng public key để giải mã chữ ký số, lấy lại giá trị hash ban đầu.
 //    Băm file tải xuống bằng cùng thuật toán (ví dụ: SHA-256) để tạo hash mới.
 //    So sánh hash từ chữ ký với hash mới tính từ file:

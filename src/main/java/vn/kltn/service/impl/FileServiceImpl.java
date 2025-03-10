@@ -351,5 +351,18 @@ public class FileServiceImpl implements IFileService {
                 .build();
     }
 
+    @Override
+    public PageResponse<List<FileResponse>> searchByTagName(Pageable pageable, String tagName) {
+        List<File> files = fileRepo.findByTagName(tagName.trim());
+        return PageResponse.<List<FileResponse>>builder()
+                .items(files.stream().map(this.fileMapper::entityToResponse).collect(toList()))
+                .totalItems(files.size())
+                .totalPage(1)
+                .hasNext(false)
+                .pageNo(0)
+                .pageSize(files.size())
+                .build();
+    }
+
 
 }

@@ -27,8 +27,7 @@ public class FileRest {
     private final IFileService fileService;
 
     @PostMapping("/repo/{repoId}/upload")
-    public ResponseData<FileResponse> upload(@RequestPart("file") MultipartFile file, @Valid
-    @RequestPart("data") FileRequest request, @PathVariable Long repoId) {
+    public ResponseData<FileResponse> upload(@RequestPart("file") MultipartFile file, @Valid @RequestPart("data") FileRequest request, @PathVariable Long repoId) {
         return new ResponseData<>(201, "Upload file successfully", fileService.uploadFile(repoId, request, file));
     }
 
@@ -43,12 +42,8 @@ public class FileRest {
         FileDataResponse fileDataResponse = fileService.downloadFile(fileId);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(fileDataResponse.getFileType())); // Kiểu file chung
-        headers.setContentDisposition(ContentDisposition.attachment()
-                .filename(fileDataResponse.getFileName())
-                .build());
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(fileDataResponse.getData());
+        headers.setContentDisposition(ContentDisposition.attachment().filename(fileDataResponse.getFileName()).build());
+        return ResponseEntity.ok().headers(headers).body(fileDataResponse.getData());
     }
 
 
@@ -65,5 +60,10 @@ public class FileRest {
     @PatchMapping("/{fileId}/restore")
     public ResponseData<FileResponse> restore(@PathVariable Long fileId) {
         return new ResponseData<>(201, "Restore file successfully", fileService.restoreFile(fileId));
+    }
+
+    @GetMapping("/tag")
+    public ResponseData<PageResponse<List<FileResponse>>> searchByTagName(Pageable pageable, @RequestParam String tagName) {
+        return new ResponseData<>(200, "Search file by tag name successfully", fileService.searchByTagName(pageable, tagName));
     }
 }
