@@ -68,6 +68,7 @@ public class FileRest {
     public ResponseData<PageResponse<List<FileResponse>>> searchByTagName(Pageable pageable, @PathVariable Long repoId, @RequestParam String tagName) {
         return new ResponseData<>(200, "Search file by tag name successfully", fileService.searchByTagName(repoId, tagName, pageable));
     }
+
     @GetMapping("/repo/{repoId}/search-by-date-range")
     public ResponseData<PageResponse<List<FileResponse>>> searchByStartDateAndEndDate(Pageable pageable, @PathVariable Long repoId,
                                                                                       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,

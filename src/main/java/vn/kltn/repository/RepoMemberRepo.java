@@ -21,6 +21,7 @@ public interface RepoMemberRepo extends JpaRepository<RepoMember, Long> {
     @Query("select rm from RepoMember rm where rm.user.id = ?1 and rm.repo.id = ?2")
     Optional<RepoMember> findRepoMemberByUserIdAndRepoId(Long userId, Long repoId);
 
+
     @Query("select rm from RepoMember rm where rm.repo.id = ?1")
     Set<RepoMember> findAllByRepoId(Long repoId);
 

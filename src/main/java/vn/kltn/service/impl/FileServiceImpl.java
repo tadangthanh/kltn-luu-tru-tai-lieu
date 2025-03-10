@@ -240,14 +240,42 @@ public class FileServiceImpl implements IFileService {
     @ValidatePermissionMember(RepoPermission.DELETE)
     public void deleteFile(Long fileId) {
         File file = getFileById(fileId);
+        if (file.getDeletedAt() != null) {
+            return;
+        }
         file.setDeletedAt(LocalDateTime.now());
+        Repo repo = file.getRepo();
+        file.setDeletedBy(getAuthRepoMemberWithRepoId(repo.getId()));
+    }
+
+    private RepoMember getAuthRepoMemberWithRepoId(Long repoId) {
+        User authUser = authenticationService.getAuthUser();
+        return repoService.getRepoMemberByUserIdAndRepoId(authUser.getId(), repoId);
     }
 
     @Override
     public FileResponse restoreFile(Long fileId) {
         File file = getFileById(fileId);
+        validatePermissionRestoreFile(file);
         file.setDeletedAt(null);
+        file.setDeletedBy(null);
         return fileMapper.entityToResponse(file);
+    }
+
+    private void validatePermissionRestoreFile(File file) {
+        Repo repo = file.getRepo();
+        if (file.getDeletedAt() == null) {
+            throw new InvalidDataException("File chưa bị xóa");
+        }
+        User authUser = authenticationService.getAuthUser();
+        User owner = repo.getOwner();
+        if (authUser.getId().equals(owner.getId())) {
+            return;
+        }
+        RepoMember repoMember = getAuthRepoMemberWithRepoId(repo.getId());
+        if (!repoMember.getId().equals(file.getDeletedBy().getId())) {
+            throw new InvalidDataException("Không có quyền khôi phục file");
+        }
     }
 
     @Override
@@ -282,11 +310,7 @@ public class FileServiceImpl implements IFileService {
         byte[] data = azureStorageService.downloadBlobByteData(containerName, fileBlobName);
         // Xác minh chữ ký số
         verifyFileSignature(data, file.getSignature(), file.getPublicKey());
-        return FileDataResponse.builder()
-                .data(data)
-                .fileType(file.getFileType())
-                .fileName(file.getFileName() + file.getFileBlobName().substring(file.getFileBlobName().lastIndexOf('.')))
-                .build();
+        return FileDataResponse.builder().data(data).fileType(file.getFileType()).fileName(file.getFileName() + file.getFileBlobName().substring(file.getFileBlobName().lastIndexOf('.'))).build();
     }
 
     public boolean verifyFileSignature(byte[] data, String signatureBase64, String publicKeyBase64) {
@@ -304,8 +328,7 @@ public class FileServiceImpl implements IFileService {
             signature.initVerify(publicKey);
             signature.update(data);
             return signature.verify(signatureBytes);
-        } catch (SignatureException | InvalidKeyException | InvalidKeySpecException |
-                 NoSuchAlgorithmException e) {
+        } catch (SignatureException | InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException e) {
             throw new InvalidDataException("Lỗi xác thực chữ ký: " + e.getMessage());
         }
     }
@@ -331,7 +354,7 @@ public class FileServiceImpl implements IFileService {
             }
             Specification<File> spec = builder.build();
             // nó trả trả về 1 spec mới
-            spec=spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
+            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
             spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("repo").get("id"), repoId));
             Page<File> filePage = fileRepo.findAll(spec, pageable);
 
@@ -343,14 +366,7 @@ public class FileServiceImpl implements IFileService {
     @Override
     public PageResponse<List<FileResponse>> convertToPageResponse(Page<File> filePage, Pageable pageable) {
         List<FileResponse> response = filePage.stream().map(this.fileMapper::entityToResponse).collect(toList());
-        return PageResponse.<List<FileResponse>>builder()
-                .items(response)
-                .totalItems(filePage.getTotalElements())
-                .totalPage(filePage.getTotalPages())
-                .hasNext(filePage.hasNext())
-                .pageNo(pageable.getPageNumber())
-                .pageSize(pageable.getPageSize())
-                .build();
+        return PageResponse.<List<FileResponse>>builder().items(response).totalItems(filePage.getTotalElements()).totalPage(filePage.getTotalPages()).hasNext(filePage.hasNext()).pageNo(pageable.getPageNumber()).pageSize(pageable.getPageSize()).build();
     }
 
     @Override

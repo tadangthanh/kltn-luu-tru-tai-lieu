@@ -34,8 +34,9 @@ public interface IRepoService {
 
     Repo getRepositoryById(Long id);
 
+
     RepoMember getRepoMemberById(Long repoMemberId);
 
-    boolean hasPermission(Long repoId, Long userId,RepoPermission permission);
+    boolean hasPermission(Long repoId, Long userId, RepoPermission permission);
 
 }

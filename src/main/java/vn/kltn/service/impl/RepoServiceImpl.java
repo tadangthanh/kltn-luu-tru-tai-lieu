@@ -243,6 +243,7 @@ public class RepoServiceImpl implements IRepoService {
         });
     }
 
+
     private void saveMember(Repo repo, User user, Set<RepoPermission> permissions) {
         RepoMember repoMember = new RepoMember();
         repoMember.setUser(user);
