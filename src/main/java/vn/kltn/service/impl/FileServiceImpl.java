@@ -331,7 +331,7 @@ public class FileServiceImpl implements IFileService {
             }
             Specification<File> spec = builder.build();
             // nó trả trả về 1 spec mới
-//            spec=spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
+            spec=spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
             spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("repo").get("id"), repoId));
             Page<File> filePage = fileRepo.findAll(spec, pageable);
 
@@ -355,7 +355,7 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     public PageResponse<List<FileResponse>> searchByTagName(Long repoId, String tagName, Pageable pageable) {
-        Page<File> filePage = fileRepo.findByRepoIdAndTagName(repoId, tagName.trim(), pageable);
+        Page<File> filePage = fileRepo.findActiveFilesByRepoIdAndTagName(repoId, tagName.trim(), pageable);
         return convertToPageResponse(filePage, pageable);
     }
 
@@ -363,7 +363,7 @@ public class FileServiceImpl implements IFileService {
     public PageResponse<List<FileResponse>> searchByStartDateAndEndDate(Long repoId, Pageable pageable, LocalDate startDate, LocalDate endDate) {
         LocalDateTime startOfDay = startDate.atStartOfDay(); // 2025-03-05 00:00:00
         LocalDateTime endOfDay = endDate.atTime(23, 59, 59); // 2025-03-10 23:59:59
-        Page<File> filePage = fileRepo.findFilesByRepoIdAndUploadDateRange(repoId, startOfDay, endOfDay, pageable);
+        Page<File> filePage = fileRepo.findActiveFilesByRepoIdAndUploadDateRange(repoId, startOfDay, endOfDay, pageable);
         return convertToPageResponse(filePage, pageable);
     }
 

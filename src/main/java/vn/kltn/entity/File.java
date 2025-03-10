@@ -32,6 +32,9 @@ public class File extends BaseEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
     @ManyToOne
+    @JoinColumn(name = "deleted_by")
+    private RepoMember deletedBy;
+    @ManyToOne
     @JoinColumn(name = "uploaded_by")
     private RepoMember uploadedBy;
     @OneToMany(mappedBy = "file", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)

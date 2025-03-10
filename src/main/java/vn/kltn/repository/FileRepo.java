@@ -13,13 +13,13 @@ import java.time.LocalDateTime;
 
 @Repository
 public interface FileRepo extends JpaRepository<File, Long>, JpaSpecificationExecutor<File> {
-    @Query("select f from File f join f.tags t where lower(t.tag.name) = lower(?2) and f.repo.id=?1")
-    Page<File> findByRepoIdAndTagName(Long repoId, String tagName, Pageable pageable);
+    @Query("select f from File f join f.tags t where lower(t.tag.name) = lower(?2) and f.repo.id=?1 and f.deletedAt is null")
+    Page<File> findActiveFilesByRepoIdAndTagName(Long repoId, String tagName, Pageable pageable);
 
-    @Query("SELECT f FROM File f WHERE f.repo.id = :repoId AND f.createdAt BETWEEN :startOfDay AND :endOfDay")
-    Page<File> findFilesByRepoIdAndUploadDateRange(@Param("repoId") Long repoId,
-                                                   @Param("startOfDay") LocalDateTime startOfDay,
-                                                   @Param("endOfDay") LocalDateTime endOfDay,
-                                                   Pageable pageable);
+    @Query("SELECT f FROM File f WHERE f.deletedAt is null and f.repo.id = :repoId AND f.createdAt BETWEEN :startOfDay AND :endOfDay")
+    Page<File> findActiveFilesByRepoIdAndUploadDateRange(@Param("repoId") Long repoId,
+                                                         @Param("startOfDay") LocalDateTime startOfDay,
+                                                         @Param("endOfDay") LocalDateTime endOfDay,
+                                                         Pageable pageable);
 
 }
