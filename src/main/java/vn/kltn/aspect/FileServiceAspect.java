@@ -67,7 +67,7 @@ public class FileServiceAspect {
 
         // Kiểm tra quyền
         if (!repoService.hasPermission(repoId, authUser.getId(), requiredPermission)) {
-            throw new AccessDeniedException("Bạn không có quyền thực hiện hành động này: " + requiredPermission);
+            throw new AccessDeniedException("Bạn không có quyền thực hiện hành động này");
         }
     }
 }

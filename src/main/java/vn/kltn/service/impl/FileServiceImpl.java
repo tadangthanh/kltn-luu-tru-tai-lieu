@@ -140,7 +140,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     private RepoMember getRepoMemberByUserIdAndRepoIdOrThrow(Long userId, Long repoId) {
-        return repoMemberRepo.findRepoMemberByUserIdAndRepoId(userId, repoId).orElseThrow(() -> {
+        return repoMemberRepo.findRepoActiveMemberByUserIdAndRepoId(userId, repoId).orElseThrow(() -> {
             log.error("Không tìm thấy repo member với user id: {} và repo id: {}", userId, repoId);
             return new RuntimeException("Không tìm thấy repo member với user id: " + userId + " và repo id: " + repoId);
         });
@@ -250,7 +250,7 @@ public class FileServiceImpl implements IFileService {
 
     private RepoMember getAuthRepoMemberWithRepoId(Long repoId) {
         User authUser = authenticationService.getAuthUser();
-        return repoService.getRepoMemberByUserIdAndRepoId(authUser.getId(), repoId);
+        return repoService.getRepoMemberActiveByUserIdAndRepoId(authUser.getId(), repoId);
     }
 
     @Override
@@ -272,6 +272,7 @@ public class FileServiceImpl implements IFileService {
         if (authUser.getId().equals(owner.getId())) {
             return;
         }
+        // chi co nguoi xoa hoac admin moi co quyen restore file
         RepoMember repoMember = getAuthRepoMemberWithRepoId(repo.getId());
         if (!repoMember.getId().equals(file.getDeletedBy().getId())) {
             throw new InvalidDataException("Không có quyền khôi phục file");

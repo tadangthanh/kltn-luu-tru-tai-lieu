@@ -30,7 +30,7 @@ public interface IRepoService {
 
     Set<RepoPermission> getPermissionMemberAuthByRepoId(Long repoId);
 
-    RepoMember getRepoMemberByUserIdAndRepoId(Long userId, Long repoId);
+    RepoMember getRepoMemberActiveByUserIdAndRepoId(Long userId, Long repoId);
 
     Repo getRepositoryById(Long id);
 
