@@ -1,0 +1,170 @@
+package vn.kltn.service.impl;
+
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import vn.kltn.common.MemberStatus;
+import vn.kltn.common.RepoPermission;
+import vn.kltn.dto.response.PageResponse;
+import vn.kltn.dto.response.RepoMemberInfoResponse;
+import vn.kltn.entity.Repo;
+import vn.kltn.entity.RepoMember;
+import vn.kltn.entity.User;
+import vn.kltn.exception.ResourceNotFoundException;
+import vn.kltn.map.RepoMemberMapper;
+import vn.kltn.repository.RepoMemberRepo;
+import vn.kltn.repository.util.PaginationUtils;
+import vn.kltn.service.IAuthenticationService;
+import vn.kltn.service.IAzureStorageService;
+import vn.kltn.service.IRepoMemberService;
+import vn.kltn.service.IRepoService;
+import vn.kltn.util.SasTokenValidator;
+
+import java.util.List;
+import java.util.Set;
+
+@Service
+@Transactional
+@Slf4j(topic = "REPO_MEMBER_SERVICE")
+@RequiredArgsConstructor
+public class RepoMemberServiceImpl implements IRepoMemberService {
+    private final RepoMemberRepo repoMemberRepo;
+    private final RepoMemberMapper repoMemberMapper;
+    private final IAzureStorageService azureStorageService;
+    private final IAuthenticationService authenticationService;
+    private final RepoHelperService repoHelperService;
+
+    @Override
+    public RepoMember getMemberById(Long repoMemberId) {
+        return repoMemberRepo.findById(repoMemberId).orElseThrow(() -> {
+            log.error("Không tìm thấy thành viên, id: {}", repoMemberId);
+            return new ResourceNotFoundException("Không tìm thấy thành viên: " + repoMemberId);
+        });
+    }
+
+    @Override
+    public RepoMember getAuthMemberWithRepoId(Long repoId) {
+        User authUser = authenticationService.getAuthUser();
+        return repoMemberRepo.getMemberActiveByRepoIdAndUserId(repoId, authUser.getId()).orElseThrow(() -> {
+            log.error("Không tìm thấy thành viên active, userId: {}, trong repo repoId: {}", authUser.getId(), repoId);
+            return new ResourceNotFoundException("Không tìm thấy thành viên: " + authUser.getId() + " trong repo: " + repoId);
+        });
+    }
+
+    @Override
+    public RepoMember getMemberActiveByRepoIdAndUserId(Long repoId, Long userId) {
+        return repoMemberRepo.findRepoMemberActiveByRepoIdAndUserId(repoId, userId).orElseThrow(() -> {
+            log.error("Không tìm thấy thành viên active, userId: {}, trong repo repoId: {}", userId, repoId);
+            return new ResourceNotFoundException("Không tìm thấy thành viên: " + userId + " trong repo: " + repoId);
+        });
+    }
+
+    @Override
+    public RepoMember getMemberByRepoIdAndUserId(Long repoId, Long userId) {
+        return repoMemberRepo.findRepoMemberByRepoIdAndUserId(repoId, userId).orElseThrow(() -> {
+            log.error("Không tìm thấy thành viên active, userId: {}, trong repo repoId: {}", userId, repoId);
+            return new ResourceNotFoundException("Không tìm thấy thành viên: " + userId + " trong repo: " + repoId);
+        });
+    }
+
+    @Override
+    public PageResponse<List<RepoMemberInfoResponse>> getListMemberByRepoId(Long repoId, Pageable pageable) {
+        Page<RepoMember> repoMemberPage = repoMemberRepo.findAllByRepoId(repoId, pageable);
+        return PaginationUtils.convertToPageResponse(repoMemberPage, pageable, repoMemberMapper::toRepoMemberInfoResponse);
+    }
+
+    @Override
+    public boolean isExistMemberActiveByRepoIdAndUserId(Long repoId, Long userId) {
+        return repoMemberRepo.isExistMemberActiveByRepoIdAndUserId(repoId, userId);
+    }
+
+    @Override
+    public RepoMember saveMemberRepoWithPermission(Repo repo, User user, Set<RepoPermission> permissions) {
+        RepoMember repoMember = new RepoMember();
+        repoMember.setUser(user);
+        repoMember.setRepo(repo);
+        repoMember.setPermissions(permissions);
+        MemberStatus status = getMemberStatus(repo, user);
+        repoMember.setStatus(status);
+        if (status.equals(MemberStatus.ACCEPTED)) {
+            repoMember.setSasToken(getSasToken(repo, permissions));
+        }
+        return repoMemberRepo.save(repoMember);
+    }
+
+    @Override
+    public int countMemberActiveByRepoId(Long repoId) {
+        return repoMemberRepo.countMemberActiveByRepoId(repoId);
+    }
+
+    @Override
+    public int countMemberByRepoId(Long repoId) {
+        return repoMemberRepo.countRepoMemberByRepoId(repoId);
+    }
+
+    @Override
+    public RepoMember updateMemberPermissions(RepoMember repoMember, Set<RepoPermission> requestedPermissions, String containerName) {
+        String sasToken = generateSasTokenForMember(containerName, requestedPermissions);
+        repoMember.setPermissions(requestedPermissions);
+        repoMember.setSasToken(sasToken);
+        return repoMemberRepo.save(repoMember);
+    }
+
+    @Override
+    public void deleteMemberById(Long memberId) {
+        repoMemberRepo.deleteById(memberId);
+    }
+
+    @Override
+    public Page<RepoMember> findAllByRepoId(Long repoId, Pageable pageable) {
+        return repoMemberRepo.findAllByRepoId(repoId, pageable);
+    }
+
+    @Override
+    public RepoMember updateSasTokenByRepoIdAndUserId(Long repoId, Long userId) {
+        RepoMember repoMember = getMemberByRepoIdAndUserId(repoId, userId);
+        Repo repo = repoHelperService.getRepositoryById(repoId);
+        String newSasToken = azureStorageService.generatePermissionRepo(repo.getContainerName(), repoMember.getPermissions());
+        repoMember.setSasToken(newSasToken);
+        return repoMemberRepo.save(repoMember);
+    }
+
+    @Override
+    public String getSasToken(Long repoId) {
+        User authUser = authenticationService.getAuthUser();
+        Repo repo = repoHelperService.getRepositoryById(repoId);
+        if (repo.getOwner().getId().equals(authUser.getId())) {
+            return azureStorageService.generatePermissionRepo(repo.getContainerName(), Set.of(RepoPermission.values()));
+        }
+        RepoMember repoMember = getMemberActiveByRepoIdAndUserId(repoId, authUser.getId());
+        String sasToken = repoMember.getSasToken();
+        if (!SasTokenValidator.isSasTokenValid(sasToken)) {
+            repoMember = updateSasTokenByRepoIdAndUserId(repoId, authUser.getId());
+        }
+        return repoMember.getSasToken();
+    }
+
+
+    private String generateSasTokenForMember(String containerName, Set<RepoPermission> permissions) {
+        return azureStorageService.generatePermissionRepo(containerName, permissions);
+    }
+
+    private String getSasToken(Repo repo, Set<RepoPermission> permissions) {
+        return azureStorageService.generatePermissionRepo(repo.getContainerName(), permissions);
+    }
+
+    private boolean isOwnerRepo(Repo repo, User user) {
+        return repo.getOwner().getId().equals(user.getId());
+    }
+
+    private MemberStatus getMemberStatus(Repo repo, User user) {
+        // neu member la chu so huu thi luon la accepted
+        if (isOwnerRepo(repo, user)) {
+            return MemberStatus.ACCEPTED;
+        }
+        return MemberStatus.PENDING;
+    }
+}

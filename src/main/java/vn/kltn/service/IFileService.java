@@ -35,7 +35,7 @@ public interface IFileService {
 
     PageResponse<List<FileResponse>> advanceSearchBySpecification(Long repoId, Pageable pageable, String[] file);
 
-    PageResponse<List<FileResponse>> convertToPageResponse(Page<File> filePage, Pageable pageable);
+//    PageResponse<List<FileResponse>> convertToPageResponse(Page<File> filePage, Pageable pageable);
 
     PageResponse<List<FileResponse>> searchByTagName(Long repoId, String tagName, Pageable pageable);
 

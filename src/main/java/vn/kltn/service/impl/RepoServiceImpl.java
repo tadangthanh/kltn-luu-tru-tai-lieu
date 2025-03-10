@@ -9,7 +9,6 @@ import vn.kltn.common.MemberStatus;
 import vn.kltn.common.RepoPermission;
 import vn.kltn.common.TokenType;
 import vn.kltn.dto.request.RepoRequestDto;
-import vn.kltn.dto.response.RepoMemberInfoResponse;
 import vn.kltn.dto.response.RepoResponseDto;
 import vn.kltn.entity.Repo;
 import vn.kltn.entity.RepoMember;
@@ -18,8 +17,6 @@ import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.RepoMapper;
-import vn.kltn.map.RepoMemberMapper;
-import vn.kltn.repository.RepoMemberRepo;
 import vn.kltn.repository.RepositoryRepo;
 import vn.kltn.service.*;
 import vn.kltn.validation.RequireOwner;
@@ -27,7 +24,6 @@ import vn.kltn.validation.RequireOwner;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j(topic = "REPOSITORY_SERVICE")
@@ -43,13 +39,12 @@ public class RepoServiceImpl implements IRepoService {
     private final RepoMapper repoMapper;
     private final RepositoryRepo repositoryRepo;
     private final IUserService userService;
-    private final RepoMemberRepo repoMemberRepo;
     private final IJwtService jwtService;
     @Value("${jwt.expirationDayInvitation}")
     private long expiryDayInvitation;
     private final IAuthenticationService authenticationService;
-    private final RepoMemberMapper repoMemberMapper;
     private final IRepoActivityService repoActivityService;
+    private final IRepoMemberService repoMemberService;
 
     @Override
     public RepoResponseDto createRepository(RepoRequestDto repoRequestDto) {
@@ -106,25 +101,24 @@ public class RepoServiceImpl implements IRepoService {
         // chi co chu so huu moi co quyen them thanh vien
         Repo repo = getRepositoryById(repoId);
         // validate thanh vien se them da ton tai hay chua
-        validateMemberNotExists(userId, repoId);
+        if (repoMemberService.isExistMemberActiveByRepoIdAndUserId(repoId, userId)) {
+            log.error("Thành viên đã tồn tại, userId: {}, repoId: {}", userId, repoId);
+            throw new ConflictResourceException("Người dùng này đã là thành viên");
+        }
         //validate so luong gioi han member cua repo
-        validateMemberCount(repo);
+        if (repoMemberService.countMemberByRepoId(repoId) >= maxMembers) {
+            log.error("Repo đã đủ thành viên, không thể thêm");
+            throw new ConflictResourceException("Repo đã đủ thành viên, không thể thêm");
+        }
         User memberAdd = userService.getUserById(userId);
         // save vao database
-        saveMember(repo, memberAdd, permissionRequest);
+        repoMemberService.saveMemberRepoWithPermission(repo, memberAdd, permissionRequest);
         RepoResponseDto repoResponseDto = convertRepositoryToResponse(repo);
         // neu thanh vien them vao khong phai la chu so huu thi gui email moi
         if (!repo.getOwner().getId().equals(userId)) {
             sendInvitationEmail(memberAdd, repoResponseDto);
         }
         return repoResponseDto;
-    }
-
-    private void validateMemberCount(Repo repo) {
-        if (repoMemberRepo.countRepoMemberByRepoId(repo.getId()) >= maxMembers) {
-            log.error("Số lượng thành viên vượt quá giới hạn, repoId: {}", repo.getId());
-            throw new InvalidDataException("Số lượng thành viên vượt quá giới hạn");
-        }
     }
 
     private void sendInvitationEmail(User memberAdd, RepoResponseDto repo) {
@@ -135,7 +129,7 @@ public class RepoServiceImpl implements IRepoService {
     @Override
     @RequireOwner
     public void removeMemberFromRepository(Long repoId, Long memberId) {
-        RepoMember repoMember = getRepoMemberById(memberId);
+        RepoMember repoMember = repoMemberService.getMemberById(memberId);
         validateSelfMember(repoMember);
         repoMember.setStatus(MemberStatus.REMOVED);
     }
@@ -153,20 +147,9 @@ public class RepoServiceImpl implements IRepoService {
     @RequireOwner
     public RepoResponseDto updatePermissionMember(Long repoId, Long memberId, Set<RepoPermission> requestedPermissions) {
         Repo repo = getRepositoryById(repoId);
-        RepoMember repoMember = getRepoMemberById(memberId);
-        updateMemberPermissions(repoMember, requestedPermissions, repo.getContainerName());
+        RepoMember repoMember = repoMemberService.getMemberById(memberId);
+        repoMemberService.updateMemberPermissions(repoMember, requestedPermissions, repo.getContainerName());
         return convertRepositoryToResponse(repo);
-    }
-
-    private void updateMemberPermissions(RepoMember repoMember, Set<RepoPermission> requestedPermissions, String containerName) {
-        String sasToken = generateSasTokenForMember(containerName, requestedPermissions);
-        repoMember.setPermissions(requestedPermissions);
-        repoMember.setSasToken(sasToken);
-        repoMemberRepo.save(repoMember);
-    }
-
-    private String generateSasTokenForMember(String containerName, Set<RepoPermission> permissions) {
-        return azureStorageService.generatePermissionRepo(containerName, permissions);
     }
 
     @Override
@@ -174,10 +157,11 @@ public class RepoServiceImpl implements IRepoService {
         // trich xuat email cua thanh vien tu token
         String emailMemberAdd = jwtService.extractEmail(token, TokenType.INVITATION_TOKEN);
         User memberAdd = userService.getUserByEmail(emailMemberAdd);
-        RepoMember repoMember = getRepoMemberActiveByUserIdAndRepoId(memberAdd.getId(), repoId);
+        RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, memberAdd.getId());
         if (repoMember.getStatus().equals(MemberStatus.PENDING)) {
             repoMember.setStatus(MemberStatus.ACCEPTED);
             updatePermissionMember(repoId, repoMember.getId(), repoMember.getPermissions());
+            log.info("Chấp nhận lời mời thành công user id{}: ", memberAdd.getId());
             return convertRepositoryToResponse(repoMember.getRepo());
         }
         log.error("Không thể chấp nhận lời mời");
@@ -188,20 +172,15 @@ public class RepoServiceImpl implements IRepoService {
     @Override
     public RepoResponseDto rejectInvitation(Long repoId, String email) {
         User userMember = userService.getUserByEmail(email);
-        RepoMember repoMember = getRepoMemberActiveByUserIdAndRepoId(userMember.getId(), repoId);
+        RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, userMember.getId());
         if (repoMember.getStatus().equals(MemberStatus.PENDING)) {
-            repoMemberRepo.delete(repoMember);
+            repoMemberService.deleteMemberById(repoMember.getId());
             return convertRepositoryToResponse(repoMember.getRepo());
         }
         log.error("Dữ liệu không hợp lệ");
         throw new InvalidDataException("Dữ liệu không hợp lệ");
     }
 
-    @Override
-    public Set<RepoMemberInfoResponse> getListMember(Long repoId) {
-        Set<RepoMember> members = repoMemberRepo.findAllByRepoId(repoId);
-        return members.stream().map(repoMemberMapper::toRepoMemberInfoResponse).collect(Collectors.toSet());
-    }
 
     @Override
     @RequireOwner
@@ -212,27 +191,12 @@ public class RepoServiceImpl implements IRepoService {
         return convertRepositoryToResponse(repo);
     }
 
-    @Override
-    public Set<RepoPermission> getPermissionMemberAuthByRepoId(Long repoId) {
-        User userAuth = authenticationService.getAuthUser();
-        RepoMember repoMember = getRepoMemberActiveByUserIdAndRepoId(userAuth.getId(), repoId);
-        return repoMember.getPermissions();
-    }
-
-    @Override
-    public RepoMember getRepoMemberById(Long memberId) {
-        return repoMemberRepo.findById(memberId).orElseThrow(() -> {
-            log.error("Không tìm thấy thành viên, id: {}", memberId);
-            return new ResourceNotFoundException("Không tìm thấy thành viên: " + memberId);
-        });
-    }
 
     @Override
     public boolean hasPermission(Long repoId, Long userId, RepoPermission permission) {
-        RepoMember repoMember = getRepoMemberActiveByUserIdAndRepoId(userId, repoId);
+        RepoMember repoMember = repoMemberService.getMemberActiveByRepoIdAndUserId(repoId, userId);
         return repoMember.getPermissions().contains(permission);
     }
-
 
 
     @Override
@@ -243,59 +207,9 @@ public class RepoServiceImpl implements IRepoService {
         });
     }
 
-
-    private void saveMember(Repo repo, User user, Set<RepoPermission> permissions) {
-        RepoMember repoMember = new RepoMember();
-        repoMember.setUser(user);
-        repoMember.setRepo(repo);
-        repoMember.setPermissions(permissions);
-        MemberStatus status = getMemberStatus(repo, user);
-        repoMember.setStatus(status);
-        if (status.equals(MemberStatus.ACCEPTED)) {
-            repoMember.setSasToken(getSasToken(repo, permissions));
-        }
-        repoMemberRepo.save(repoMember);
-    }
-
-    private boolean isOwner(Repo repo, User user) {
-        return repo.getOwner().getId().equals(user.getId());
-    }
-
-    private String getSasToken(Repo repo, Set<RepoPermission> permissions) {
-        return azureStorageService.generatePermissionRepo(repo.getContainerName(), permissions);
-    }
-
-    private MemberStatus getMemberStatus(Repo repo, User user) {
-        // neu member la chu so huu thi luon la accepted
-        if (isOwner(repo, user)) {
-            return MemberStatus.ACCEPTED;
-        }
-        return MemberStatus.PENDING;
-    }
-
-
-    /**
-     * @param userId : id của user sẽ thêm vào repository
-     * @param repoId : id của repository mà user sẽ tham gia
-     */
-    private void validateMemberNotExists(Long userId, Long repoId) {
-        repoMemberRepo.findRepoActiveMemberByUserIdAndRepoId(userId, repoId).ifPresent(repoMember -> {
-            log.error("Thành viên đã tồn tại, userId: {}, repoId: {}", userId, repoId);
-            throw new ConflictResourceException("Người dùng này đã là thành viên");
-        });
-    }
-
-    @Override
-    public RepoMember getRepoMemberActiveByUserIdAndRepoId(Long userId, Long repoId) {
-        return repoMemberRepo.findRepoActiveMemberByUserIdAndRepoId(userId, repoId).orElseThrow(() -> {
-            log.error("Không tìm thấy thành viên, userId: {}, repoId: {}", userId, repoId);
-            return new ResourceNotFoundException("Không tìm thấy thành viên: " + userId);
-        });
-    }
-
     private RepoResponseDto convertRepositoryToResponse(Repo repo) {
         RepoResponseDto repoResponseDto = repoMapper.entityToResponse(repo);
-        repoResponseDto.setMemberCount(repoMemberRepo.countRepoMemberByRepoId(repo.getId()));
+        repoResponseDto.setMemberCount(repoMemberService.countMemberByRepoId(repo.getId()));
         return repoResponseDto;
     }
 

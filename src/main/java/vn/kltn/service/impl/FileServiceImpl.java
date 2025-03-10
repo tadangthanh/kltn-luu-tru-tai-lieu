@@ -25,6 +25,7 @@ import vn.kltn.repository.FileRepo;
 import vn.kltn.repository.RepoMemberRepo;
 import vn.kltn.repository.TagRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
+import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
 import vn.kltn.util.SasTokenValidator;
 import vn.kltn.validation.ValidatePermissionMember;
@@ -42,8 +43,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static java.util.stream.Collectors.toList;
-
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -59,6 +58,7 @@ public class FileServiceImpl implements IFileService {
     private final TagMapper tagMapper;
     private final IRepoService repoService;
     private final IUserHasKeyService userHasKeyService;
+    private final IRepoMemberService repoMemberService;
 
 
     @Override
@@ -106,7 +106,7 @@ public class FileServiceImpl implements IFileService {
         fileEntity.setFileType(file.getContentType());
         Repo repo = repoService.getRepositoryById(repoId);
         fileEntity.setRepo(repo);
-        RepoMember uploadedBy = getAuthMemberByRepoId(repoId);
+        RepoMember uploadedBy = repoMemberService.getAuthMemberWithRepoId(repoId);
         fileEntity.setUploadedBy(uploadedBy);
         return fileEntity;
     }
@@ -118,7 +118,7 @@ public class FileServiceImpl implements IFileService {
         if (repo.getOwner().getId().equals(authUser.getId())) {
             return azureStorageService.generatePermissionRepo(repo.getContainerName(), Set.of(RepoPermission.values()));
         }
-        RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(authUser.getId(), repoId);
+        RepoMember repoMember = repoMemberService.getMemberActiveByRepoIdAndUserId(repoId, authUser.getId());
         String sasToken = repoMember.getSasToken();
         if (!SasTokenValidator.isSasTokenValid(sasToken)) {
             repoMember = updateSasTokenMember(repoId, authUser.getId());
@@ -127,23 +127,11 @@ public class FileServiceImpl implements IFileService {
     }
 
     private RepoMember updateSasTokenMember(Long repoId, Long userId) {
-        RepoMember repoMember = getRepoMemberByUserIdAndRepoIdOrThrow(userId, repoId);
+        RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, userId);
         Repo repo = repoService.getRepositoryById(repoId);
         String newSasToken = azureStorageService.generatePermissionRepo(repo.getContainerName(), repoMember.getPermissions());
         repoMember.setSasToken(newSasToken);
         return repoMemberRepo.save(repoMember);
-    }
-
-    private RepoMember getAuthMemberByRepoId(Long repoId) {
-        User authUser = authenticationService.getAuthUser();
-        return getRepoMemberByUserIdAndRepoIdOrThrow(authUser.getId(), repoId);
-    }
-
-    private RepoMember getRepoMemberByUserIdAndRepoIdOrThrow(Long userId, Long repoId) {
-        return repoMemberRepo.findRepoActiveMemberByUserIdAndRepoId(userId, repoId).orElseThrow(() -> {
-            log.error("Không tìm thấy repo member với user id: {} và repo id: {}", userId, repoId);
-            return new RuntimeException("Không tìm thấy repo member với user id: " + userId + " và repo id: " + repoId);
-        });
     }
 
     private String uploadFileToCloud(MultipartFile file, String containerName, String sasToken) {
@@ -245,13 +233,9 @@ public class FileServiceImpl implements IFileService {
         }
         file.setDeletedAt(LocalDateTime.now());
         Repo repo = file.getRepo();
-        file.setDeletedBy(getAuthRepoMemberWithRepoId(repo.getId()));
+        file.setDeletedBy(repoMemberService.getAuthMemberWithRepoId(repo.getId()));
     }
 
-    private RepoMember getAuthRepoMemberWithRepoId(Long repoId) {
-        User authUser = authenticationService.getAuthUser();
-        return repoService.getRepoMemberActiveByUserIdAndRepoId(authUser.getId(), repoId);
-    }
 
     @Override
     public FileResponse restoreFile(Long fileId) {
@@ -273,13 +257,14 @@ public class FileServiceImpl implements IFileService {
             return;
         }
         // chi co nguoi xoa hoac admin moi co quyen restore file
-        RepoMember repoMember = getAuthRepoMemberWithRepoId(repo.getId());
+        RepoMember repoMember = repoMemberService.getAuthMemberWithRepoId(repo.getId());
         if (!repoMember.getId().equals(file.getDeletedBy().getId())) {
             throw new InvalidDataException("Không có quyền khôi phục file");
         }
     }
 
     @Override
+    @ValidatePermissionMember(RepoPermission.READ)
     public File getFileById(Long fileId) {
         return fileRepo.findById(fileId).orElseThrow(() -> {
             log.warn("Không tìm thấy file với id: {}", fileId);
@@ -294,6 +279,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
+    @ValidatePermissionMember(RepoPermission.UPDATE)
     public FileResponse updateFileMetadata(Long fileId, FileRequest fileRequest) {
         File file = getFileById(fileId);
         fileMapper.updateEntity(fileRequest, file);
@@ -358,22 +344,15 @@ public class FileServiceImpl implements IFileService {
             spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
             spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("repo").get("id"), repoId));
             Page<File> filePage = fileRepo.findAll(spec, pageable);
-
-            return convertToPageResponse(filePage, pageable);
+            return PaginationUtils.convertToPageResponse(filePage, pageable, fileMapper::entityToResponse);
         }
-        return convertToPageResponse(fileRepo.findAll(pageable), pageable);
-    }
-
-    @Override
-    public PageResponse<List<FileResponse>> convertToPageResponse(Page<File> filePage, Pageable pageable) {
-        List<FileResponse> response = filePage.stream().map(this.fileMapper::entityToResponse).collect(toList());
-        return PageResponse.<List<FileResponse>>builder().items(response).totalItems(filePage.getTotalElements()).totalPage(filePage.getTotalPages()).hasNext(filePage.hasNext()).pageNo(pageable.getPageNumber()).pageSize(pageable.getPageSize()).build();
+        return PaginationUtils.convertToPageResponse(fileRepo.findAll(pageable), pageable, fileMapper::entityToResponse);
     }
 
     @Override
     public PageResponse<List<FileResponse>> searchByTagName(Long repoId, String tagName, Pageable pageable) {
         Page<File> filePage = fileRepo.findActiveFilesByRepoIdAndTagName(repoId, tagName.trim(), pageable);
-        return convertToPageResponse(filePage, pageable);
+        return PaginationUtils.convertToPageResponse(filePage, pageable, fileMapper::entityToResponse);
     }
 
     @Override
@@ -381,7 +360,7 @@ public class FileServiceImpl implements IFileService {
         LocalDateTime startOfDay = startDate.atStartOfDay(); // 2025-03-05 00:00:00
         LocalDateTime endOfDay = endDate.atTime(23, 59, 59); // 2025-03-10 23:59:59
         Page<File> filePage = fileRepo.findActiveFilesByRepoIdAndUploadDateRange(repoId, startOfDay, endOfDay, pageable);
-        return convertToPageResponse(filePage, pageable);
+        return PaginationUtils.convertToPageResponse(filePage, pageable, fileMapper::entityToResponse);
     }
 
 }
