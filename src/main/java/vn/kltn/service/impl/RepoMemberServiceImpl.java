@@ -20,7 +20,6 @@ import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IRepoMemberService;
-import vn.kltn.service.IRepoService;
 import vn.kltn.util.SasTokenValidator;
 
 import java.util.List;
@@ -35,7 +34,8 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
     private final RepoMemberMapper repoMemberMapper;
     private final IAzureStorageService azureStorageService;
     private final IAuthenticationService authenticationService;
-    private final RepoHelperService repoHelperService;
+    private final RepoCommonService repoCommonService;
+
 
     @Override
     public RepoMember getMemberById(Long repoMemberId) {
@@ -126,7 +126,7 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
     @Override
     public RepoMember updateSasTokenByRepoIdAndUserId(Long repoId, Long userId) {
         RepoMember repoMember = getMemberByRepoIdAndUserId(repoId, userId);
-        Repo repo = repoHelperService.getRepositoryById(repoId);
+        Repo repo = repoCommonService.getRepositoryById(repoId);
         String newSasToken = azureStorageService.generatePermissionRepo(repo.getContainerName(), repoMember.getPermissions());
         repoMember.setSasToken(newSasToken);
         return repoMemberRepo.save(repoMember);
@@ -135,7 +135,7 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
     @Override
     public String getSasToken(Long repoId) {
         User authUser = authenticationService.getAuthUser();
-        Repo repo = repoHelperService.getRepositoryById(repoId);
+        Repo repo = repoCommonService.getRepositoryById(repoId);
         if (repo.getOwner().getId().equals(authUser.getId())) {
             return azureStorageService.generatePermissionRepo(repo.getContainerName(), Set.of(RepoPermission.values()));
         }

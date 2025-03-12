@@ -15,7 +15,6 @@ import vn.kltn.entity.RepoMember;
 import vn.kltn.entity.User;
 import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.InvalidDataException;
-import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.RepoMapper;
 import vn.kltn.repository.RepositoryRepo;
 import vn.kltn.service.*;
@@ -45,6 +44,7 @@ public class RepoServiceImpl implements IRepoService {
     private final IAuthenticationService authenticationService;
     private final IRepoActivityService repoActivityService;
     private final IRepoMemberService repoMemberService;
+    private final RepoCommonService repoCommonService;
 
     @Override
     public RepoResponseDto createRepository(RepoRequestDto repoRequestDto) {
@@ -201,10 +201,7 @@ public class RepoServiceImpl implements IRepoService {
 
     @Override
     public Repo getRepositoryById(Long id) {
-        return repositoryRepo.findById(id).orElseThrow(() -> {
-            log.error("Không tìm thấy repository, id: {}", id);
-            return new ResourceNotFoundException("Repository not found");
-        });
+        return repoCommonService.getRepositoryById(id);
     }
 
     private RepoResponseDto convertRepositoryToResponse(Repo repo) {

@@ -7,10 +7,10 @@ import vn.kltn.entity.Repo;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.repository.RepositoryRepo;
 
-@Service
 @RequiredArgsConstructor
-@Slf4j(topic = "REPO_HELPER_SERVICE")
-public class RepoHelperService {
+@Slf4j(topic = "REPO_COMMON_SERVICE")
+@Service
+public class RepoCommonService {
     private final RepositoryRepo repositoryRepo;
 
     public Repo getRepositoryById(Long id) {
@@ -19,5 +19,4 @@ public class RepoHelperService {
             return new ResourceNotFoundException("Repository not found");
         });
     }
-
 }
