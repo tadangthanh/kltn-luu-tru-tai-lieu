@@ -37,18 +37,17 @@ public class RepositoryRest {
         return new ResponseData<>(HttpStatus.CREATED.value(), "Thêm thành viên vào kho lưu trữ thành công",
                 repositoryService.addMemberToRepository(repositoryId, repoMemberRequest.getUserId(), repoMemberRequest.getPermissions()));
     }
-
-    @PostMapping("/{repositoryId}/member/{memberId}")
+    @PostMapping("/{repositoryId}/member/{userId}")
     public ResponseData<RepoResponseDto> updatePermissionForMember(@PathVariable Long repositoryId,
-                                                                   @PathVariable Long memberId,
+                                                                   @PathVariable Long userId,
                                                                    @Validated(Update.class) @RequestBody RepoMemberRequest repoMemberRequest) {
         return new ResponseData<>(HttpStatus.OK.value(), "Cập nhật quyền cho thành viên thành công",
-                repositoryService.updatePermissionMember(repositoryId, memberId, repoMemberRequest.getPermissions()));
+                repositoryService.updatePermissionMemberByRepoIdAndUserId(repositoryId, userId, repoMemberRequest.getPermissions()));
     }
 
-    @DeleteMapping("/{repositoryId}/member/{memberId}")
-    public ResponseData<Void> removeMemberFromRepository(@PathVariable Long repositoryId, @PathVariable Long memberId) {
-        repositoryService.removeMemberFromRepository(repositoryId, memberId);
+    @DeleteMapping("/{repositoryId}/member/{userId}")
+    public ResponseData<Void> removeMemberFromRepository(@PathVariable Long repositoryId, @PathVariable Long userId) {
+        repositoryService.removeMemberByRepoIdAndUserId(repositoryId, userId);
         return new ResponseData<>(HttpStatus.NO_CONTENT.value(), "Xóa thành viên khỏi kho lưu trữ thành công", null);
     }
 

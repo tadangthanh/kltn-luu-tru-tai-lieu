@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Set;
 
 public interface IRepoMemberService {
-    RepoMember getMemberById(Long repoMemberId);
 
     RepoMember getAuthMemberWithRepoId(Long repoId);
 
@@ -33,12 +32,10 @@ public interface IRepoMemberService {
 
     RepoMember updateMemberPermissions(RepoMember repoMember, Set<RepoPermission> requestedPermissions, String containerName);
 
-    void deleteMemberById(Long memberId);
+    void deleteMemberByRepoIdAndUserId(Long repoId, Long userId);
 
-    Page<RepoMember> findAllByRepoId(Long repoId, Pageable pageable);
 
     RepoMember updateSasTokenByRepoIdAndUserId(Long repoId, Long userId);
 
-    String getSasToken(Long repoId);
 }
 

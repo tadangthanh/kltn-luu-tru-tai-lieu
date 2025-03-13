@@ -128,8 +128,8 @@ public class RepoServiceImpl implements IRepoService {
 
     @Override
     @RequireOwner
-    public void removeMemberFromRepository(Long repoId, Long memberId) {
-        RepoMember repoMember = repoMemberService.getMemberById(memberId);
+    public void removeMemberByRepoIdAndUserId(Long repoId, Long userId) {
+        RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, userId);
         validateSelfMember(repoMember);
         repoMember.setStatus(MemberStatus.REMOVED);
     }
@@ -145,9 +145,9 @@ public class RepoServiceImpl implements IRepoService {
 
     @Override
     @RequireOwner
-    public RepoResponseDto updatePermissionMember(Long repoId, Long memberId, Set<RepoPermission> requestedPermissions) {
+    public RepoResponseDto updatePermissionMemberByRepoIdAndUserId(Long repoId, Long userId, Set<RepoPermission> requestedPermissions) {
         Repo repo = getRepositoryById(repoId);
-        RepoMember repoMember = repoMemberService.getMemberById(memberId);
+        RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, userId);
         repoMemberService.updateMemberPermissions(repoMember, requestedPermissions, repo.getContainerName());
         return convertRepositoryToResponse(repo);
     }
@@ -159,8 +159,8 @@ public class RepoServiceImpl implements IRepoService {
         User memberAdd = userService.getUserByEmail(emailMemberAdd);
         RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, memberAdd.getId());
         if (repoMember.getStatus().equals(MemberStatus.PENDING)) {
-            repoMember.setStatus(MemberStatus.ACCEPTED);
-            updatePermissionMember(repoId, repoMember.getId(), repoMember.getPermissions());
+            repoMember.setStatus(MemberStatus.ACTIVE);
+            updatePermissionMemberByRepoIdAndUserId(repoId, repoMember.getId(), repoMember.getPermissions());
             log.info("Chấp nhận lời mời thành công user id{}: ", memberAdd.getId());
             return convertRepositoryToResponse(repoMember.getRepo());
         }
@@ -174,7 +174,7 @@ public class RepoServiceImpl implements IRepoService {
         User userMember = userService.getUserByEmail(email);
         RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, userMember.getId());
         if (repoMember.getStatus().equals(MemberStatus.PENDING)) {
-            repoMemberService.deleteMemberById(repoMember.getId());
+            repoMemberService.deleteMemberByRepoIdAndUserId(repoId, userMember.getId());
             return convertRepositoryToResponse(repoMember.getRepo());
         }
         log.error("Dữ liệu không hợp lệ");

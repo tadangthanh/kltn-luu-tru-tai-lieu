@@ -36,21 +36,12 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
     private final IAuthenticationService authenticationService;
     private final RepoCommonService repoCommonService;
 
-
-    @Override
-    public RepoMember getMemberById(Long repoMemberId) {
-        return repoMemberRepo.findById(repoMemberId).orElseThrow(() -> {
-            log.error("Không tìm thấy thành viên, id: {}", repoMemberId);
-            return new ResourceNotFoundException("Không tìm thấy thành viên: " + repoMemberId);
-        });
-    }
-
     @Override
     public RepoMember getAuthMemberWithRepoId(Long repoId) {
         User authUser = authenticationService.getAuthUser();
         return repoMemberRepo.getMemberActiveByRepoIdAndUserId(repoId, authUser.getId()).orElseThrow(() -> {
-            log.error("Không tìm thấy thành viên active, userId: {}, trong repo repoId: {}", authUser.getId(), repoId);
-            return new ResourceNotFoundException("Không tìm thấy thành viên: " + authUser.getId() + " trong repo: " + repoId);
+            log.error("{} không phải chủ sở hữu repo: {}", authUser.getEmail(), repoId);
+            return new ResourceNotFoundException("Bạn không phải chủ sở hữu repo");
         });
     }
 
@@ -65,8 +56,8 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
     @Override
     public RepoMember getMemberByRepoIdAndUserId(Long repoId, Long userId) {
         return repoMemberRepo.findRepoMemberByRepoIdAndUserId(repoId, userId).orElseThrow(() -> {
-            log.error("Không tìm thấy thành viên active, userId: {}, trong repo repoId: {}", userId, repoId);
-            return new ResourceNotFoundException("Không tìm thấy thành viên: " + userId + " trong repo: " + repoId);
+            log.error("Không tìm thấy thành viên, userId: {}, trong repo repoId: {}", userId, repoId);
+            return new ResourceNotFoundException("Không tìm thấy thành viên");
         });
     }
 
@@ -89,7 +80,7 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
         repoMember.setPermissions(permissions);
         MemberStatus status = getMemberStatus(repo, user);
         repoMember.setStatus(status);
-        if (status.equals(MemberStatus.ACCEPTED)) {
+        if (status.equals(MemberStatus.ACTIVE)) {
             repoMember.setSasToken(getSasToken(repo, permissions));
         }
         return repoMemberRepo.save(repoMember);
@@ -114,15 +105,10 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
     }
 
     @Override
-    public void deleteMemberById(Long memberId) {
-        repoMemberRepo.deleteById(memberId);
+    public void deleteMemberByRepoIdAndUserId(Long repoId, Long userId) {
+        RepoMember repoMember = getMemberByRepoIdAndUserId(repoId, userId);
+        repoMemberRepo.delete(repoMember);
     }
-
-    @Override
-    public Page<RepoMember> findAllByRepoId(Long repoId, Pageable pageable) {
-        return repoMemberRepo.findAllByRepoId(repoId, pageable);
-    }
-
     @Override
     public RepoMember updateSasTokenByRepoIdAndUserId(Long repoId, Long userId) {
         RepoMember repoMember = getMemberByRepoIdAndUserId(repoId, userId);
@@ -132,20 +118,20 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
         return repoMemberRepo.save(repoMember);
     }
 
-    @Override
-    public String getSasToken(Long repoId) {
-        User authUser = authenticationService.getAuthUser();
-        Repo repo = repoCommonService.getRepositoryById(repoId);
-        if (repo.getOwner().getId().equals(authUser.getId())) {
-            return azureStorageService.generatePermissionRepo(repo.getContainerName(), Set.of(RepoPermission.values()));
-        }
-        RepoMember repoMember = getMemberActiveByRepoIdAndUserId(repoId, authUser.getId());
-        String sasToken = repoMember.getSasToken();
-        if (!SasTokenValidator.isSasTokenValid(sasToken)) {
-            repoMember = updateSasTokenByRepoIdAndUserId(repoId, authUser.getId());
-        }
-        return repoMember.getSasToken();
-    }
+//    @Override
+//    public String getSasToken(Long repoId) {
+//        User authUser = authenticationService.getAuthUser();
+//        Repo repo = repoCommonService.getRepositoryById(repoId);
+//        if (repo.getOwner().getId().equals(authUser.getId())) {
+//            return azureStorageService.generatePermissionRepo(repo.getContainerName(), Set.of(RepoPermission.values()));
+//        }
+//        RepoMember repoMember = getMemberActiveByRepoIdAndUserId(repoId, authUser.getId());
+//        String sasToken = repoMember.getSasToken();
+//        if (!SasTokenValidator.isSasTokenValid(sasToken)) {
+//            repoMember = updateSasTokenByRepoIdAndUserId(repoId, authUser.getId());
+//        }
+//        return repoMember.getSasToken();
+//    }
 
 
     private String generateSasTokenForMember(String containerName, Set<RepoPermission> permissions) {
@@ -163,7 +149,7 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
     private MemberStatus getMemberStatus(Repo repo, User user) {
         // neu member la chu so huu thi luon la accepted
         if (isOwnerRepo(repo, user)) {
-            return MemberStatus.ACCEPTED;
+            return MemberStatus.ACTIVE;
         }
         return MemberStatus.PENDING;
     }

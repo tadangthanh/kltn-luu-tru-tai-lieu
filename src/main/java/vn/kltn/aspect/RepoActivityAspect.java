@@ -8,10 +8,8 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.stereotype.Component;
 import vn.kltn.common.RepoAction;
 import vn.kltn.common.RepoPermission;
-import vn.kltn.common.TokenType;
 import vn.kltn.dto.request.RepoRequestDto;
 import vn.kltn.exception.InvalidDataException;
-import vn.kltn.service.IJwtService;
 import vn.kltn.service.IRepoActivityService;
 
 import java.util.Collection;
@@ -23,17 +21,16 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class RepoActivityAspect {
     private final IRepoActivityService repoActivityService;
-    private final IJwtService jwtService;
 
     @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.addMemberToRepository(..))")
     public void addMemberRepoPointCut() {
     }
 
-    @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.removeMemberFromRepository(..))")
+    @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.removeMemberByRepoIdAndUserId(..))")
     public void removeMemberRepoPointCut() {
     }
 
-    @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.updatePermissionMember(..))")
+    @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.updatePermissionMemberByRepoIdAndUserId(..))")
     public void updatePermissionMember() {
     }
 
