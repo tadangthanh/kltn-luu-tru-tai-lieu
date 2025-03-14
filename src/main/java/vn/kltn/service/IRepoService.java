@@ -1,10 +1,14 @@
 package vn.kltn.service;
 
+import org.springframework.data.domain.Pageable;
 import vn.kltn.common.RepoPermission;
 import vn.kltn.dto.request.RepoRequestDto;
+import vn.kltn.dto.response.PageResponse;
+import vn.kltn.dto.response.RepoMemberInfoResponse;
 import vn.kltn.dto.response.RepoResponseDto;
 import vn.kltn.entity.Repo;
 
+import java.util.List;
 import java.util.Set;
 
 public interface IRepoService {
@@ -27,5 +31,7 @@ public interface IRepoService {
     Repo getRepositoryById(Long id);
 
     boolean hasPermission(Long repoId, Long userId, RepoPermission permission);
+
+    PageResponse<List<RepoMemberInfoResponse>> getListMemberByRepoId(Long repoId, Pageable pageable);
 
 }

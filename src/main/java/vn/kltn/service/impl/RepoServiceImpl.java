@@ -4,11 +4,15 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.MemberStatus;
 import vn.kltn.common.RepoPermission;
 import vn.kltn.common.TokenType;
 import vn.kltn.dto.request.RepoRequestDto;
+import vn.kltn.dto.response.PageResponse;
+import vn.kltn.dto.response.RepoMemberInfoResponse;
 import vn.kltn.dto.response.RepoResponseDto;
 import vn.kltn.entity.Repo;
 import vn.kltn.entity.RepoMember;
@@ -17,11 +21,13 @@ import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.map.RepoMapper;
 import vn.kltn.repository.RepositoryRepo;
+import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
 import vn.kltn.validation.RequireOwner;
 import vn.kltn.validation.RequireRepoMember;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -199,6 +205,13 @@ public class RepoServiceImpl implements IRepoService {
         return repoMember.getPermissions().contains(permission);
     }
 
+
+    @Override
+    @RequireRepoMember
+    public PageResponse<List<RepoMemberInfoResponse>> getListMemberByRepoId(Long repoId, Pageable pageable) {
+        Page<RepoMember> repoMemberPage = repoMemberService.getPageMember(repoId, pageable);
+        return PaginationUtils.convertToPageResponse(repoMemberPage, pageable, repoMemberService::toRepoMemberInfoResponse);
+    }
 
     @Override
     @RequireRepoMember

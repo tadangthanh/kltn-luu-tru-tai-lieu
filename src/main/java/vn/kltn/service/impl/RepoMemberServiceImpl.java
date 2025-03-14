@@ -8,7 +8,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.MemberStatus;
 import vn.kltn.common.RepoPermission;
-import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.RepoMemberInfoResponse;
 import vn.kltn.entity.Repo;
 import vn.kltn.entity.RepoMember;
@@ -16,14 +15,11 @@ import vn.kltn.entity.User;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.RepoMemberMapper;
 import vn.kltn.repository.RepoMemberRepo;
-import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IRepoMemberService;
-import vn.kltn.util.SasTokenValidator;
 import vn.kltn.validation.RequireRepoMember;
 
-import java.util.List;
 import java.util.Set;
 
 @Service
@@ -32,10 +28,10 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class RepoMemberServiceImpl implements IRepoMemberService {
     private final RepoMemberRepo repoMemberRepo;
-    private final RepoMemberMapper repoMemberMapper;
     private final IAzureStorageService azureStorageService;
     private final IAuthenticationService authenticationService;
     private final RepoCommonService repoCommonService;
+    private final RepoMemberMapper repoMemberMapper;
 
     @Override
     public RepoMember getAuthMemberWithRepoId(Long repoId) {
@@ -55,6 +51,7 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
     }
 
     @Override
+    @RequireRepoMember
     public RepoMember getMemberByRepoIdAndUserId(Long repoId, Long userId) {
         return repoMemberRepo.findRepoMemberByRepoIdAndUserId(repoId, userId).orElseThrow(() -> {
             log.error("Không tìm thấy thành viên, userId: {}, trong repo repoId: {}", userId, repoId);
@@ -63,11 +60,10 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
     }
 
     @Override
-    @RequireRepoMember
-    public PageResponse<List<RepoMemberInfoResponse>> getListMemberByRepoId(Long repoId, Pageable pageable) {
-        Page<RepoMember> repoMemberPage = repoMemberRepo.findAllByRepoId(repoId, pageable);
-        return PaginationUtils.convertToPageResponse(repoMemberPage, pageable, repoMemberMapper::toRepoMemberInfoResponse);
+    public Page<RepoMember> getPageMember(Long repoId, Pageable pageable) {
+        return repoMemberRepo.findAllByRepoId(repoId, pageable);
     }
+
 
     @Override
     public boolean isExistMemberActiveByRepoIdAndUserId(Long repoId, Long userId) {
@@ -111,6 +107,12 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
         RepoMember repoMember = getMemberByRepoIdAndUserId(repoId, userId);
         repoMemberRepo.delete(repoMember);
     }
+
+    @Override
+    public RepoMemberInfoResponse toRepoMemberInfoResponse(RepoMember repoMember) {
+        return repoMemberMapper.toRepoMemberInfoResponse(repoMember);
+    }
+
     @Override
     public RepoMember updateSasTokenByRepoIdAndUserId(Long repoId, Long userId) {
         RepoMember repoMember = getMemberByRepoIdAndUserId(repoId, userId);
