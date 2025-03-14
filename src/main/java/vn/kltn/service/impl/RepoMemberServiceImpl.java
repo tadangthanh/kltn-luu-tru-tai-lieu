@@ -21,6 +21,7 @@ import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IRepoMemberService;
 import vn.kltn.util.SasTokenValidator;
+import vn.kltn.validation.RequireRepoMember;
 
 import java.util.List;
 import java.util.Set;
@@ -62,6 +63,7 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
     }
 
     @Override
+    @RequireRepoMember
     public PageResponse<List<RepoMemberInfoResponse>> getListMemberByRepoId(Long repoId, Pageable pageable) {
         Page<RepoMember> repoMemberPage = repoMemberRepo.findAllByRepoId(repoId, pageable);
         return PaginationUtils.convertToPageResponse(repoMemberPage, pageable, repoMemberMapper::toRepoMemberInfoResponse);
@@ -147,7 +149,7 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
     }
 
     private MemberStatus getMemberStatus(Repo repo, User user) {
-        // neu member la chu so huu thi luon la accepted
+        // neu member la chu so huu thi luon la active
         if (isOwnerRepo(repo, user)) {
             return MemberStatus.ACTIVE;
         }

@@ -19,6 +19,7 @@ import vn.kltn.map.RepoMapper;
 import vn.kltn.repository.RepositoryRepo;
 import vn.kltn.service.*;
 import vn.kltn.validation.RequireOwner;
+import vn.kltn.validation.RequireRepoMember;
 
 import java.util.HashMap;
 import java.util.Set;
@@ -200,6 +201,7 @@ public class RepoServiceImpl implements IRepoService {
 
 
     @Override
+    @RequireRepoMember
     public Repo getRepositoryById(Long id) {
         return repoCommonService.getRepositoryById(id);
     }

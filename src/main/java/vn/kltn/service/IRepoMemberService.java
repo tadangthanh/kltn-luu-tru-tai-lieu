@@ -1,6 +1,5 @@
 package vn.kltn.service;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import vn.kltn.common.RepoPermission;
 import vn.kltn.dto.response.PageResponse;

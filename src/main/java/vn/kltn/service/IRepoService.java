@@ -24,7 +24,6 @@ public interface IRepoService {
 
     RepoResponseDto update(Long repoId, RepoRequestDto repoRequestDto);
 
-
     Repo getRepositoryById(Long id);
 
     boolean hasPermission(Long repoId, Long userId, RepoPermission permission);
