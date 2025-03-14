@@ -23,7 +23,7 @@ public class RepoServiceAspect {
     private final RepositoryRepo repositoryRepo;
     private final IRepoMemberService repoMemberService;
 
-    @Before("@annotation(vn.kltn.validation.RequireOwner) && args(repoId,..)")
+    @Before("@annotation(vn.kltn.validation.RequireOwnerRepo) && args(repoId,..)")
     public void checkOwnerRepoPermission(JoinPoint joinPoint, Long repoId) {
         log.info("Kiểm tra quyền chủ sở hũu repo, repoId: {}", repoId);
         Repo repo = getRepoByIdOrThrow(repoId);

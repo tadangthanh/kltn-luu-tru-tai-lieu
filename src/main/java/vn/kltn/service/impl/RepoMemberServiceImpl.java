@@ -78,6 +78,11 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
 
     @Override
     public RepoMember saveMemberRepoWithPermission(Repo repo, User user, Set<RepoPermission> permissions) {
+        RepoMember repoMember = mapToRepoMember(repo, user, permissions);
+        return repoMemberRepo.save(repoMember);
+    }
+
+    private RepoMember mapToRepoMember(Repo repo, User user, Set<RepoPermission> permissions) {
         RepoMember repoMember = new RepoMember();
         repoMember.setUser(user);
         repoMember.setRepo(repo);
@@ -87,7 +92,7 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
         if (status.equals(MemberStatus.ACTIVE)) {
             repoMember.setSasToken(getSasToken(repo, permissions));
         }
-        return repoMemberRepo.save(repoMember);
+        return repoMember;
     }
 
     @Override

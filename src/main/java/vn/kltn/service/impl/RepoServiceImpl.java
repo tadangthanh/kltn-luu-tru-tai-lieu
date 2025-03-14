@@ -23,7 +23,7 @@ import vn.kltn.map.RepoMapper;
 import vn.kltn.repository.RepositoryRepo;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
-import vn.kltn.validation.RequireOwner;
+import vn.kltn.validation.RequireOwnerRepo;
 import vn.kltn.validation.RequireRepoMemberActive;
 
 import java.util.HashMap;
@@ -91,7 +91,7 @@ public class RepoServiceImpl implements IRepoService {
     }
 
     @Override
-    @RequireOwner
+    @RequireOwnerRepo
     public void deleteRepository(Long id) {
         Repo repo = getRepositoryById(id);
         // xoa log cua repo
@@ -102,7 +102,7 @@ public class RepoServiceImpl implements IRepoService {
     }
 
     @Override
-    @RequireOwner
+    @RequireOwnerRepo
     public RepoMemberInfoResponse disableMemberByRepoIdAndUserId(Long repoId, Long userId) {
         RepoMember repoMember = repoMemberService.getMemberActiveByRepoIdAndUserId(repoId, userId);
         validateNotSelfMember(repoMember);
@@ -111,7 +111,7 @@ public class RepoServiceImpl implements IRepoService {
     }
 
     @Override
-    @RequireOwner
+    @RequireOwnerRepo
     public RepoMemberInfoResponse enableMemberByRepoIdAndUserId(Long repoId, Long userId) {
         RepoMember repoMember = repoMemberService.getMemberWithStatus(repoId, userId, MemberStatus.DISABLED);
         validateNotSelfMember(repoMember);
@@ -121,13 +121,13 @@ public class RepoServiceImpl implements IRepoService {
 
     @Override
     public void leaveRepo(Long repoId) {
-        User authUser = authenticationService.getAuthUser();
-        RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, authUser.getId());
+        RepoMember repoMember = repoMemberService.getAuthMemberWithRepoId(repoId);
         validateMemberNotOwner(repoMember);
         validateMemberNotRemoved(repoMember);
         validateMemberNotExited(repoMember);
         repoMember.setStatus(MemberStatus.EXITED);
     }
+
 
     private void validateMemberNotOwner(RepoMember repoMember) {
         if (repoMember.getRepo().getOwner().getId().equals(repoMember.getUser().getId())) {
@@ -138,34 +138,40 @@ public class RepoServiceImpl implements IRepoService {
 
     private void validateMemberNotRemoved(RepoMember repoMember) {
         if (repoMember.getStatus().equals(MemberStatus.REMOVED)) {
-            log.error("Thành viên đã bị loại bỏ");
-            throw new InvalidDataException("Thành viên đã bị loại bỏ");
+            log.error("Thành viên đã bị xóa");
+            throw new InvalidDataException("Thành viên đã bị xóa");
         }
     }
 
     private void validateMemberNotExited(RepoMember repoMember) {
         if (repoMember.getStatus().equals(MemberStatus.EXITED)) {
-            log.error("Thành viên đã bị vô hiệu hóa");
-            throw new InvalidDataException("Thành viên đã bị vô hiệu hóa");
+            log.error("Thành viên đã rời khỏi");
+            throw new InvalidDataException("Thành viên đã rời khỏi");
         }
     }
 
-
-    @Override
-    @RequireOwner
-    public RepoResponseDto addMemberToRepository(Long repoId, Long userId, Set<RepoPermission> permissionRequest) {
-        // chi co chu so huu moi co quyen them thanh vien
-        Repo repo = getRepositoryById(repoId);
+    private void validateMemberNotExistByRepoIdAndUserId(Long repoId, Long userId) {
         // validate thanh vien se them da ton tai hay chua
         if (repoMemberService.isExistMemberActiveByRepoIdAndUserId(repoId, userId)) {
             log.error("Thành viên đã tồn tại, userId: {}, repoId: {}", userId, repoId);
             throw new ConflictResourceException("Người dùng này đã là thành viên");
         }
-        //validate so luong gioi han member cua repo
-        if (repoMemberService.countMemberByRepoId(repoId) >= maxMembers) {
+    }
+
+    private void validateNumberOfMembers(Repo repo) {
+        if (repoMemberService.countMemberByRepoId(repo.getId()) >= maxMembers) {
             log.error("Repo đã đủ thành viên, không thể thêm");
             throw new ConflictResourceException("Repo đã đủ thành viên, không thể thêm");
         }
+    }
+
+    @Override
+    @RequireOwnerRepo
+    public RepoResponseDto addMemberToRepository(Long repoId, Long userId, Set<RepoPermission> permissionRequest) {
+        // chi co chu so huu moi co quyen them thanh vien
+        validateMemberNotExistByRepoIdAndUserId(repoId, userId);
+        validateNumberOfMembers(getRepositoryById(repoId));
+        Repo repo = getRepositoryById(repoId);
         User memberAdd = userService.getUserById(userId);
         // save vao database
         repoMemberService.saveMemberRepoWithPermission(repo, memberAdd, permissionRequest);
@@ -183,7 +189,7 @@ public class RepoServiceImpl implements IRepoService {
     }
 
     @Override
-    @RequireOwner
+    @RequireOwnerRepo
     public void removeMemberByRepoIdAndUserId(Long repoId, Long userId) {
         RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, userId);
         validateNotSelfMember(repoMember);
@@ -200,7 +206,7 @@ public class RepoServiceImpl implements IRepoService {
 
 
     @Override
-    @RequireOwner
+    @RequireOwnerRepo
     public RepoMemberInfoResponse updatePermissionMemberByRepoIdAndUserId(Long repoId, Long userId, Set<RepoPermission> requestedPermissions) {
         Repo repo = getRepositoryById(repoId);
         RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, userId);
@@ -211,17 +217,25 @@ public class RepoServiceImpl implements IRepoService {
     @Override
     public RepoResponseDto acceptInvitation(Long repoId, String token) {
         // trich xuat email cua thanh vien tu token
-        String emailMemberAdd = jwtService.extractEmail(token, TokenType.INVITATION_TOKEN);
-        User memberAdd = userService.getUserByEmail(emailMemberAdd);
+        User memberAdd = getUserByToken(token, TokenType.INVITATION_TOKEN);
         RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, memberAdd.getId());
-        if (repoMember.getStatus().equals(MemberStatus.INVITED)) {
-            repoMember.setStatus(MemberStatus.ACTIVE);
-            updatePermissionMemberByRepoIdAndUserId(repoId, repoMember.getId(), repoMember.getPermissions());
-            log.info("Chấp nhận lời mời thành công user id{}: ", memberAdd.getId());
-            return convertRepositoryToResponse(repoMember.getRepo());
+        validateMemberInvited(repoMember);
+        repoMember.setStatus(MemberStatus.ACTIVE);
+        updatePermissionMemberByRepoIdAndUserId(repoId, repoMember.getId(), repoMember.getPermissions());
+        log.info("Chấp nhận lời mời thành công user id{}: ", memberAdd.getId());
+        return convertRepositoryToResponse(repoMember.getRepo());
+    }
+
+    private User getUserByToken(String token, TokenType tokenType) {
+        String email = jwtService.extractEmail(token, tokenType);
+        return userService.getUserByEmail(email);
+    }
+
+    private void validateMemberInvited(RepoMember repoMember) {
+        if (!repoMember.getStatus().equals(MemberStatus.INVITED)) {
+            log.error("Thành viên không được mời");
+            throw new InvalidDataException("Thành viên không được mời");
         }
-        log.error("Không thể chấp nhận lời mời");
-        throw new InvalidDataException("Không thể chấp nhận lời mời");
     }
 
 
@@ -229,17 +243,14 @@ public class RepoServiceImpl implements IRepoService {
     public RepoResponseDto rejectInvitation(Long repoId, String email) {
         User userMember = userService.getUserByEmail(email);
         RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, userMember.getId());
-        if (repoMember.getStatus().equals(MemberStatus.INVITED)) {
-            repoMemberService.deleteMemberByRepoIdAndUserId(repoId, userMember.getId());
-            return convertRepositoryToResponse(repoMember.getRepo());
-        }
-        log.error("Dữ liệu không hợp lệ");
-        throw new InvalidDataException("Dữ liệu không hợp lệ");
+        validateMemberInvited(repoMember);
+        repoMemberService.deleteMemberByRepoIdAndUserId(repoId, userMember.getId());
+        return convertRepositoryToResponse(repoMember.getRepo());
     }
 
 
     @Override
-    @RequireOwner
+    @RequireOwnerRepo
     public RepoResponseDto update(Long repoId, RepoRequestDto repoRequestDto) {
         Repo repo = getRepositoryById(repoId);
         repoMapper.updateEntityFromRequest(repoRequestDto, repo);
