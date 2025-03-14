@@ -6,6 +6,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import vn.kltn.common.MemberStatus;
+import vn.kltn.entity.Repo;
 import vn.kltn.entity.RepoMember;
 
 import java.util.Optional;
@@ -22,6 +24,9 @@ public interface RepoMemberRepo extends JpaRepository<RepoMember, Long> {
 
     @Query("select rm from RepoMember rm where rm.repo.id = ?1 and rm.user.id = ?2 and rm.status = 'ACTIVE'")
     Optional<RepoMember> findRepoMemberActiveByRepoIdAndUserId(Long repoId, Long userId);
+
+    @Query("select rm from RepoMember rm where rm.repo.id = ?1 and rm.user.id = ?2 and rm.status = ?3")
+    Optional<RepoMember> findRepoMemberByRepoIdAndUserIdAndStatus(Long repoId, Long userId, MemberStatus status);
 
     @Query("select rm from RepoMember rm where rm.repo.id = ?1 and rm.user.id = ?2")
     Optional<RepoMember> findRepoMemberByRepoIdAndUserId(Long repoId, Long userId);

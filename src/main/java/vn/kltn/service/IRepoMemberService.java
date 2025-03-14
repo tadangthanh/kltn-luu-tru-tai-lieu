@@ -2,6 +2,7 @@ package vn.kltn.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import vn.kltn.common.MemberStatus;
 import vn.kltn.common.RepoPermission;
 import vn.kltn.dto.response.RepoMemberInfoResponse;
 import vn.kltn.entity.Repo;
@@ -17,6 +18,8 @@ public interface IRepoMemberService {
     RepoMember getMemberActiveByRepoIdAndUserId(Long repoId, Long userId);
 
     RepoMember getMemberByRepoIdAndUserId(Long repoId, Long userId);
+
+    RepoMember getMemberWithStatus(Long repoId, Long userId, MemberStatus status);
 
     Page<RepoMember> getPageMember(Long repoId, Pageable pageable);
 

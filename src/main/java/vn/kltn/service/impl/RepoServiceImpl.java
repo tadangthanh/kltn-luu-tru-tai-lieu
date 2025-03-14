@@ -24,7 +24,7 @@ import vn.kltn.repository.RepositoryRepo;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
 import vn.kltn.validation.RequireOwner;
-import vn.kltn.validation.RequireRepoMember;
+import vn.kltn.validation.RequireRepoMemberActive;
 
 import java.util.HashMap;
 import java.util.List;
@@ -101,6 +101,55 @@ public class RepoServiceImpl implements IRepoService {
         azureStorageService.deleteContainer(containerName);
     }
 
+    @Override
+    @RequireOwner
+    public RepoMemberInfoResponse disableMemberByRepoIdAndUserId(Long repoId, Long userId) {
+        RepoMember repoMember = repoMemberService.getMemberActiveByRepoIdAndUserId(repoId, userId);
+        validateNotSelfMember(repoMember);
+        repoMember.setStatus(MemberStatus.DISABLED);
+        return repoMemberService.toRepoMemberInfoResponse(repoMember);
+    }
+
+    @Override
+    @RequireOwner
+    public RepoMemberInfoResponse enableMemberByRepoIdAndUserId(Long repoId, Long userId) {
+        RepoMember repoMember = repoMemberService.getMemberWithStatus(repoId, userId, MemberStatus.DISABLED);
+        validateNotSelfMember(repoMember);
+        repoMember.setStatus(MemberStatus.ACTIVE);
+        return repoMemberService.toRepoMemberInfoResponse(repoMember);
+    }
+
+    @Override
+    public void leaveRepo(Long repoId) {
+        User authUser = authenticationService.getAuthUser();
+        RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, authUser.getId());
+        validateMemberNotOwner(repoMember);
+        validateMemberNotRemoved(repoMember);
+        validateMemberNotExited(repoMember);
+        repoMember.setStatus(MemberStatus.EXITED);
+    }
+
+    private void validateMemberNotOwner(RepoMember repoMember) {
+        if (repoMember.getRepo().getOwner().getId().equals(repoMember.getUser().getId())) {
+            log.error("Không thể thực hiện hành động này với chủ sở hữu");
+            throw new InvalidDataException("Không thể thực hiện hành động này với chủ sở hữu");
+        }
+    }
+
+    private void validateMemberNotRemoved(RepoMember repoMember) {
+        if (repoMember.getStatus().equals(MemberStatus.REMOVED)) {
+            log.error("Thành viên đã bị loại bỏ");
+            throw new InvalidDataException("Thành viên đã bị loại bỏ");
+        }
+    }
+
+    private void validateMemberNotExited(RepoMember repoMember) {
+        if (repoMember.getStatus().equals(MemberStatus.EXITED)) {
+            log.error("Thành viên đã bị vô hiệu hóa");
+            throw new InvalidDataException("Thành viên đã bị vô hiệu hóa");
+        }
+    }
+
 
     @Override
     @RequireOwner
@@ -137,11 +186,11 @@ public class RepoServiceImpl implements IRepoService {
     @RequireOwner
     public void removeMemberByRepoIdAndUserId(Long repoId, Long userId) {
         RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, userId);
-        validateSelfMember(repoMember);
+        validateNotSelfMember(repoMember);
         repoMember.setStatus(MemberStatus.REMOVED);
     }
 
-    private void validateSelfMember(RepoMember member) {
+    private void validateNotSelfMember(RepoMember member) {
         User userAuth = authenticationService.getAuthUser();
         if (userAuth.getId().equals(member.getUser().getId())) {
             log.error("email {} không thể thực hiện hành động này với mình", userAuth.getEmail());
@@ -152,11 +201,11 @@ public class RepoServiceImpl implements IRepoService {
 
     @Override
     @RequireOwner
-    public RepoResponseDto updatePermissionMemberByRepoIdAndUserId(Long repoId, Long userId, Set<RepoPermission> requestedPermissions) {
+    public RepoMemberInfoResponse updatePermissionMemberByRepoIdAndUserId(Long repoId, Long userId, Set<RepoPermission> requestedPermissions) {
         Repo repo = getRepositoryById(repoId);
         RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, userId);
-        repoMemberService.updateMemberPermissions(repoMember, requestedPermissions, repo.getContainerName());
-        return convertRepositoryToResponse(repo);
+        repoMember = repoMemberService.updateMemberPermissions(repoMember, requestedPermissions, repo.getContainerName());
+        return repoMemberService.toRepoMemberInfoResponse(repoMember);
     }
 
     @Override
@@ -165,7 +214,7 @@ public class RepoServiceImpl implements IRepoService {
         String emailMemberAdd = jwtService.extractEmail(token, TokenType.INVITATION_TOKEN);
         User memberAdd = userService.getUserByEmail(emailMemberAdd);
         RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, memberAdd.getId());
-        if (repoMember.getStatus().equals(MemberStatus.PENDING)) {
+        if (repoMember.getStatus().equals(MemberStatus.INVITED)) {
             repoMember.setStatus(MemberStatus.ACTIVE);
             updatePermissionMemberByRepoIdAndUserId(repoId, repoMember.getId(), repoMember.getPermissions());
             log.info("Chấp nhận lời mời thành công user id{}: ", memberAdd.getId());
@@ -180,7 +229,7 @@ public class RepoServiceImpl implements IRepoService {
     public RepoResponseDto rejectInvitation(Long repoId, String email) {
         User userMember = userService.getUserByEmail(email);
         RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, userMember.getId());
-        if (repoMember.getStatus().equals(MemberStatus.PENDING)) {
+        if (repoMember.getStatus().equals(MemberStatus.INVITED)) {
             repoMemberService.deleteMemberByRepoIdAndUserId(repoId, userMember.getId());
             return convertRepositoryToResponse(repoMember.getRepo());
         }
@@ -207,14 +256,14 @@ public class RepoServiceImpl implements IRepoService {
 
 
     @Override
-    @RequireRepoMember
+    @RequireRepoMemberActive
     public PageResponse<List<RepoMemberInfoResponse>> getListMemberByRepoId(Long repoId, Pageable pageable) {
         Page<RepoMember> repoMemberPage = repoMemberService.getPageMember(repoId, pageable);
         return PaginationUtils.convertToPageResponse(repoMemberPage, pageable, repoMemberService::toRepoMemberInfoResponse);
     }
 
     @Override
-    @RequireRepoMember
+    @RequireRepoMemberActive
     public Repo getRepositoryById(Long id) {
         return repoCommonService.getRepositoryById(id);
     }

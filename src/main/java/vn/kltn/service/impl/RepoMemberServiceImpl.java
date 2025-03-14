@@ -18,7 +18,6 @@ import vn.kltn.repository.RepoMemberRepo;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IRepoMemberService;
-import vn.kltn.validation.RequireRepoMember;
 
 import java.util.Set;
 
@@ -51,10 +50,17 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
     }
 
     @Override
-    @RequireRepoMember
     public RepoMember getMemberByRepoIdAndUserId(Long repoId, Long userId) {
         return repoMemberRepo.findRepoMemberByRepoIdAndUserId(repoId, userId).orElseThrow(() -> {
             log.error("Không tìm thấy thành viên, userId: {}, trong repo repoId: {}", userId, repoId);
+            return new ResourceNotFoundException("Không tìm thấy thành viên");
+        });
+    }
+
+    @Override
+    public RepoMember getMemberWithStatus(Long repoId, Long userId, MemberStatus status) {
+        return repoMemberRepo.findRepoMemberByRepoIdAndUserIdAndStatus(repoId, userId, status).orElseThrow(() -> {
+            log.error("Không tìm thấy thành viên {}, userId: {}, trong repo repoId: {}", status, userId, repoId);
             return new ResourceNotFoundException("Không tìm thấy thành viên");
         });
     }
@@ -155,6 +161,6 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
         if (isOwnerRepo(repo, user)) {
             return MemberStatus.ACTIVE;
         }
-        return MemberStatus.PENDING;
+        return MemberStatus.INVITED;
     }
 }

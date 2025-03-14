@@ -11,6 +11,8 @@ import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 public interface RepoMemberMapper {
     @Mapping(target = "memberName", source = "user.fullName")
     @Mapping(target = "memberEmail", source = "user.email")
+    @Mapping(target = "repoId", source = "repo.id")
+    @Mapping(target = "userId", source = "user.id")
     RepoMemberInfoResponse toRepoMemberInfoResponse(RepoMember repoMember);
 
 }

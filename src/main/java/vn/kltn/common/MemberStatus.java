@@ -1,8 +1,9 @@
 package vn.kltn.common;
 
 public enum MemberStatus {
-    PENDING,// Đang chờ chấp nhận hoặc từ chối
+    INVITED,// Đang chờ chấp nhận hoặc từ chối
     ACTIVE,  // Đã chấp nhận
+    DISABLED,  // Đã bị vô hiệu hóa
     REMOVED,  // Đã bị loại bỏ
-    LEFT  // Đã rời khỏi
+    EXITED  // Đã rời khỏi
 }

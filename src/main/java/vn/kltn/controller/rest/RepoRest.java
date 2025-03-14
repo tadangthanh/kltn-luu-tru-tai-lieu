@@ -44,9 +44,9 @@ public class RepoRest {
     }
 
     @PostMapping("/{repositoryId}/member/{userId}")
-    public ResponseData<RepoResponseDto> updatePermissionForMember(@PathVariable Long repositoryId,
-                                                                   @PathVariable Long userId,
-                                                                   @Validated(Update.class) @RequestBody RepoMemberRequest repoMemberRequest) {
+    public ResponseData<RepoMemberInfoResponse> updatePermissionForMember(@PathVariable Long repositoryId,
+                                                                          @PathVariable Long userId,
+                                                                          @Validated(Update.class) @RequestBody RepoMemberRequest repoMemberRequest) {
         return new ResponseData<>(HttpStatus.OK.value(), "Cập nhật quyền cho thành viên thành công",
                 repositoryService.updatePermissionMemberByRepoIdAndUserId(repositoryId, userId, repoMemberRequest.getPermissions()));
     }
@@ -68,5 +68,24 @@ public class RepoRest {
     public ResponseData<PageResponse<List<RepoMemberInfoResponse>>> getListMember(@PathVariable Long repositoryId, Pageable pageable) {
         return new ResponseData<>(HttpStatus.OK.value(), "Lấy danh sách thành viên thành công",
                 repositoryService.getListMemberByRepoId(repositoryId, pageable));
+    }
+
+    @PostMapping("/{repositoryId}/member/{userId}/enable")
+    public ResponseData<RepoMemberInfoResponse> enableMember(@PathVariable Long repositoryId, @PathVariable Long userId) {
+        return new ResponseData<>(HttpStatus.OK.value(), "Kích hoạt thành viên thành công",
+                repositoryService.enableMemberByRepoIdAndUserId(repositoryId, userId));
+    }
+
+    @PostMapping("/{repositoryId}/member/{userId}/disable")
+    public ResponseData<RepoMemberInfoResponse> disableMember(@PathVariable Long repositoryId, @PathVariable Long userId) {
+        return new ResponseData<>(HttpStatus.OK.value(), "Vô hiệu hóa thành viên thành công",
+                repositoryService.disableMemberByRepoIdAndUserId(repositoryId, userId));
+    }
+
+    @PostMapping("/{repositoryId}/member/leave")
+    public ResponseData<Void> leaveRepo(@PathVariable Long repositoryId) {
+        repositoryService.leaveRepo(repositoryId);
+        return new ResponseData<>(HttpStatus.OK.value(), "Rời khỏi kho lưu trữ thành công",
+                null);
     }
 }

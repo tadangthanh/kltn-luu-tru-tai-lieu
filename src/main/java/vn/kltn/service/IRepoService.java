@@ -16,11 +16,17 @@ public interface IRepoService {
 
     void deleteRepository(Long id);
 
+    RepoMemberInfoResponse disableMemberByRepoIdAndUserId(Long repoId, Long userId);
+
+    RepoMemberInfoResponse enableMemberByRepoIdAndUserId(Long repoId, Long userId);
+
+    void leaveRepo(Long repoId);
+
     RepoResponseDto addMemberToRepository(Long repoId, Long userId, Set<RepoPermission> permissionRequest);
 
     void removeMemberByRepoIdAndUserId(Long repoId, Long userId);
 
-    RepoResponseDto updatePermissionMemberByRepoIdAndUserId(Long repoId, Long userId, Set<RepoPermission> requestedPermissions);
+    RepoMemberInfoResponse updatePermissionMemberByRepoIdAndUserId(Long repoId, Long userId, Set<RepoPermission> requestedPermissions);
 
     RepoResponseDto acceptInvitation(Long repoId, String token);
 

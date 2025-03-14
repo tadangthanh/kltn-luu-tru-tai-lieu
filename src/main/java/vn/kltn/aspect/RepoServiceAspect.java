@@ -34,7 +34,7 @@ public class RepoServiceAspect {
         }
     }
 
-    @Before("@annotation(vn.kltn.validation.RequireRepoMember) && args(repoId,..)")
+    @Before("@annotation(vn.kltn.validation.RequireRepoMemberActive) && args(repoId,..)")
     public void checkRepoMembership(JoinPoint joinPoint, Long repoId) {
         log.info("Kiểm tra có phải thành viên repo, repoId: {}", repoId);
         User authUser = authService.getAuthUser();

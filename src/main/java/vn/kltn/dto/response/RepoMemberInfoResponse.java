@@ -12,8 +12,10 @@ import java.util.Set;
 @Setter
 public class RepoMemberInfoResponse implements Serializable {
     private Long id;
+    private Long repoId;
+    private Long userId;
     private String memberName;
     private String memberEmail;
     private MemberStatus status;
     private Set<RepoPermission> permissions;
- }
+}
