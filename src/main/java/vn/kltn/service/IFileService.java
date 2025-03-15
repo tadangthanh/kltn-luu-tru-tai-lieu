@@ -1,6 +1,5 @@
 package vn.kltn.service;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.request.FileRequest;
@@ -21,21 +20,20 @@ public interface IFileService {
 
     void validateFileIntegrity(File file); // kiem tra tinh toan ven cua file
 
-    void deleteFile(Long fileId);
+    void deleteFile(Long repoId,Long fileId);
 
-    FileResponse restoreFile(Long fileId);
+    FileResponse restoreFile(Long repoId,Long fileId);
 
     File getFileById(Long fileId);
 
     Long getRepoIdByFileId(Long fileId);
 
-    FileResponse updateFileMetadata(Long fileId, FileRequest fileRequest);
+    FileResponse updateFileMetadata(Long repoId,Long fileId, FileRequest fileRequest);
 
-    FileDataResponse downloadFile(Long fileId);
+    FileDataResponse downloadFile(Long repoId,Long fileId);
 
     PageResponse<List<FileResponse>> advanceSearchBySpecification(Long repoId, Pageable pageable, String[] file);
 
-//    PageResponse<List<FileResponse>> convertToPageResponse(Page<File> filePage, Pageable pageable);
 
     PageResponse<List<FileResponse>> searchByTagName(Long repoId, String tagName, Pageable pageable);
 

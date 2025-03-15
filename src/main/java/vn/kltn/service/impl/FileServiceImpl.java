@@ -10,20 +10,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.RepoPermission;
 import vn.kltn.dto.request.FileRequest;
-import vn.kltn.dto.request.TagRequest;
 import vn.kltn.dto.response.FileDataResponse;
 import vn.kltn.dto.response.FileResponse;
 import vn.kltn.dto.response.PageResponse;
-import vn.kltn.entity.*;
+import vn.kltn.entity.File;
+import vn.kltn.entity.Repo;
+import vn.kltn.entity.RepoMember;
+import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.exception.UploadFailureException;
 import vn.kltn.map.FileMapper;
-import vn.kltn.map.TagMapper;
-import vn.kltn.repository.FileHasTagRepo;
 import vn.kltn.repository.FileRepo;
 import vn.kltn.repository.RepoMemberRepo;
-import vn.kltn.repository.TagRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
@@ -53,9 +52,7 @@ public class FileServiceImpl implements IFileService {
     private final IAzureStorageService azureStorageService;
     private final RepoMemberRepo repoMemberRepo;
     private final IAuthenticationService authenticationService;
-    private final FileHasTagRepo fileHasTagRepo;
-    private final TagRepo tagRepo;
-    private final TagMapper tagMapper;
+    private final IFileHasTagService fileHasTagService;
     private final IRepoService repoService;
     private final IUserHasKeyService userHasKeyService;
     private final IRepoMemberService repoMemberService;
@@ -67,68 +64,68 @@ public class FileServiceImpl implements IFileService {
         try {
             String publicKey = getUserPublicKey();
             byte[] fileData = file.getBytes();
-            if (!verifyFileSignature(fileData, fileRequest.getSignature(), publicKey)) {
-                log.error("Invalid signature for file: {}", file.getOriginalFilename());
-                throw new InvalidDataException("Chữ ký không hợp lệ");
-            }
-
-            return processValidFile(repoId, fileRequest, file, publicKey);
+            validateSignature(fileData, fileRequest.getSignature(), publicKey);
+            Repo repo = repoService.getRepositoryById(repoId);
+            return processValidFile(repo, fileRequest, file, publicKey);
         } catch (IOException e) {
             log.error("Error reading file: {}", file.getOriginalFilename(), e);
             throw new UploadFailureException("Lỗi khi đọc file: " + e.getMessage());
         }
     }
 
-    // 🔹 Lấy public key của user hiện tại
+    private void validateSignature(byte[] fileData, String signature, String publicKey) {
+        if (!verifyFileSignature(fileData, signature, publicKey)) {
+            log.error("Invalid signature for file: {}", fileData);
+            throw new InvalidDataException("Chữ ký không hợp lệ");
+        }
+    }
+
+    // Lấy public key của user hiện tại
     private String getUserPublicKey() {
         return userHasKeyService.getPublicKeyActiveByUserAuth();
     }
 
-    // 🔹 Xử lý khi file hợp lệ và lưu vào database
-    private FileResponse processValidFile(Long repoId, FileRequest fileRequest, MultipartFile file, String publicKey) {
-        File fileEntity = mapToEntity(repoId, fileRequest, file);
+    // Xử lý khi file hợp lệ và lưu vào database
+    private FileResponse processValidFile(Repo repo, FileRequest fileRequest, MultipartFile file, String publicKey) {
+        File fileEntity = mapToEntity(repo, fileRequest, file);
         fileEntity.setVersion(1);
         fileEntity.setPublicKey(publicKey);
         fileEntity = fileRepo.save(fileEntity);
-        saveFileHasTag(fileRequest.getTags(), fileEntity);
-        Repo repo = repoService.getRepositoryById(repoId);
+        fileHasTagService.addFileToTag(fileEntity, fileRequest.getTags());
         // upload file to cloud
-        String fileBlobName = uploadFileToCloud(file, repo.getContainerName(), getSasToken(repoId));
+        String fileBlobName = uploadFileToCloud(file, repo.getContainerName(), getSasToken(repo));
         fileEntity.setFileBlobName(fileBlobName);
         fileEntity.setRepo(repo);
         return fileMapper.entityToResponse(fileEntity);
     }
 
-    private File mapToEntity(Long repoId, FileRequest fileRequest, MultipartFile file) {
+    private File mapToEntity(Repo repo, FileRequest fileRequest, MultipartFile file) {
         File fileEntity = fileMapper.requestToEntity(fileRequest);
         fileEntity.setCheckSum(calculateChecksumHexFromFile(file));
         fileEntity.setFileSize(file.getSize());
         fileEntity.setFileType(file.getContentType());
-        Repo repo = repoService.getRepositoryById(repoId);
         fileEntity.setRepo(repo);
-        RepoMember uploadedBy = repoMemberService.getAuthMemberWithRepoId(repoId);
+        RepoMember uploadedBy = repoMemberService.getAuthMemberWithRepoId(repo.getId());
         fileEntity.setUploadedBy(uploadedBy);
         return fileEntity;
     }
 
 
-    private String getSasToken(Long repoId) {
+    private String getSasToken(Repo repo) {
         User authUser = authenticationService.getAuthUser();
-        Repo repo = repoService.getRepositoryById(repoId);
         if (repo.getOwner().getId().equals(authUser.getId())) {
             return azureStorageService.generatePermissionRepo(repo.getContainerName(), Set.of(RepoPermission.values()));
         }
-        RepoMember repoMember = repoMemberService.getMemberActiveByRepoIdAndUserId(repoId, authUser.getId());
+        RepoMember repoMember = repoMemberService.getMemberActiveByRepoIdAndUserId(repo.getId(), authUser.getId());
         String sasToken = repoMember.getSasToken();
         if (!SasTokenValidator.isSasTokenValid(sasToken)) {
-            repoMember = updateSasTokenMember(repoId, authUser.getId());
+            repoMember = updateSasTokenMember(repo, authUser.getId());
         }
         return repoMember.getSasToken();
     }
 
-    private RepoMember updateSasTokenMember(Long repoId, Long userId) {
-        RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, userId);
-        Repo repo = repoService.getRepositoryById(repoId);
+    private RepoMember updateSasTokenMember(Repo repo, Long userId) {
+        RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repo.getId(), userId);
         String newSasToken = azureStorageService.generatePermissionRepo(repo.getContainerName(), repoMember.getPermissions());
         repoMember.setSasToken(newSasToken);
         return repoMemberRepo.save(repoMember);
@@ -141,27 +138,6 @@ public class FileServiceImpl implements IFileService {
             throw new InvalidDataException(e.getMessage());
         }
     }
-
-    private void saveFileHasTag(TagRequest[] tags, File fileEntity) {
-        for (TagRequest tagRequest : tags) {
-            if (tagRepo.existsByName(tagRequest.getName())) {
-                Tag tag = tagRepo.findByName(tagRequest.getName()).orElse(null);
-                saveFileHasTag(fileEntity, tag);
-            } else {
-                Tag tag = tagMapper.requestToEntity(tagRequest);
-                tag = tagRepo.save(tag);
-                saveFileHasTag(fileEntity, tag);
-            }
-        }
-    }
-
-    private void saveFileHasTag(File file, Tag tag) {
-        FileHasTag fileHasTag = new FileHasTag();
-        fileHasTag.setFile(file);
-        fileHasTag.setTag(tag);
-        fileHasTagRepo.save(fileHasTag);
-    }
-
 
     @Override
     public String calculateChecksumHexFromFile(MultipartFile file) {
@@ -226,7 +202,7 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     @ValidatePermissionMember(RepoPermission.DELETE)
-    public void deleteFile(Long fileId) {
+    public void deleteFile(Long repoId, Long fileId) {
         File file = getFileById(fileId);
         if (file.getDeletedAt() != null) {
             return;
@@ -238,7 +214,7 @@ public class FileServiceImpl implements IFileService {
 
 
     @Override
-    public FileResponse restoreFile(Long fileId) {
+    public FileResponse restoreFile(Long repoId, Long fileId) {
         File file = getFileById(fileId);
         validatePermissionRestoreFile(file);
         file.setDeletedAt(null);
@@ -280,7 +256,7 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     @ValidatePermissionMember(RepoPermission.UPDATE)
-    public FileResponse updateFileMetadata(Long fileId, FileRequest fileRequest) {
+    public FileResponse updateFileMetadata(Long repoId, Long fileId, FileRequest fileRequest) {
         File file = getFileById(fileId);
         fileMapper.updateEntity(fileRequest, file);
         file = fileRepo.save(file);
@@ -288,7 +264,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public FileDataResponse downloadFile(Long fileId) {
+    public FileDataResponse downloadFile(Long repoId, Long fileId) {
         File file = getFileById(fileId);
         // kiem tra tinh toan ven cua file
         validateFileIntegrity(file);

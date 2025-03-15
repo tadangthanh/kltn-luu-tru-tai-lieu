@@ -22,14 +22,18 @@ public class TagServiceImpl implements ITagService {
     private final TagMapper tagMapper;
 
     @Override
-    public TagResponse createTag(TagRequest tagRequest) {
-        Optional<Tag> tagExist = tagRepo.findByName(tagRequest.getName());
-        if (tagExist.isPresent()) {
-            return tagMapper.entityToResponse(tagExist.get());
-        }
-        Tag tag = tagMapper.requestToEntity(tagRequest);
-        Tag savedTag = tagRepo.save(tag);
-        return tagMapper.entityToResponse(savedTag);
+    public Tag getByNameOrNull(String name) {
+        return tagRepo.findByName(name).orElse(null);
+    }
+
+    @Override
+    public Tag requestToEntity(TagRequest tagRequest) {
+        return tagMapper.requestToEntity(tagRequest);
+    }
+
+    @Override
+    public Tag saveTag(Tag tag) {
+        return tagRepo.save(tag);
     }
 
 }
