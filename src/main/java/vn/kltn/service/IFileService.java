@@ -20,17 +20,17 @@ public interface IFileService {
 
     void validateFileIntegrity(File file); // kiem tra tinh toan ven cua file
 
-    void deleteFile(Long repoId,Long fileId);
+    void deleteFile(Long fileId);
 
-    FileResponse restoreFile(Long repoId,Long fileId);
+    FileResponse restoreFile(Long fileId);
 
     File getFileById(Long fileId);
 
     Long getRepoIdByFileId(Long fileId);
 
-    FileResponse updateFileMetadata(Long repoId,Long fileId, FileRequest fileRequest);
+    FileResponse updateFileMetadata(Long fileId, FileRequest fileRequest);
 
-    FileDataResponse downloadFile(Long repoId,Long fileId);
+    FileDataResponse downloadFile(Long fileId);
 
     PageResponse<List<FileResponse>> advanceSearchBySpecification(Long repoId, Pageable pageable, String[] file);
 

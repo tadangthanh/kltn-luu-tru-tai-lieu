@@ -194,7 +194,7 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     @HasPermission(RepoPermission.DELETE)
-    public void deleteFile(Long repoId, Long fileId) {
+    public void deleteFile(Long fileId) {
         File file = getFileById(fileId);
         if (file.getDeletedAt() != null) {
             return;
@@ -206,7 +206,7 @@ public class FileServiceImpl implements IFileService {
 
 
     @Override
-    public FileResponse restoreFile(Long repoId, Long fileId) {
+    public FileResponse restoreFile(Long fileId) {
         File file = getFileById(fileId);
         validateFileDeleted(file);
         validateAdminOrAuthorDeleteFile(file);
@@ -253,7 +253,7 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     @HasPermission(RepoPermission.UPDATE)
-    public FileResponse updateFileMetadata(Long repoId, Long fileId, FileRequest fileRequest) {
+    public FileResponse updateFileMetadata(Long fileId, FileRequest fileRequest) {
         File file = getFileById(fileId);
         fileMapper.updateEntity(fileRequest, file);
         file = fileRepo.save(file);
@@ -261,7 +261,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public FileDataResponse downloadFile(Long repoId, Long fileId) {
+    public FileDataResponse downloadFile(Long fileId) {
         File file = getFileById(fileId);
         // kiem tra tinh toan ven cua file
         validateFileIntegrity(file);
