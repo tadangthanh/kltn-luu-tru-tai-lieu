@@ -4,7 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import vn.kltn.common.RepoAction;
+import vn.kltn.common.RepoActionType;
 import vn.kltn.entity.Repo;
 import vn.kltn.entity.RepoActivity;
 import vn.kltn.entity.User;
@@ -24,7 +24,7 @@ public class RepoActivityServiceImpl implements IRepoActivityService {
     private final IAuthenticationService authService;
 
     @Override
-    public void logActivity(Long repoId, RepoAction action, String detail) {
+    public void logActivity(Long repoId, RepoActionType action, String detail) {
         log.info("Log activity for repoId: {}, action: {}, detail: {}", repoId, action, detail);
         Repo repo = getRepoByIdOrThrow(repoId);
         saveActivity(repo, action, detail);
@@ -36,7 +36,7 @@ public class RepoActivityServiceImpl implements IRepoActivityService {
         activityRepo.deleteByRepoId(repoId);
     }
 
-    private void saveActivity(Repo repo, RepoAction action, String detail) {
+    private void saveActivity(Repo repo, RepoActionType action, String detail) {
         RepoActivity activity = new RepoActivity();
         User authUser = authService.getAuthUser();
         activity.setRepo(repo);

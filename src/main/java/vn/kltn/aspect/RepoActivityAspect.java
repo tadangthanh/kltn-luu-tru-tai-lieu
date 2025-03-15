@@ -6,7 +6,7 @@ import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.stereotype.Component;
-import vn.kltn.common.RepoAction;
+import vn.kltn.common.RepoActionType;
 import vn.kltn.common.RepoPermission;
 import vn.kltn.dto.request.RepoRequestDto;
 import vn.kltn.exception.InvalidDataException;
@@ -51,7 +51,7 @@ public class RepoActivityAspect {
         Object[] args = joinPoint.getArgs();
         Long repoId = (Long) args[0];
         RepoRequestDto repoRequestDto = (RepoRequestDto) args[1];
-        repoActivityService.logActivity(repoId, RepoAction.UPDATE_REPOSITORY,
+        repoActivityService.logActivity(repoId, RepoActionType.UPDATE_REPOSITORY,
                 String.format("Cập nhật repository %s, new name: %s, new description: %s", repoId, repoRequestDto.getName(), repoRequestDto.getDescription()));
     }
 
@@ -61,7 +61,7 @@ public class RepoActivityAspect {
         Object[] args = joinPoint.getArgs();
         Long repoId = (Long) args[0];
         Long userId = (Long) args[1];
-        repoActivityService.logActivity(repoId, RepoAction.ADD_MEMBER, String.format("Thêm thành viên %s vào repository %s", userId, repoId));
+        repoActivityService.logActivity(repoId, RepoActionType.SEND_MEMBER_INVITE, String.format("Thêm thành viên %s vào repository %s", userId, repoId));
     }
 
     @AfterReturning(value = "removeMemberRepoPointCut()")
@@ -69,7 +69,7 @@ public class RepoActivityAspect {
         Object[] args = joinPoint.getArgs();
         Long repoId = (Long) args[0];
         Long memberId = (Long) args[1];
-        repoActivityService.logActivity(repoId, RepoAction.REMOVE_MEMBER, "Xoá viên memberId: " + memberId);
+        repoActivityService.logActivity(repoId, RepoActionType.REMOVE_MEMBER, "Xoá viên memberId: " + memberId);
     }
 
     @AfterReturning(value = "updatePermissionMember()")
@@ -89,7 +89,7 @@ public class RepoActivityAspect {
         } else {
             throw new InvalidDataException("Expected a Set<RepoPermission>, but got: " + args[2].getClass());
         }
-        repoActivityService.logActivity(repoId, RepoAction.UPDATE_PERMISSION,
+        repoActivityService.logActivity(repoId, RepoActionType.CHANGE_MEMBER_PERMISSION,
                 String.format("Cập nhật quyền hạn cho thành viên memberId: %s, new permissions: %s", memberId, requestedPermissions));
     }
 
