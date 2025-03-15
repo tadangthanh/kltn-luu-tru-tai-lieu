@@ -9,6 +9,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface ValidatePermissionMember {
+public @interface HasPermission {
     RepoPermission value(); // Truyền vào quyền cần kiểm tra
 }

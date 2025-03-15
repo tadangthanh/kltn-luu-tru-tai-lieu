@@ -42,6 +42,18 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
     }
 
     @Override
+    public RepoMember saveMember(RepoMember repoMember) {
+        return repoMemberRepo.save(repoMember);
+    }
+
+    @Override
+    public RepoMember updateSasTokenMember(Repo repo, RepoMember repoMember) {
+        String newSasToken = azureStorageService.generatePermissionRepo(repo.getContainerName(), repoMember.getPermissions());
+        repoMember.setSasToken(newSasToken);
+        return repoMemberRepo.save(repoMember);
+    }
+
+    @Override
     public RepoMember getMemberActiveByRepoIdAndUserId(Long repoId, Long userId) {
         return repoMemberRepo.findRepoMemberActiveByRepoIdAndUserId(repoId, userId).orElseThrow(() -> {
             log.error("Không tìm thấy thành viên active, userId: {}, trong repo repoId: {}", userId, repoId);
@@ -132,22 +144,6 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
         repoMember.setSasToken(newSasToken);
         return repoMemberRepo.save(repoMember);
     }
-
-//    @Override
-//    public String getSasToken(Long repoId) {
-//        User authUser = authenticationService.getAuthUser();
-//        Repo repo = repoCommonService.getRepositoryById(repoId);
-//        if (repo.getOwner().getId().equals(authUser.getId())) {
-//            return azureStorageService.generatePermissionRepo(repo.getContainerName(), Set.of(RepoPermission.values()));
-//        }
-//        RepoMember repoMember = getMemberActiveByRepoIdAndUserId(repoId, authUser.getId());
-//        String sasToken = repoMember.getSasToken();
-//        if (!SasTokenValidator.isSasTokenValid(sasToken)) {
-//            repoMember = updateSasTokenByRepoIdAndUserId(repoId, authUser.getId());
-//        }
-//        return repoMember.getSasToken();
-//    }
-
 
     private String generateSasTokenForMember(String containerName, Set<RepoPermission> permissions) {
         return azureStorageService.generatePermissionRepo(containerName, permissions);

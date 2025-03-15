@@ -15,6 +15,10 @@ public interface IRepoMemberService {
 
     RepoMember getAuthMemberWithRepoId(Long repoId);
 
+    RepoMember saveMember(RepoMember repoMember);
+
+    RepoMember updateSasTokenMember(Repo repo, RepoMember repoMember);
+
     RepoMember getMemberActiveByRepoIdAndUserId(Long repoId, Long userId);
 
     RepoMember getMemberByRepoIdAndUserId(Long repoId, Long userId);

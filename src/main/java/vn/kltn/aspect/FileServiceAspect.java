@@ -9,13 +9,11 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 import vn.kltn.common.RepoPermission;
-import vn.kltn.entity.File;
 import vn.kltn.entity.User;
-import vn.kltn.exception.InvalidDataException;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IFileService;
 import vn.kltn.service.IRepoService;
-import vn.kltn.validation.ValidatePermissionMember;
+import vn.kltn.validation.HasPermission;
 
 import java.lang.reflect.Method;
 
@@ -29,12 +27,12 @@ public class FileServiceAspect {
     private final IFileService fileService;
 
 
-    @Before("@annotation(vn.kltn.validation.ValidatePermissionMember)")
+    @Before("@annotation(vn.kltn.validation.HasPermission)")
     public void checkPermissionMember(JoinPoint joinPoint) {
         Object[] args = joinPoint.getArgs();
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
-        ValidatePermissionMember annotation = method.getAnnotation(ValidatePermissionMember.class);
+        HasPermission annotation = method.getAnnotation(HasPermission.class);
         RepoPermission requiredPermission = annotation.value();
 
         // Lấy danh sách tham số của method
