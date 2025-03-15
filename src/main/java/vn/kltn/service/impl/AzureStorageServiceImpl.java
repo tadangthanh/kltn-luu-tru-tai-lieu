@@ -182,30 +182,24 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
      */
     private BlobContainerSasPermission generatePermissionForMember(Set<RepoPermission> permissionList) {
         BlobContainerSasPermission permission = new BlobContainerSasPermission();
-        for (RepoPermission permissionRepo : permissionList) {
-            switch (permissionRepo) {
-                case CREATE:
+
+        permissionList.forEach(repoPermission -> {
+            switch (repoPermission) {
+                case CREATE -> {
                     permission.setCreatePermission(true);
-                    break;
-                case READ:
-                    permission.setReadPermission(true);
-                    break;
-                case UPDATE, WRITE:
-                    permission.setWritePermission(true);
-                    break;
-                case DELETE:
-                    permission.setDeletePermission(true);
-                    break;
-                case LIST:
-                    permission.setListPermission(true);
-                    break;
-                case ADD:
-                    permission.setAddPermission(true);
-                    break;
-                default:
-                    break;
+                    permission.setWritePermission(true);  // Cho phép ghi dữ liệu
+                    permission.setAddPermission(true);   // Cho phép thêm dữ liệu
+                }
+                case READ -> permission.setReadPermission(true); // Đọc nội dung tệp
+                case UPDATE -> permission.setWritePermission(true); // UPDATE thực chất là một phần của WRITE
+                case DELETE -> permission.setDeletePermission(true); // Xóa tệp hoặc thư mục
+                case LIST -> permission.setListPermission(true); // Liệt kê danh sách các tệp
+                default -> {
+                    // Không làm gì nếu quyền không được xác định
+                }
             }
-        }
+        });
+
         return permission;
     }
 

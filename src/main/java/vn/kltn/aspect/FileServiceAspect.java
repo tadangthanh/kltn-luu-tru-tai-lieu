@@ -10,6 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 import vn.kltn.common.RepoPermission;
 import vn.kltn.entity.User;
+import vn.kltn.exception.InvalidDataException;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IFileService;
 import vn.kltn.service.IRepoService;
@@ -57,7 +58,7 @@ public class FileServiceAspect {
 
         // Nếu vẫn không có repoId, báo lỗi
         if (repoId == null) {
-            throw new IllegalArgumentException("Không thể xác định repoId để kiểm tra quyền.");
+            throw new InvalidDataException("Có lỗi xảy ra khi xác định quyền hạn của bạn");
         }
 
         // Lấy thông tin user

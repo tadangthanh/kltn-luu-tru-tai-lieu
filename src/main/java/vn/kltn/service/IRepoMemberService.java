@@ -43,5 +43,6 @@ public interface IRepoMemberService {
 
     RepoMember updateSasTokenByRepoIdAndUserId(Long repoId, Long userId);
 
+    String getSasTokenByAuthMemberWithRepo(Repo repo);
 }
 

@@ -91,7 +91,7 @@ public class FileServiceImpl implements IFileService {
         fileEntity = fileRepo.save(fileEntity);
         fileHasTagService.addFileToTag(fileEntity, fileRequest.getTags());
         // upload file to cloud
-        String fileBlobName = uploadFileToCloud(file, repo.getContainerName(), getSasToken(repo));
+        String fileBlobName = uploadFileToCloud(file, repo.getContainerName(), repoMemberService.getSasTokenByAuthMemberWithRepo(repo));
         fileEntity.setFileBlobName(fileBlobName);
         fileEntity.setRepo(repo);
         return fileMapper.entityToResponse(fileEntity);
@@ -109,18 +109,18 @@ public class FileServiceImpl implements IFileService {
     }
 
 
-    private String getSasToken(Repo repo) {
-        User authUser = authenticationService.getAuthUser();
-        if (repo.getOwner().getId().equals(authUser.getId())) {
-            return azureStorageService.generatePermissionRepo(repo.getContainerName(), Set.of(RepoPermission.values()));
-        }
-        RepoMember repoMember = repoMemberService.getMemberActiveByRepoIdAndUserId(repo.getId(), authUser.getId());
-        String sasToken = repoMember.getSasToken();
-        if (!SasTokenValidator.isSasTokenValid(sasToken)) {
-            repoMember = repoMemberService.updateSasTokenMember(repo, repoMember);
-        }
-        return repoMember.getSasToken();
-    }
+//    private String getSasToken(Repo repo) {
+//        User authUser = authenticationService.getAuthUser();
+//        if (repo.getOwner().getId().equals(authUser.getId())) {
+//            return azureStorageService.generatePermissionRepo(repo.getContainerName(), Set.of(RepoPermission.values()));
+//        }
+//        RepoMember repoMember = repoMemberService.getMemberActiveByRepoIdAndUserId(repo.getId(), authUser.getId());
+//        String sasToken = repoMember.getSasToken();
+//        if (!SasTokenValidator.isSasTokenValid(sasToken)) {
+//            repoMember = repoMemberService.updateSasTokenMember(repo, repoMember);
+//        }
+//        return repoMember.getSasToken();
+//    }
 
 
     private String uploadFileToCloud(MultipartFile file, String containerName, String sasToken) {
@@ -196,19 +196,22 @@ public class FileServiceImpl implements IFileService {
     @HasPermission(RepoPermission.DELETE)
     public void deleteFile(Long fileId) {
         File file = getFileById(fileId);
-        if (file.getDeletedAt() != null) {
-            return;
-        }
+        validateFileDeleted(file);
         file.setDeletedAt(LocalDateTime.now());
         Repo repo = file.getRepo();
         file.setDeletedBy(repoMemberService.getAuthMemberWithRepoId(repo.getId()));
     }
 
+    private void validateFileDeleted(File file) {
+        if (file.getDeletedAt() != null) {
+            throw new InvalidDataException("File đã bị xóa");
+        }
+    }
 
     @Override
     public FileResponse restoreFile(Long fileId) {
         File file = getFileById(fileId);
-        validateFileDeleted(file);
+        validateFileExist(file);
         validateAdminOrAuthorDeleteFile(file);
         file.setDeletedAt(null);
         file.setDeletedBy(null);
@@ -227,17 +230,15 @@ public class FileServiceImpl implements IFileService {
         if (!repoMember.getId().equals(file.getDeletedBy().getId())) {
             throw new InvalidDataException("Không có quyền khôi phục file");
         }
-        throw new InvalidDataException("Không có quyền xóa file");
     }
 
-    private void validateFileDeleted(File file) {
+    private void validateFileExist(File file) {
         if (file.getDeletedAt() == null) {
             throw new InvalidDataException("File chưa bị xóa");
         }
     }
 
     @Override
-    @HasPermission(RepoPermission.READ)
     public File getFileById(Long fileId) {
         return fileRepo.findById(fileId).orElseThrow(() -> {
             log.warn("Không tìm thấy file với id: {}", fileId);

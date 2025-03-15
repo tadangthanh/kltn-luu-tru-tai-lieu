@@ -11,8 +11,4 @@ public enum RepoPermission {
     DELETE,  // Xóa blob hoặc container
     // Quyền liệt kê
     LIST,    // Liệt kê tất cả blob trong repository
-    // Quyền ghi dữ liệu (cho phép ghi đè file đã có)
-    WRITE,   // Ghi dữ liệu vào blob (có thể ghi đè)
-    // Quyền thêm mới (chỉ cho phép thêm file, không ghi đè)
-    ADD,   // Chỉ được thêm file mới vào repository, không ghi đè,
 }

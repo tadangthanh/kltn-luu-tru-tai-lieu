@@ -18,6 +18,7 @@ import vn.kltn.repository.RepoMemberRepo;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IRepoMemberService;
+import vn.kltn.util.SasTokenValidator;
 
 import java.util.Set;
 
@@ -36,8 +37,8 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
     public RepoMember getAuthMemberWithRepoId(Long repoId) {
         User authUser = authenticationService.getAuthUser();
         return repoMemberRepo.getMemberActiveByRepoIdAndUserId(repoId, authUser.getId()).orElseThrow(() -> {
-            log.error("{} không phải chủ sở hữu repo: {}", authUser.getEmail(), repoId);
-            return new ResourceNotFoundException("Bạn không phải chủ sở hữu repo");
+            log.error("{} không phải thành viên repository: {}", authUser.getEmail(), repoId);
+            return new ResourceNotFoundException("Bạn không phải thành viên repository");
         });
     }
 
@@ -57,7 +58,7 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
     public RepoMember getMemberActiveByRepoIdAndUserId(Long repoId, Long userId) {
         return repoMemberRepo.findRepoMemberActiveByRepoIdAndUserId(repoId, userId).orElseThrow(() -> {
             log.error("Không tìm thấy thành viên active, userId: {}, trong repo repoId: {}", userId, repoId);
-            return new ResourceNotFoundException("Không tìm thấy thành viên: " + userId + " trong repo: " + repoId);
+            return new ResourceNotFoundException("Không tìm thấy thành viên");
         });
     }
 
@@ -143,6 +144,17 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
         String newSasToken = azureStorageService.generatePermissionRepo(repo.getContainerName(), repoMember.getPermissions());
         repoMember.setSasToken(newSasToken);
         return repoMemberRepo.save(repoMember);
+    }
+
+    @Override
+    public String getSasTokenByAuthMemberWithRepo(Repo repo) {
+        User authUser = authenticationService.getAuthUser();
+        RepoMember repoMember = getMemberActiveByRepoIdAndUserId(repo.getId(), authUser.getId());
+        String sasToken = repoMember.getSasToken();
+        if (!SasTokenValidator.isSasTokenValid(sasToken)) {
+            repoMember = updateSasTokenMember(repo, repoMember);
+        }
+        return repoMember.getSasToken();
     }
 
     private String generateSasTokenForMember(String containerName, Set<RepoPermission> permissions) {

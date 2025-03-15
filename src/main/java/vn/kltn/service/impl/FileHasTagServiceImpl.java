@@ -23,13 +23,14 @@ public class FileHasTagServiceImpl implements IFileHasTagService {
     @Override
     public void addFileToTag(File fileEntity, TagRequest[] tags) {
         for (TagRequest tagRequest : tags) {
-            Tag tagExist= tagService.getByNameOrNull(tagRequest.getName());
+            Tag tagExist = tagService.getByNameOrNull(tagRequest.getName());
             if (tagExist != null) {
                 saveFileHasTag(fileEntity, tagExist);
+            } else {
+                tagExist = tagService.requestToEntity(tagRequest);
+                tagExist = tagService.saveTag(tagExist);
+                saveFileHasTag(fileEntity, tagExist);
             }
-            tagExist= tagService.requestToEntity(tagRequest);
-            tagExist = tagService.saveTag(tagExist);
-            saveFileHasTag(fileEntity, tagExist);
         }
     }
     private void saveFileHasTag(File file, Tag tag) {
