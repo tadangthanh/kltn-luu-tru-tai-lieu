@@ -34,7 +34,6 @@ public interface IFileService {
 
     PageResponse<List<FileResponse>> advanceSearchBySpecification(Long repoId, Pageable pageable, String[] file);
 
-
     PageResponse<List<FileResponse>> searchByTagName(Long repoId, String tagName, Pageable pageable);
 
     PageResponse<List<FileResponse>> searchByStartDateAndEndDate(Long repoId, Pageable pageable, LocalDate startDate, LocalDate endDate);

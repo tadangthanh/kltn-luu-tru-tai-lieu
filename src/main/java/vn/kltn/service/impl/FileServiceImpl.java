@@ -25,7 +25,6 @@ import vn.kltn.repository.FileRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
-import vn.kltn.util.SasTokenValidator;
 import vn.kltn.validation.HasPermission;
 
 import java.io.IOException;
@@ -37,7 +36,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -107,21 +105,6 @@ public class FileServiceImpl implements IFileService {
         fileEntity.setUploadedBy(uploadedBy);
         return fileEntity;
     }
-
-
-//    private String getSasToken(Repo repo) {
-//        User authUser = authenticationService.getAuthUser();
-//        if (repo.getOwner().getId().equals(authUser.getId())) {
-//            return azureStorageService.generatePermissionRepo(repo.getContainerName(), Set.of(RepoPermission.values()));
-//        }
-//        RepoMember repoMember = repoMemberService.getMemberActiveByRepoIdAndUserId(repo.getId(), authUser.getId());
-//        String sasToken = repoMember.getSasToken();
-//        if (!SasTokenValidator.isSasTokenValid(sasToken)) {
-//            repoMember = repoMemberService.updateSasTokenMember(repo, repoMember);
-//        }
-//        return repoMember.getSasToken();
-//    }
-
 
     private String uploadFileToCloud(MultipartFile file, String containerName, String sasToken) {
         try (InputStream inputStream = file.getInputStream()) {
