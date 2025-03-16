@@ -2,7 +2,6 @@ package vn.kltn.aspect;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.springframework.security.access.AccessDeniedException;
@@ -24,7 +23,7 @@ public class RepoServiceAspect {
     private final IRepoMemberService repoMemberService;
 
     @Before("@annotation(vn.kltn.validation.RequireOwnerRepo) && args(repoId,..)")
-    public void checkOwnerRepoPermission(JoinPoint joinPoint, Long repoId) {
+    public void checkOwnerRepoPermission(Long repoId) {
         log.info("Kiểm tra quyền chủ sở hũu repo, repoId: {}", repoId);
         Repo repo = getRepoByIdOrThrow(repoId);
         String authEmail = authService.getAuthUser().getEmail();
@@ -35,7 +34,7 @@ public class RepoServiceAspect {
     }
 
     @Before("@annotation(vn.kltn.validation.RequireRepoMemberActive) && args(repoId,..)")
-    public void checkRepoMembership(JoinPoint joinPoint, Long repoId) {
+    public void checkRepoMembership(Long repoId) {
         log.info("Kiểm tra có phải thành viên repo, repoId: {}", repoId);
         User authUser = authService.getAuthUser();
         if (!repoMemberService.isExistMemberActiveByRepoIdAndUserId(repoId, authUser.getId())) {
