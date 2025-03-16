@@ -14,6 +14,7 @@ public interface FileShareMapper {
     FileShare toEntity(FileShareRequest fileShareRequest);
 
     @Mapping(target = "fileName",source = "file.fileName")
+    @Mapping(target = "fileId",source = "file.id")
     FileShareResponse toResponse(FileShare fileShare);
 
 }

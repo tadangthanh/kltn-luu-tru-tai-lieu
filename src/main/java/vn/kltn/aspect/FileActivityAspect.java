@@ -51,8 +51,8 @@ public class FileActivityAspect {
 
     @AfterReturning(value = "shareFilePointCut()", returning = "fileShared")
     public void logShareFile(FileShareResponse fileShared) {
-        fileActivityService.logActivity(fileShared.getId(), FileActionType.SHARE,
-                String.format("Tạo link chia sẻ file #%s với thời gian hết hạn: %s", fileShared.getId(), fileShared.getExpireAt()));
+        fileActivityService.logActivity(fileShared.getFileId(), FileActionType.SHARE,
+                String.format("Tạo link chia sẻ file #%s với thời gian hết hạn: %s", fileShared.getFileId(), fileShared.getExpireAt()));
     }
 
     @AfterReturning(value = "updateFileMetadataPointCut()", returning = "fileUpdated")
@@ -61,10 +61,10 @@ public class FileActivityAspect {
                 String.format("Cập nhật metadata file #%s", fileUpdated.getId()));
     }
 
-    @AfterReturning(value = "uploadFilePointCut()", returning = "fileRestore")
+    @AfterReturning(value = "restoreFileFilePointCut()", returning = "fileRestore")
     public void logRestoreFile(FileResponse fileRestore) {
         fileActivityService.logActivity(fileRestore.getId(), FileActionType.RESTORE,
-                String.format("Khôi phục file tên: %s, #%s", fileRestore.getFileName(), fileRestore.getId()));
+                String.format("Khôi phục file đã xoá: #%s", fileRestore.getId()));
     }
 
     @AfterReturning(value = "deleteFileFilePointCut()")

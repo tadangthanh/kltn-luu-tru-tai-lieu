@@ -7,6 +7,7 @@ import vn.kltn.dto.BaseDto;
 @Getter
 @Setter
 public class FileShareResponse extends BaseDto {
+    private Long fileId;
     private String token;
     private String expireAt;
     private String fileName;
