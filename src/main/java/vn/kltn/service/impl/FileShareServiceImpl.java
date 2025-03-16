@@ -113,8 +113,8 @@ public class FileShareServiceImpl implements IFileShareService {
     }
 
     @Override
-    public void deleteFileShareById(Long id) {
-        fileShareRepo.deleteById(id);
+    public void deleteFileShareById(Long fileId) {
+        fileShareRepo.deleteByFileId(fileId);
     }
 
     @Override

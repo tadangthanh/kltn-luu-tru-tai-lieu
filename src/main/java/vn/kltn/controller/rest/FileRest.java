@@ -90,7 +90,7 @@ public class FileRest {
         return new ResponseData<>(201, "Share file successfully", fileService.shareFile(fileId, fileShareRequest));
     }
 
-    @DeleteMapping("/file-share/{fileId}")
+    @DeleteMapping("/{fileId}/un-share")
     public ResponseData<Void> unFileShare(@PathVariable Long fileId) {
         fileService.deleteFileShareByFileId(fileId);
         return new ResponseData<>(200, "un file share completed", null);

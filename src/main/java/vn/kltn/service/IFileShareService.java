@@ -12,7 +12,7 @@ public interface IFileShareService {
 
     FileShare getShareFileByToken(String token);
 
-    void deleteFileShareById(Long id);
+    void deleteFileShareById(Long fileId);
     void deleteFileSharedByFileId(Long fileId);
 
     FileShare getFileShareByFileId(Long fileId);
