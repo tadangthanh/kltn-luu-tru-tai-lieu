@@ -4,8 +4,12 @@ import lombok.Getter;
 
 @Getter
 public enum RepoActionType {
+    CREATE_REPOSITORY("Tạo repository"),
     SEND_MEMBER_INVITE("Gửi lời mời tham gia"),
     REMOVE_MEMBER("Xóa thành viên"),
+    DISABLE_MEMBER("Vô hiệu hóa thành viên"),
+    ENABLE_MEMBER("Kích hoạt lại thành viên"),
+    MEMBER_LEAVE("Thành viên rời khỏi repository"),
     UPDATE_REPOSITORY("cập nhât repository"),
     CHANGE_MEMBER_PERMISSION("cập nhật quyền của thành viên"),
     MEMBER_ACCEPT_INVITATION("thành viên chấp nhận lời mời"),

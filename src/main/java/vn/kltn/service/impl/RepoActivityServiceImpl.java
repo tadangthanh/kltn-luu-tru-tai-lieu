@@ -19,6 +19,7 @@ import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IRepoActivityService;
+import vn.kltn.validation.RequireRepoMemberActive;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -37,6 +38,7 @@ public class RepoActivityServiceImpl implements IRepoActivityService {
     private final RepoActivityMapper repoActivityMapper;
 
     @Override
+    @RequireRepoMemberActive
     public void logActivity(Long repoId, RepoActionType action, String detail) {
         log.info("Log activity for repoId: {}, action: {}, detail: {}", repoId, action, detail);
         Repo repo = repoCommonService.getRepositoryById(repoId);
@@ -50,6 +52,7 @@ public class RepoActivityServiceImpl implements IRepoActivityService {
     }
 
     @Override
+    @RequireRepoMemberActive
     public PageResponse<List<RepoActivityResponse>> advanceSearchBySpecification(Long repoId, Pageable pageable, String[] activities) {
         log.info("request search activity with specification");
         if (activities != null && activities.length > 0) {
@@ -78,6 +81,7 @@ public class RepoActivityServiceImpl implements IRepoActivityService {
     }
 
     @Override
+    @RequireRepoMemberActive
     public PageResponse<List<RepoActivityResponse>> searchByStartDateAndEndDate(Long repoId, Pageable pageable, LocalDate startDate, LocalDate endDate) {
         LocalDateTime startOfDay = startDate.atStartOfDay(); // 2025-03-05 00:00:00
         LocalDateTime endOfDay = endDate.atTime(23, 59, 59); // 2025-03-10 23:59:59
@@ -86,6 +90,7 @@ public class RepoActivityServiceImpl implements IRepoActivityService {
     }
 
     @Override
+    @RequireRepoMemberActive
     public PageResponse<List<RepoActivityResponse>> getActivitiesByRepoId(Long repoId, Pageable pageable) {
         Page<RepoActivity> repoActivityPage = activityRepo.findByRepoId(repoId, pageable);
         return PaginationUtils.convertToPageResponse(repoActivityPage, pageable, repoActivityMapper::toResponse);

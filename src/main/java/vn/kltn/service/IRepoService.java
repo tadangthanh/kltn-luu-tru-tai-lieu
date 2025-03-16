@@ -20,7 +20,7 @@ public interface IRepoService {
 
     RepoMemberInfoResponse enableMemberByRepoIdAndUserId(Long repoId, Long userId);
 
-    void leaveRepo(Long repoId);
+    RepoMemberInfoResponse leaveRepo(Long repoId);
 
     RepoResponseDto addMemberToRepository(Long repoId, Long userId, Set<RepoPermission> permissionRequest);
 

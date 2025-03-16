@@ -120,12 +120,13 @@ public class RepoServiceImpl implements IRepoService {
     }
 
     @Override
-    public void leaveRepo(Long repoId) {
+    public RepoMemberInfoResponse leaveRepo(Long repoId) {
         RepoMember repoMember = repoMemberService.getAuthMemberWithRepoId(repoId);
         validateMemberNotOwner(repoMember);
         validateMemberNotRemoved(repoMember);
         validateMemberNotExited(repoMember);
         repoMember.setStatus(MemberStatus.EXITED);
+        return repoMemberService.toRepoMemberInfoResponse(repoMember);
     }
 
 

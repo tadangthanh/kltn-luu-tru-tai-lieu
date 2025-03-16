@@ -83,9 +83,8 @@ public class RepoRest {
     }
 
     @PostMapping("/{repositoryId}/member/leave")
-    public ResponseData<Void> leaveRepo(@PathVariable Long repositoryId) {
-        repositoryService.leaveRepo(repositoryId);
+    public ResponseData<RepoMemberInfoResponse> leaveRepo(@PathVariable Long repositoryId) {
         return new ResponseData<>(HttpStatus.OK.value(), "Rời khỏi kho lưu trữ thành công",
-                null);
+                repositoryService.leaveRepo(repositoryId));
     }
 }
