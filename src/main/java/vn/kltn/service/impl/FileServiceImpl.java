@@ -10,15 +10,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.RepoPermission;
 import vn.kltn.dto.request.FileRequest;
+import vn.kltn.dto.request.FileShareRequest;
 import vn.kltn.dto.response.FileDataResponse;
 import vn.kltn.dto.response.FileResponse;
+import vn.kltn.dto.response.FileShareResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.File;
 import vn.kltn.entity.Repo;
 import vn.kltn.entity.RepoMember;
 import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
-import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.exception.UploadFailureException;
 import vn.kltn.map.FileMapper;
 import vn.kltn.repository.FileRepo;
@@ -51,7 +52,9 @@ public class FileServiceImpl implements IFileService {
     private final IFileHasTagService fileHasTagService;
     private final IRepoService repoService;
     private final IUserHasKeyService userHasKeyService;
+    private final FileCommonService fileCommonService;
     private final IRepoMemberService repoMemberService;
+    private final IFileShareService fileShareService;
 
 
     @Override
@@ -183,6 +186,8 @@ public class FileServiceImpl implements IFileService {
         file.setDeletedAt(LocalDateTime.now());
         Repo repo = file.getRepo();
         file.setDeletedBy(repoMemberService.getAuthMemberWithRepoId(repo.getId()));
+        // xóa file share liên quan
+        fileShareService.deleteFileShareById(fileId);
     }
 
     private void validateFileDeleted(File file) {
@@ -223,10 +228,7 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     public File getFileById(Long fileId) {
-        return fileRepo.findById(fileId).orElseThrow(() -> {
-            log.warn("Không tìm thấy file với id: {}", fileId);
-            return new ResourceNotFoundException("File không tồn tại");
-        });
+        return fileCommonService.getFileById(fileId);
     }
 
     @Override
@@ -318,6 +320,21 @@ public class FileServiceImpl implements IFileService {
         LocalDateTime endOfDay = endDate.atTime(23, 59, 59); // 2025-03-10 23:59:59
         Page<File> filePage = fileRepo.findActiveFilesByRepoIdAndUploadDateRange(repoId, startOfDay, endOfDay, pageable);
         return PaginationUtils.convertToPageResponse(filePage, pageable, fileMapper::entityToResponse);
+    }
+
+    @Override
+    public FileShareResponse createFileShareLink(Long fileId, FileShareRequest fileShareRequest) {
+        return fileShareService.createFileShareLink(fileId, fileShareRequest);
+    }
+
+    @Override
+    public FileDataResponse viewFile(String token, String password) {
+        return fileShareService.viewFile(token, password);
+    }
+
+    @Override
+    public void deleteFileShareById(Long id) {
+        fileShareService.deleteFileShareById(id);
     }
 
 }

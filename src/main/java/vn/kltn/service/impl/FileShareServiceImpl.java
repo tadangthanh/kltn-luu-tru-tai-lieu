@@ -16,7 +16,6 @@ import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.FileShareMapper;
 import vn.kltn.repository.FileShareRepo;
 import vn.kltn.service.IAzureStorageService;
-import vn.kltn.service.IFileService;
 import vn.kltn.service.IFileShareService;
 
 import java.io.IOException;
@@ -33,16 +32,14 @@ public class FileShareServiceImpl implements IFileShareService {
     private final FileShareMapper fileShareMapper;
     private final PasswordEncoder passwordEncoder;
     private final IAzureStorageService azureStorageService;
-    private final IFileService fileService;
+    private final FileCommonService fileCommonService;
 
     @Override
     public FileShareResponse createFileShareLink(Long fileId, FileShareRequest request) {
-        File file = fileService.getFileById(fileId);
+        File file = fileCommonService.getFileById(fileId);
         FileShare fileShare = fileShareRepo.findByFileId(fileId).orElseGet(() -> createNewFileShare(file, request));
-
         updateFileShare(fileShare, request);
         fileShareRepo.save(fileShare);
-
         return fileShareMapper.toResponse(fileShare);
     }
 
@@ -80,10 +77,9 @@ public class FileShareServiceImpl implements IFileShareService {
         String containerName = repo.getContainerName();
         String fileBlobName = file.getFileBlobName();
         try (InputStream inputStream = azureStorageService.downloadBlobInputStream(containerName, fileBlobName)) {
-
             return FileDataResponse.builder()
                     .data(inputStream.readAllBytes())
-                    .fileName(file.getFileName()+file.getFileBlobName().substring(file.getFileBlobName().lastIndexOf('.')))
+                    .fileName(file.getFileName() + file.getFileBlobName().substring(file.getFileBlobName().lastIndexOf('.')))
                     .fileType(file.getFileType())
                     .build();
         } catch (IOException e) {

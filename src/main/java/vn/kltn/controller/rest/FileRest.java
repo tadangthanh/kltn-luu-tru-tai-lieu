@@ -2,6 +2,7 @@ package vn.kltn.controller.rest;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ContentDisposition;
@@ -12,12 +13,11 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.request.FileRequest;
-import vn.kltn.dto.response.FileDataResponse;
-import vn.kltn.dto.response.FileResponse;
-import vn.kltn.dto.response.PageResponse;
-import vn.kltn.dto.response.ResponseData;
+import vn.kltn.dto.request.FileShareRequest;
+import vn.kltn.dto.response.*;
 import vn.kltn.service.IFileService;
 
+import java.io.ByteArrayInputStream;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -74,5 +74,25 @@ public class FileRest {
                                                                                       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
                                                                                       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         return new ResponseData<>(200, "Search file by date range successfully", fileService.searchByStartDateAndEndDate(repoId, pageable, startDate, endDate));
+    }
+
+    @GetMapping("/view/{token}")
+    public ResponseEntity<InputStreamResource> viewFile(@PathVariable("token") String token, @RequestParam(value = "password", required = false) String password) {
+        FileDataResponse fileDataResponse = fileService.viewFile(token, password);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileDataResponse.getFileName() + "\"")
+                .contentType(MediaType.parseMediaType(fileDataResponse.getFileType()))
+                .body(new InputStreamResource(new ByteArrayInputStream(fileDataResponse.getData())));
+    }
+
+    @PostMapping("/{fileId}/share")
+    public ResponseData<FileShareResponse> share(@PathVariable Long fileId, @Valid @RequestBody FileShareRequest fileShareRequest) {
+        return new ResponseData<>(201, "Share file successfully", fileService.createFileShareLink(fileId, fileShareRequest));
+    }
+
+    @DeleteMapping("/file-share/{id}")
+    public ResponseData<Void> unFileShare(@PathVariable Long id) {
+        fileService.deleteFileShareById(id);
+        return new ResponseData<>(200, "un file share completed", null);
     }
 }
