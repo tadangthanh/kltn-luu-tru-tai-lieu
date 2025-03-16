@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import vn.kltn.entity.RepoActivity;
 
+import java.time.LocalDateTime;
+
 public interface RepositoryActivityRepo extends JpaRepository<RepoActivity, Long> {
     @Transactional
     @Modifying
@@ -15,4 +17,6 @@ public interface RepositoryActivityRepo extends JpaRepository<RepoActivity, Long
     void deleteByRepoId(Long repoId);
 
     Page<RepoActivity> findByRepoId(Long repoId, Pageable pageable);
+    @Query("SELECT ra FROM RepoActivity ra WHERE ra.repo.id = :repoId AND ra.createdAt BETWEEN :startOfDay AND :endOfDay")
+    Page<RepoActivity> findActiveRepositoriesByRepoIdAndCreatedAtRange(Long repoId, LocalDateTime startOfDay, LocalDateTime endOfDay, Pageable pageable);
 }

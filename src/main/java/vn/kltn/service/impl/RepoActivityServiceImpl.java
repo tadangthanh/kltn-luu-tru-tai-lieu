@@ -18,6 +18,8 @@ import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IRepoActivityService;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -44,8 +46,16 @@ public class RepoActivityServiceImpl implements IRepoActivityService {
     }
 
     @Override
+    public PageResponse<List<RepoActivityResponse>> searchByStartDateAndEndDate(Long repoId, Pageable pageable, LocalDate startDate, LocalDate endDate) {
+        LocalDateTime startOfDay = startDate.atStartOfDay(); // 2025-03-05 00:00:00
+        LocalDateTime endOfDay = endDate.atTime(23, 59, 59); // 2025-03-10 23:59:59
+        Page<RepoActivity> repoActivityPage = activityRepo.findActiveRepositoriesByRepoIdAndCreatedAtRange(repoId, startOfDay, endOfDay, pageable);
+        return PaginationUtils.convertToPageResponse(repoActivityPage, pageable, repoActivityMapper::toResponse);
+    }
+
+    @Override
     public PageResponse<List<RepoActivityResponse>> getActivitiesByRepoId(Long repoId, Pageable pageable) {
-        Page<RepoActivity> repoActivityPage= activityRepo.findByRepoId(repoId, pageable);
+        Page<RepoActivity> repoActivityPage = activityRepo.findByRepoId(repoId, pageable);
         return PaginationUtils.convertToPageResponse(repoActivityPage, pageable, repoActivityMapper::toResponse);
     }
 
