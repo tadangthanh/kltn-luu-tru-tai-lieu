@@ -117,6 +117,19 @@ public class FileShareServiceImpl implements IFileShareService {
         fileShareRepo.deleteById(id);
     }
 
+    @Override
+    public void deleteFileSharedByFileId(Long fileId) {
+        fileShareRepo.deleteByFileId(fileId);
+    }
+
+    @Override
+    public FileShare getFileShareByFileId(Long fileId) {
+        return fileShareRepo.findByFileId(fileId).orElseThrow(() -> {
+            log.warn("file share not found with id: {}", fileId);
+            return new ResourceNotFoundException("File share not found");
+        });
+    }
+
     private boolean isExpired(FileShare fileShare) {
         return fileShare.getExpireAt() != null && fileShare.getExpireAt().isBefore(LocalDateTime.now());
     }

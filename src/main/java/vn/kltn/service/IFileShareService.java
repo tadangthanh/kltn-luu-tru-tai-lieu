@@ -13,4 +13,7 @@ public interface IFileShareService {
     FileShare getShareFileByToken(String token);
 
     void deleteFileShareById(Long id);
+    void deleteFileSharedByFileId(Long fileId);
+
+    FileShare getFileShareByFileId(Long fileId);
 }

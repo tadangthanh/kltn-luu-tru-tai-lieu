@@ -13,6 +13,7 @@ public enum FileActionType {
     MOVE("Di chuyển file"),
     COPY("Sao chép file"),
     SHARE("Chia sẻ file"),
+    DELETE_SHARE("Xóa chia sẻ file"),
     PERMISSION_CHANGE("Thay đổi quyền truy cập"),
     CHANGE_ACCESS_SCOPE("Thay đổi phạm vi truy cập"),
     VERSION_RESTORE("Khôi phục phiên bản cũ"),

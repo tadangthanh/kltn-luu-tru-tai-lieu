@@ -87,12 +87,12 @@ public class FileRest {
 
     @PostMapping("/{fileId}/share")
     public ResponseData<FileShareResponse> share(@PathVariable Long fileId, @Valid @RequestBody FileShareRequest fileShareRequest) {
-        return new ResponseData<>(201, "Share file successfully", fileService.createFileShareLink(fileId, fileShareRequest));
+        return new ResponseData<>(201, "Share file successfully", fileService.shareFile(fileId, fileShareRequest));
     }
 
-    @DeleteMapping("/file-share/{id}")
-    public ResponseData<Void> unFileShare(@PathVariable Long id) {
-        fileService.deleteFileShareById(id);
+    @DeleteMapping("/file-share/{fileId}")
+    public ResponseData<Void> unFileShare(@PathVariable Long fileId) {
+        fileService.deleteFileShareByFileId(fileId);
         return new ResponseData<>(200, "un file share completed", null);
     }
 }

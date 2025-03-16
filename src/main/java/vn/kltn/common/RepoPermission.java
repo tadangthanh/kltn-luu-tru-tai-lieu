@@ -11,4 +11,6 @@ public enum RepoPermission {
     DELETE,  // Xóa blob hoặc container
     // Quyền liệt kê
     LIST,    // Liệt kê tất cả blob trong repository
+    SHARE_FILE, // Chia sẻ file
+
 }

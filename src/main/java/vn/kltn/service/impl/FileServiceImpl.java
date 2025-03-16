@@ -15,11 +15,9 @@ import vn.kltn.dto.response.FileDataResponse;
 import vn.kltn.dto.response.FileResponse;
 import vn.kltn.dto.response.FileShareResponse;
 import vn.kltn.dto.response.PageResponse;
-import vn.kltn.entity.File;
-import vn.kltn.entity.Repo;
-import vn.kltn.entity.RepoMember;
-import vn.kltn.entity.User;
+import vn.kltn.entity.*;
 import vn.kltn.exception.InvalidDataException;
+import vn.kltn.exception.UnauthorizedException;
 import vn.kltn.exception.UploadFailureException;
 import vn.kltn.map.FileMapper;
 import vn.kltn.repository.FileRepo;
@@ -39,6 +37,8 @@ import java.util.Base64;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static vn.kltn.common.RepoPermission.*;
 
 @Service
 @Transactional
@@ -187,7 +187,7 @@ public class FileServiceImpl implements IFileService {
         Repo repo = file.getRepo();
         file.setDeletedBy(repoMemberService.getAuthMemberWithRepoId(repo.getId()));
         // xóa file share liên quan
-        fileShareService.deleteFileShareById(fileId);
+        fileShareService.deleteFileSharedByFileId(fileId);
     }
 
     private void validateFileDeleted(File file) {
@@ -323,7 +323,8 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public FileShareResponse createFileShareLink(Long fileId, FileShareRequest fileShareRequest) {
+    @HasPermission(SHARE_FILE)
+    public FileShareResponse shareFile(Long fileId, FileShareRequest fileShareRequest) {
         return fileShareService.createFileShareLink(fileId, fileShareRequest);
     }
 
@@ -333,8 +334,16 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public void deleteFileShareById(Long id) {
-        fileShareService.deleteFileShareById(id);
+    public void deleteFileShareByFileId(Long fileId) {
+        validateCreatedShareFile(fileShareService.getFileShareByFileId(fileId));
+        fileShareService.deleteFileShareById(fileId);
+    }
+
+    private void validateCreatedShareFile(FileShare fileShare) {
+        User authUser = authenticationService.getAuthUser();
+        if (!authUser.getEmail().equals(fileShare.getCreatedBy())) {
+            throw new UnauthorizedException("Không có quyền xóa link chia sẻ");
+        }
     }
 
 }

@@ -40,11 +40,11 @@ public interface IFileService {
 
     PageResponse<List<FileResponse>> searchByStartDateAndEndDate(Long repoId, Pageable pageable, LocalDate startDate, LocalDate endDate);
 
-    FileShareResponse createFileShareLink(Long fileId, FileShareRequest fileShareRequest);
+    FileShareResponse shareFile(Long fileId, FileShareRequest fileShareRequest);
 
     FileDataResponse viewFile(String token, String password);
 
-    void deleteFileShareById(Long id);
+    void deleteFileShareByFileId(Long fileId);
 //    Dùng public key để giải mã chữ ký số, lấy lại giá trị hash ban đầu.
 //    Băm file tải xuống bằng cùng thuật toán (ví dụ: SHA-256) để tạo hash mới.
 //    So sánh hash từ chữ ký với hash mới tính từ file:
