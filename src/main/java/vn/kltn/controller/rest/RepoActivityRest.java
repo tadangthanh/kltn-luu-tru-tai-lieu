@@ -33,4 +33,10 @@ public class RepoActivityRest {
         return new ResponseData<>(200, "Search activity repository by date range successfully",
                 repoActivityService.searchByStartDateAndEndDate(repoId, pageable, startDate, endDate));
     }
+
+    @GetMapping("/{repoId}/search")
+    public ResponseData<PageResponse<List<RepoActivityResponse>>> searchActivity(Pageable pageable, @PathVariable Long repoId,
+                                                                                 @RequestParam(required = false, value = "activities") String[] activities) {
+        return new ResponseData<>(200, "Search activity successfully", repoActivityService.advanceSearchBySpecification(repoId, pageable, activities));
+    }
 }

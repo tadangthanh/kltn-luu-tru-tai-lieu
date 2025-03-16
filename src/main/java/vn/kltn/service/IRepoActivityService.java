@@ -13,6 +13,8 @@ public interface IRepoActivityService {
 
     void deleteActivitiesByRepoId(Long repoId);
 
+    PageResponse<List<RepoActivityResponse>> advanceSearchBySpecification(Long repoId, Pageable pageable, String[] activities);
+
     PageResponse<List<RepoActivityResponse>> searchByStartDateAndEndDate(Long repoId, Pageable pageable, LocalDate startDate, LocalDate endDate);
 
     PageResponse<List<RepoActivityResponse>> getActivitiesByRepoId(Long repoId, Pageable pageable);

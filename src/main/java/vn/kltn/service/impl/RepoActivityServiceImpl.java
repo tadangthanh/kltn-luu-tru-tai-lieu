@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.RepoActionType;
 import vn.kltn.dto.response.PageResponse;
@@ -13,7 +14,8 @@ import vn.kltn.entity.Repo;
 import vn.kltn.entity.RepoActivity;
 import vn.kltn.entity.User;
 import vn.kltn.map.RepoActivityMapper;
-import vn.kltn.repository.RepositoryActivityRepo;
+import vn.kltn.repository.RepoActivityRepo;
+import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IRepoActivityService;
@@ -21,13 +23,15 @@ import vn.kltn.service.IRepoActivityService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 @Slf4j(topic = "REPOSITORY_ACTIVITY_SERVICE")
 public class RepoActivityServiceImpl implements IRepoActivityService {
-    private final RepositoryActivityRepo activityRepo;
+    private final RepoActivityRepo activityRepo;
     private final RepoCommonService repoCommonService;
     private final IAuthenticationService authService;
     private final RepoActivityMapper repoActivityMapper;
@@ -43,6 +47,34 @@ public class RepoActivityServiceImpl implements IRepoActivityService {
     public void deleteActivitiesByRepoId(Long repoId) {
         log.info("Delete activities by repoId: {}", repoId);
         activityRepo.deleteByRepoId(repoId);
+    }
+
+    @Override
+    public PageResponse<List<RepoActivityResponse>> advanceSearchBySpecification(Long repoId, Pageable pageable, String[] activities) {
+        log.info("request search activity with specification");
+        if (activities != null && activities.length > 0) {
+            EntitySpecificationsBuilder<RepoActivity> builder = new EntitySpecificationsBuilder<>();
+//            Pattern pattern = Pattern.compile("(\\w+?)([<:>~!])(.*)(\\p{Punct}?)(\\p{Punct}?)");
+            Pattern pattern = Pattern.compile("([a-zA-Z0-9_.]+?)([<:>~!])(.*)(\\p{Punct}?)(\\p{Punct}?)");
+            //patten chia ra thành 5 nhóm
+            // nhóm 1: từ cần tìm kiếm (có thể là tên cột hoặc tên bảng) , ví dụ: name, age, subTopic.id=> subTopic là tên bảng, id là tên cột
+            // nhóm 2: toán tử tìm kiếm
+            // nhóm 3: giá trị cần tìm kiếm
+            // nhóm 4: dấu câu cuối cùng
+            // nhóm 5: dấu câu cuối cùng
+            for (String s : activities) {
+                Matcher matcher = pattern.matcher(s);
+                if (matcher.find()) {
+                    builder.with(matcher.group(1), matcher.group(2), matcher.group(3), matcher.group(4), matcher.group(5));
+                }
+            }
+            Specification<RepoActivity> spec = builder.build();
+            // nó trả trả về 1 spec mới
+            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("repo").get("id"), repoId));
+            Page<RepoActivity> filePage = activityRepo.findAll(spec, pageable);
+            return PaginationUtils.convertToPageResponse(filePage, pageable, repoActivityMapper::toResponse);
+        }
+        return PaginationUtils.convertToPageResponse(activityRepo.findAll(pageable), pageable, repoActivityMapper::toResponse);
     }
 
     @Override
