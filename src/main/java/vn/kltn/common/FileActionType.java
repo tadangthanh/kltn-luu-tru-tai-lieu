@@ -14,8 +14,8 @@ public enum FileActionType {
     COPY("Sao chép file"),
     SHARE("Chia sẻ file"),
     PERMISSION_CHANGE("Thay đổi quyền truy cập"),
+    CHANGE_ACCESS_SCOPE("Thay đổi phạm vi truy cập"),
     VERSION_RESTORE("Khôi phục phiên bản cũ"),
-    COMMENT("Bình luận trên file"),
     TAG_ADDED("Thêm tag vào file"),
     TAG_REMOVED("Xóa tag khỏi file");
 
