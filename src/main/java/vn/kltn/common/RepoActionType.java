@@ -1,11 +1,21 @@
 package vn.kltn.common;
 
+import lombok.Getter;
+
+@Getter
 public enum RepoActionType {
-    SEND_MEMBER_INVITE, // them thanh vien
-    REMOVE_MEMBER, // xoa thanh vien
-    UPDATE_REPOSITORY, // update thong tin repo
-    CHANGE_MEMBER_PERMISSION, // update quyen thanh vien
-    MEMBER_ACCEPT_INVITATION, // thanh vien chap nhan loi moi
-    MEMBER_REJECT_INVITATION, // thanh vien tu choi loi moi
-    SETTINGS_UPDATE,// update thong tin cai dat
+    SEND_MEMBER_INVITE("Gửi lời mời tham gia"),
+    REMOVE_MEMBER("Xóa thành viên"),
+    UPDATE_REPOSITORY("cập nhât repository"),
+    CHANGE_MEMBER_PERMISSION("cập nhật quyền của thành viên"),
+    MEMBER_ACCEPT_INVITATION("thành viên chấp nhận lời mời"),
+    MEMBER_REJECT_INVITATION("thành viên từ chối lời mời"),
+    SETTINGS_UPDATE("cập nhật cài đặt repository");
+
+    private final String description;
+
+    RepoActionType(String description) {
+        this.description = description;
+    }
+
 }
