@@ -39,7 +39,7 @@ public class RepoRest {
     @PostMapping("/{repositoryId}/member")
     public ResponseData<RepoResponseDto> addMemberToRepository(@PathVariable Long repositoryId,
                                                                @Validated(Create.class) @RequestBody RepoMemberRequest repoMemberRequest) {
-        return new ResponseData<>(HttpStatus.CREATED.value(), "Thêm thành viên vào kho lưu trữ thành công",
+        return new ResponseData<>(HttpStatus.CREATED.value(), "gửi lơi mời thành công",
                 repositoryService.addMemberToRepository(repositoryId, repoMemberRequest.getUserId(), repoMemberRequest.getPermissions()));
     }
 

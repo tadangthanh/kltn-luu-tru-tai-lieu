@@ -222,7 +222,7 @@ public class RepoServiceImpl implements IRepoService {
         RepoMember repoMember = repoMemberService.getMemberByRepoIdAndUserId(repoId, memberAdd.getId());
         validateMemberInvited(repoMember);
         repoMember.setStatus(MemberStatus.ACTIVE);
-        updatePermissionMemberByRepoIdAndUserId(repoId, repoMember.getId(), repoMember.getPermissions());
+        updatePermissionMemberByRepoIdAndUserId(repoId, memberAdd.getId(), repoMember.getPermissions());
         log.info("Chấp nhận lời mời thành công user id{}: ", memberAdd.getId());
         return convertRepositoryToResponse(repoMember.getRepo());
     }

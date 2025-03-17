@@ -95,6 +95,11 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
         return repoMemberRepo.save(repoMember);
     }
 
+    @Override
+    public int countMemberActiveByRepoId(Long repoId) {
+        return repoMemberRepo.countMemberActiveByRepoId(repoId);
+    }
+
     private RepoMember mapToRepoMember(Repo repo, User user, Set<RepoPermission> permissions) {
         RepoMember repoMember = new RepoMember();
         repoMember.setUser(user);
@@ -106,11 +111,6 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
             repoMember.setSasToken(getSasToken(repo, permissions));
         }
         return repoMember;
-    }
-
-    @Override
-    public int countMemberActiveByRepoId(Long repoId) {
-        return repoMemberRepo.countMemberActiveByRepoId(repoId);
     }
 
     @Override

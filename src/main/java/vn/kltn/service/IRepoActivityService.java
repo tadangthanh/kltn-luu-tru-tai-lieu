@@ -11,6 +11,8 @@ import java.util.List;
 public interface IRepoActivityService {
     void logActivity(Long repoId, RepoActionType action, String detail);
 
+    void logActivity(Long repoId,String actionByEmail, RepoActionType action, String detail);
+
     void deleteActivitiesByRepoId(Long repoId);
 
     PageResponse<List<RepoActivityResponse>> advanceSearchBySpecification(Long repoId, Pageable pageable, String[] activities);

@@ -8,10 +8,12 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.stereotype.Component;
 import vn.kltn.common.RepoActionType;
 import vn.kltn.common.RepoPermission;
+import vn.kltn.common.TokenType;
 import vn.kltn.dto.request.RepoRequestDto;
 import vn.kltn.dto.response.RepoMemberInfoResponse;
 import vn.kltn.dto.response.RepoResponseDto;
 import vn.kltn.exception.InvalidDataException;
+import vn.kltn.service.IJwtService;
 import vn.kltn.service.IRepoActivityService;
 
 import java.util.Collection;
@@ -23,6 +25,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class RepoActivityAspect {
     private final IRepoActivityService repoActivityService;
+    private final IJwtService jwtService;
 
     @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.addMemberToRepository(..))")
     public void addMemberRepoPointCut() {
@@ -63,6 +66,27 @@ public class RepoActivityAspect {
     @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.leaveRepo(..))")
     public void memberLeave() {
     }
+
+
+    @AfterReturning(value = "acceptInvitation()", returning = "repoResponse")
+    public void logMemberAcceptInvitation(JoinPoint joinPoint, RepoResponseDto repoResponse) {
+        Object[] args = joinPoint.getArgs();
+        Long repoId = (Long) args[0];
+        String token = (String) args[1];
+        String email = jwtService.extractEmail(token, TokenType.INVITATION_TOKEN);
+        repoActivityService.logActivity(repoId, email, RepoActionType.MEMBER_ACCEPT_INVITATION,
+                String.format("Thành viên user email: #%s tham gia vào repository #%s", email, repoId));
+    }
+
+    @AfterReturning(value = "rejectInvitation()")
+    public void logMemberRejectInvitation(JoinPoint joinPoint) {
+        Object[] args = joinPoint.getArgs();
+        Long repoId = (Long) args[0];
+        String email = (String) args[1];
+        repoActivityService.logActivity(repoId, email, RepoActionType.MEMBER_REJECT_INVITATION,
+                String.format("Thành viên user email: #%s từ chối tham gia vào repository #%s", email, repoId));
+    }
+
     @AfterReturning(value = "enableMember()", returning = "memberResponse")
     public void logMemberLeave(JoinPoint joinPoint, RepoMemberInfoResponse memberResponse) {
         Object[] args = joinPoint.getArgs();

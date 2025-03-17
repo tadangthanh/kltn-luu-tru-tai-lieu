@@ -19,6 +19,7 @@ import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IRepoActivityService;
+import vn.kltn.service.IUserService;
 import vn.kltn.validation.RequireRepoMemberActive;
 
 import java.time.LocalDate;
@@ -36,19 +37,28 @@ public class RepoActivityServiceImpl implements IRepoActivityService {
     private final RepoCommonService repoCommonService;
     private final IAuthenticationService authService;
     private final RepoActivityMapper repoActivityMapper;
+    private final IUserService  userService;
 
     @Override
     @RequireRepoMemberActive
     public void logActivity(Long repoId, RepoActionType action, String detail) {
         log.info("Log activity for repoId: {}, action: {}, detail: {}", repoId, action, detail);
         Repo repo = repoCommonService.getRepositoryById(repoId);
-        saveActivity(repo, action, detail);
+        saveActivityByAuthUser(repo, action, detail);
+    }
+
+    @Override
+    public void logActivity(Long repoId, String actionByEmail, RepoActionType action, String detail) {
+        log.info("Log activity for repoId: {}, action: {}, action by email: {}, detail: {}", repoId, action, actionByEmail,detail);
+        Repo repo = repoCommonService.getRepositoryById(repoId);
+        saveActivityByActionByEmail(repo,actionByEmail, action, detail);
     }
 
     @Override
     public void deleteActivitiesByRepoId(Long repoId) {
         log.info("Delete activities by repoId: {}", repoId);
         activityRepo.deleteByRepoId(repoId);
+
     }
 
     @Override
@@ -96,9 +106,18 @@ public class RepoActivityServiceImpl implements IRepoActivityService {
         return PaginationUtils.convertToPageResponse(repoActivityPage, pageable, repoActivityMapper::toResponse);
     }
 
-    private void saveActivity(Repo repo, RepoActionType action, String detail) {
+    private void saveActivityByAuthUser(Repo repo, RepoActionType action, String detail) {
         RepoActivity activity = new RepoActivity();
         User authUser = authService.getAuthUser();
+        activity.setRepo(repo);
+        activity.setUser(authUser);
+        activity.setAction(action);
+        activity.setDetails(detail);
+        activityRepo.save(activity);
+    }
+    private void saveActivityByActionByEmail(Repo repo,String actionByEmail ,RepoActionType action, String detail) {
+        RepoActivity activity = new RepoActivity();
+        User authUser = userService.getUserByEmail(actionByEmail);
         activity.setRepo(repo);
         activity.setUser(authUser);
         activity.setAction(action);
