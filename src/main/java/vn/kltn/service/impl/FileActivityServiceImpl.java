@@ -20,6 +20,7 @@ import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IFileActivityService;
 import vn.kltn.service.IFileService;
+import vn.kltn.validation.RequireRepoMemberActive;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -61,6 +62,7 @@ public class FileActivityServiceImpl implements IFileActivityService {
     }
 
     @Override
+    @RequireRepoMemberActive
     public PageResponse<List<FileActivityResponse>> advanceSearchBySpecification(Long fileId, Pageable pageable, String[] activities) {
         log.info("request search activity with specification");
         if (activities != null && activities.length > 0) {
