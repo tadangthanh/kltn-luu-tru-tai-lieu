@@ -278,7 +278,7 @@ public class RepoServiceImpl implements IRepoService {
     public PageResponse<List<RepoResponseDto>> getPageResponseByUserAuth(Pageable pageable) {
         Set<Long> repoIds = getRepoIdsByUserAuth();
         Page<Repo> repoPage = repositoryRepo.findAllByRepoIdSet(repoIds, pageable);
-        return PaginationUtils.convertToPageResponse(repoPage, pageable, repoMapper::entityToResponse);
+        return PaginationUtils.convertToPageResponse(repoPage, pageable, this::convertRepositoryToResponse);
     }
 
     private Set<Long> getRepoIdsByUserAuth() {
