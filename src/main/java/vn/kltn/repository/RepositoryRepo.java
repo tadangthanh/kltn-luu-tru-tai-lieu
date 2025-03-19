@@ -6,14 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import vn.kltn.entity.Repo;
 
-import java.util.Optional;
-import java.util.Set;
-
 @org.springframework.stereotype.Repository
 public interface RepositoryRepo extends JpaRepository<Repo, Long> {
-    Optional<Repo> findByName(String name);
 
-
-    @Query("select r from Repo r where r.id in :repoIds")
-    Page<Repo> findAllByRepoIdSet(Set<Long> repoIds, Pageable pageable);
+    @Query("select r from  Repo r join RepoMember rm on r.id = rm.repo.id where rm.user.id = ?1 and rm.status = 'ACTIVE'")
+    Page<Repo> findAllByUserIdActive(Long userId, Pageable pageable);
 }

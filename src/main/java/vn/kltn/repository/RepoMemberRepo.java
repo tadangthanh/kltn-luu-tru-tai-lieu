@@ -1,22 +1,15 @@
 package vn.kltn.repository;
 
-import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import vn.kltn.common.MemberStatus;
 import vn.kltn.entity.RepoMember;
 
 import java.util.Optional;
-import java.util.Set;
 
 public interface RepoMemberRepo extends JpaRepository<RepoMember, Long> {
-    @Modifying
-    @Transactional
-    @Query("delete from RepoMember rm where rm.repo.id = ?1")
-    void deleteByRepoId(Long repoId);
 
     @Query("select count(rm) from RepoMember rm where rm.repo.id = ?1")
     int countRepoMemberByRepoId(Long repoId);
@@ -40,6 +33,4 @@ public interface RepoMemberRepo extends JpaRepository<RepoMember, Long> {
 
     Optional<RepoMember> getMemberActiveByRepoIdAndUserId(Long repoId, Long userId);
 
-    @Query("select rm.repo.id from RepoMember rm where rm.user.id = ?1 and rm.status = 'ACTIVE'")
-    Set<Long> findRepoIdByUserIdActive(Long userId);
 }
