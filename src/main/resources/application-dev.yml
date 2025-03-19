@@ -47,8 +47,8 @@ spring:
   cache:
     type: redis
     redis:
-      cache-null-values: true
-      time-to-live: 3600000
+      cache-null-values: false
+      time-to-live: 3600000 # 1 hour
   servlet:
     multipart:
       enabled: true
