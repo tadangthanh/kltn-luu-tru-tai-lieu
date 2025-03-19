@@ -37,10 +37,9 @@ public class RepoActivityServiceImpl implements IRepoActivityService {
     private final RepoCommonService repoCommonService;
     private final IAuthenticationService authService;
     private final RepoActivityMapper repoActivityMapper;
-    private final IUserService  userService;
+    private final IUserService userService;
 
     @Override
-    @RequireRepoMemberActive
     public void logActivity(Long repoId, RepoActionType action, String detail) {
         log.info("Log activity for repoId: {}, action: {}, detail: {}", repoId, action, detail);
         Repo repo = repoCommonService.getRepositoryById(repoId);
@@ -49,9 +48,9 @@ public class RepoActivityServiceImpl implements IRepoActivityService {
 
     @Override
     public void logActivity(Long repoId, String actionByEmail, RepoActionType action, String detail) {
-        log.info("Log activity for repoId: {}, action: {}, action by email: {}, detail: {}", repoId, action, actionByEmail,detail);
+        log.info("Log activity for repoId: {}, action: {}, action by email: {}, detail: {}", repoId, action, actionByEmail, detail);
         Repo repo = repoCommonService.getRepositoryById(repoId);
-        saveActivityByActionByEmail(repo,actionByEmail, action, detail);
+        saveActivityByActionByEmail(repo, actionByEmail, action, detail);
     }
 
     @Override
@@ -115,7 +114,8 @@ public class RepoActivityServiceImpl implements IRepoActivityService {
         activity.setDetails(detail);
         activityRepo.save(activity);
     }
-    private void saveActivityByActionByEmail(Repo repo,String actionByEmail ,RepoActionType action, String detail) {
+
+    private void saveActivityByActionByEmail(Repo repo, String actionByEmail, RepoActionType action, String detail) {
         RepoActivity activity = new RepoActivity();
         User authUser = userService.getUserByEmail(actionByEmail);
         activity.setRepo(repo);

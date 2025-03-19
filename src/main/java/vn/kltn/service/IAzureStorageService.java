@@ -1,16 +1,15 @@
 package vn.kltn.service;
 
-import vn.kltn.common.RepoPermission;
+import vn.kltn.entity.MemberRole;
 
 import java.io.InputStream;
-import java.util.Set;
 
 public interface IAzureStorageService {
-    String uploadChunked(InputStream data, String originalFileName, String containerName, String sasToken,long length, int chunkSize);
+    String uploadChunked(InputStream data, String originalFileName, String containerName, String sasToken, long length, int chunkSize);
 
     void createContainerForRepository(String repoName);
 
-    String generatePermissionRepo(String containerName, Set<RepoPermission> permissionList);
+    String generatePermissionRepoByMemberRole(String containerName, MemberRole role);
 
     void deleteContainer(String containerName);
 

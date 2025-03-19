@@ -7,18 +7,11 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.stereotype.Component;
 import vn.kltn.common.RepoActionType;
-import vn.kltn.common.RepoPermission;
 import vn.kltn.common.TokenType;
 import vn.kltn.dto.request.RepoRequestDto;
-import vn.kltn.dto.response.RepoMemberInfoResponse;
 import vn.kltn.dto.response.RepoResponseDto;
-import vn.kltn.exception.InvalidDataException;
 import vn.kltn.service.IJwtService;
 import vn.kltn.service.IRepoActivityService;
-
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 @Aspect
 @Component
@@ -35,13 +28,6 @@ public class RepoActivityAspect {
     public void createRepoPointCut() {
     }
 
-    @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.removeMemberByRepoIdAndUserId(..))")
-    public void removeMemberRepoPointCut() {
-    }
-
-    @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.updatePermissionMemberByRepoIdAndUserId(..))")
-    public void updatePermissionMember() {
-    }
 
     @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.acceptInvitation(..))")
     public void acceptInvitation() {
@@ -55,21 +41,9 @@ public class RepoActivityAspect {
     public void updateRepo() {
     }
 
-    @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.disableMemberByRepoIdAndUserId(..))")
-    public void disableMember() {
-    }
 
-    @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.enableMemberByRepoIdAndUserId(..))")
-    public void enableMember() {
-    }
-
-    @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.leaveRepo(..))")
-    public void memberLeave() {
-    }
-
-
-    @AfterReturning(value = "acceptInvitation()", returning = "repoResponse")
-    public void logMemberAcceptInvitation(JoinPoint joinPoint, RepoResponseDto repoResponse) {
+    @AfterReturning(value = "acceptInvitation()")
+    public void logMemberAcceptInvitation(JoinPoint joinPoint) {
         Object[] args = joinPoint.getArgs();
         Long repoId = (Long) args[0];
         String token = (String) args[1];
@@ -87,29 +61,6 @@ public class RepoActivityAspect {
                 String.format("Thành viên user email: #%s từ chối tham gia vào repository #%s", email, repoId));
     }
 
-    @AfterReturning(value = "enableMember()", returning = "memberResponse")
-    public void logMemberLeave(JoinPoint joinPoint, RepoMemberInfoResponse memberResponse) {
-        Object[] args = joinPoint.getArgs();
-        Long repoId = (Long) args[0];
-        repoActivityService.logActivity(repoId, RepoActionType.MEMBER_LEAVE,
-                String.format("Thành viên user id: #%s (member id: #%s) rời khỏi repository #%s", memberResponse.getUserId(), memberResponse.getId(), repoId));
-    }
-
-    @AfterReturning(value = "enableMember()", returning = "memberResponse")
-    public void logEnableMember(JoinPoint joinPoint, RepoMemberInfoResponse memberResponse) {
-        Object[] args = joinPoint.getArgs();
-        Long repoId = (Long) args[0];
-        repoActivityService.logActivity(repoId, RepoActionType.ENABLE_MEMBER,
-                String.format("Kích hoạt lại thành viên user id: #%s (member id: #%s) trong repository #%s", memberResponse.getUserId(), memberResponse.getId(), repoId));
-    }
-
-    @AfterReturning(value = "disableMember()", returning = "memberResponse")
-    public void logDisableMember(JoinPoint joinPoint, RepoMemberInfoResponse memberResponse) {
-        Object[] args = joinPoint.getArgs();
-        Long repoId = (Long) args[0];
-        repoActivityService.logActivity(repoId, RepoActionType.DISABLE_MEMBER,
-                String.format("Vô hiệu thành viên user id: #%s (member id: #%s) trong repository #%s", memberResponse.getUserId(), memberResponse.getId(), repoId));
-    }
 
     @AfterReturning(value = "updateRepo()")
     public void logUpdateRepo(JoinPoint joinPoint) {
@@ -134,33 +85,5 @@ public class RepoActivityAspect {
         repoActivityService.logActivity(repoId, RepoActionType.SEND_MEMBER_INVITE, String.format("Thêm thành viên #%s vào repository #%s", userId, repoId));
     }
 
-    @AfterReturning(value = "removeMemberRepoPointCut()")
-    public void logRemoveMember(JoinPoint joinPoint) {
-        Object[] args = joinPoint.getArgs();
-        Long repoId = (Long) args[0];
-        Long memberId = (Long) args[1];
-        repoActivityService.logActivity(repoId, RepoActionType.REMOVE_MEMBER, "Xoá thành viên #%s: " + memberId);
-    }
-
-    @AfterReturning(value = "updatePermissionMember()")
-    public void logUpdatePermissionMember(JoinPoint joinPoint) {
-        Object[] args = joinPoint.getArgs();
-        Long repoId = (Long) args[0];
-        Long memberId = (Long) args[1];
-        Set<RepoPermission> requestedPermissions = new HashSet<>();
-        if (args[2] instanceof Collection<?>) { // Kiểm tra nếu là Collection (Set, List, ...)
-            for (Object obj : (Collection<?>) args[2]) {
-                if (obj instanceof RepoPermission) {
-                    requestedPermissions.add((RepoPermission) obj);
-                } else {
-                    throw new InvalidDataException("Invalid element type in requestedPermissions: " + obj.getClass());
-                }
-            }
-        } else {
-            throw new InvalidDataException("Expected a Set<RepoPermission>, but got: " + args[2].getClass());
-        }
-        repoActivityService.logActivity(repoId, RepoActionType.CHANGE_MEMBER_PERMISSION,
-                String.format("Cập nhật quyền hạn cho thành viên memberId: %s, new permissions: %s", memberId, requestedPermissions));
-    }
 
 }

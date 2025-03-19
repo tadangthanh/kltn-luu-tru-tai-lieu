@@ -27,5 +27,5 @@ public class Repo extends BaseEntity {
     @OneToMany(mappedBy = "repo", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<File> files;
     @OneToMany(mappedBy = "repo", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private Set<RepoMember> members;
+    private Set<Member> members;
 }

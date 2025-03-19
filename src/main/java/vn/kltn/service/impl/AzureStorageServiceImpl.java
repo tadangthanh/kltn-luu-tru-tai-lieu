@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import vn.kltn.common.RepoPermission;
+import vn.kltn.entity.MemberRole;
 import vn.kltn.exception.CustomBlobStorageException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.service.IAzureStorageService;
@@ -21,7 +21,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -77,17 +80,17 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     // tạo quyền cho thành viên của repo tùy vào quyền của từng thành viên
 
     /**
-     * @param containerName  : tên container cần tạo SAS Token
-     * @param permissionList : danh sách quyền hạn của từng thành viên
+     * @param containerName : tên container cần tạo SAS Token
+     * @param memberRole    : quyền hạn của từng thành viên
      * @return : trả về SAS Token của thành viên với container này
      */
     @Override
-    public String generatePermissionRepo(String containerName, Set<RepoPermission> permissionList) {
+    public String generatePermissionRepoByMemberRole(String containerName, MemberRole memberRole) {
         BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
         // Thiết lập thời gian hết hạn cho SAS Token
         OffsetDateTime expiryTime = OffsetDateTime.now().plusMinutes(1);
         // Tạo SAS Token với quyền hạn tùy vào từng thành viên
-        BlobServiceSasSignatureValues sasValues = new BlobServiceSasSignatureValues(expiryTime, generatePermissionForMember(permissionList)).setProtocol(SasProtocol.HTTPS_HTTP);  //  cho phép truy cập qua HTTPS_HTTP
+        BlobServiceSasSignatureValues sasValues = new BlobServiceSasSignatureValues(expiryTime, generatePermissionForMember(memberRole)).setProtocol(SasProtocol.HTTPS_HTTP);  //  cho phép truy cập qua HTTPS_HTTP
         return blobContainerClient.generateSas(sasValues);
     }
 
@@ -167,38 +170,42 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
      * Helper method to get BlockBlobClient
      */
     private BlockBlobClient getBlockBlobClient(String containerName, String blobName) {
-        return blobServiceClient
-                .getBlobContainerClient(containerName)
-                .getBlobClient(blobName)
-                .getBlockBlobClient();
+        return blobServiceClient.getBlobContainerClient(containerName).getBlobClient(blobName).getBlockBlobClient();
     }
 
 
     /**
      * Tạo quyền cho thành viên của container
      *
-     * @param permissionList : danh sách quyền hạn của từng thành viên
+     * @param memberRole : quyen cua thành viên
      * @return : trả về quyền hạn của thành viên
      */
-    private BlobContainerSasPermission generatePermissionForMember(Set<RepoPermission> permissionList) {
+    private BlobContainerSasPermission generatePermissionForMember(MemberRole memberRole) {
         BlobContainerSasPermission permission = new BlobContainerSasPermission();
-
-        permissionList.forEach(repoPermission -> {
-            switch (repoPermission) {
-                case CREATE -> {
-                    permission.setCreatePermission(true);
-                    permission.setWritePermission(true);  // Cho phép ghi dữ liệu
-                    permission.setAddPermission(true);   // Cho phép thêm dữ liệu
-                }
-                case READ -> permission.setReadPermission(true); // Đọc nội dung tệp
-                case UPDATE -> permission.setWritePermission(true); // UPDATE thực chất là một phần của WRITE
-                case DELETE -> permission.setDeletePermission(true); // Xóa tệp hoặc thư mục
-                case LIST -> permission.setListPermission(true); // Liệt kê danh sách các tệp
-                default -> {
-                    // Không làm gì nếu quyền không được xác định
-                }
+        switch (memberRole.getName()) {
+            case ADMIN -> {
+                permission.setCreatePermission(true);
+                permission.setWritePermission(true);  // Cho phép ghi dữ liệu
+                permission.setAddPermission(true);   // Cho phép thêm dữ liệu
+                permission.setReadPermission(true); // Đọc nội dung tệp
+                permission.setDeletePermission(true);
+                permission.setListPermission(true);
             }
-        });
+            case VIEWER -> {
+                permission.setReadPermission(true);
+                permission.setListPermission(true);
+            } // Đọc nội dung tệp
+            case EDITOR -> {
+                permission.setCreatePermission(true);
+                permission.setWritePermission(true);
+                permission.setReadPermission(true);
+                permission.setAddPermission(true);   // Cho phép thêm dữ liệu
+                permission.setListPermission(true);
+            } // UPDATE thực chất là một phần của WRITE
+            default -> {
+                // Không làm gì nếu quyền không được xác định
+            }
+        }
 
         return permission;
     }

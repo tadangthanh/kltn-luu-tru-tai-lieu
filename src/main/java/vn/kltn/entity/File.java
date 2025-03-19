@@ -33,10 +33,10 @@ public class File extends BaseEntity {
     private LocalDateTime deletedAt;
     @ManyToOne
     @JoinColumn(name = "deleted_by")
-    private RepoMember deletedBy;
+    private Member deletedBy;
     @ManyToOne
     @JoinColumn(name = "uploaded_by")
-    private RepoMember uploadedBy;
+    private Member uploadedBy;
     @OneToMany(mappedBy = "file", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
     private Set<FileHasTag> tags = new HashSet<>();
     @OneToOne(mappedBy = "file", cascade = CascadeType.REMOVE)

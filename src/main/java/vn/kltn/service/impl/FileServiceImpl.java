@@ -8,7 +8,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import vn.kltn.common.RepoPermission;
 import vn.kltn.dto.request.FileRequest;
 import vn.kltn.dto.request.FileShareRequest;
 import vn.kltn.dto.response.FileDataResponse;
@@ -24,7 +23,6 @@ import vn.kltn.repository.FileRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
-import vn.kltn.validation.HasPermission;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,8 +35,6 @@ import java.util.Base64;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static vn.kltn.common.RepoPermission.*;
 
 @Service
 @Transactional
@@ -53,12 +49,11 @@ public class FileServiceImpl implements IFileService {
     private final IRepoService repoService;
     private final IUserHasKeyService userHasKeyService;
     private final FileCommonService fileCommonService;
-    private final IRepoMemberService repoMemberService;
+    private final IMemberService repoMemberService;
     private final IFileShareService fileShareService;
 
 
     @Override
-    @HasPermission(RepoPermission.CREATE)
     public FileResponse uploadFile(Long repoId, FileRequest fileRequest, MultipartFile file) {
         try {
             String publicKey = getUserPublicKey();
@@ -104,7 +99,7 @@ public class FileServiceImpl implements IFileService {
         fileEntity.setFileSize(file.getSize());
         fileEntity.setFileType(file.getContentType());
         fileEntity.setRepo(repo);
-        RepoMember uploadedBy = repoMemberService.getAuthMemberWithRepoId(repo.getId());
+        Member uploadedBy = repoMemberService.getAuthMemberWithRepoId(repo.getId());
         fileEntity.setUploadedBy(uploadedBy);
         return fileEntity;
     }
@@ -179,7 +174,6 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    @HasPermission(RepoPermission.DELETE)
     public void deleteFile(Long fileId) {
         File file = getFileById(fileId);
         validateFileDeleted(file);
@@ -214,8 +208,8 @@ public class FileServiceImpl implements IFileService {
             return;
         }
         // chi co nguoi xoa hoac admin moi co quyen restore file
-        RepoMember repoMember = repoMemberService.getAuthMemberWithRepoId(repo.getId());
-        if (!repoMember.getId().equals(file.getDeletedBy().getId())) {
+        Member member = repoMemberService.getAuthMemberWithRepoId(repo.getId());
+        if (!member.getId().equals(file.getDeletedBy().getId())) {
             throw new InvalidDataException("Không có quyền khôi phục file");
         }
     }
@@ -238,7 +232,6 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    @HasPermission(RepoPermission.UPDATE)
     public FileResponse updateFileMetadata(Long fileId, FileRequest fileRequest) {
         File file = getFileById(fileId);
         fileMapper.updateEntity(fileRequest, file);
@@ -323,7 +316,6 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    @HasPermission(SHARE_FILE)
     public FileShareResponse shareFile(Long fileId, FileShareRequest fileShareRequest) {
         return fileShareService.createFileShareLink(fileId, fileShareRequest);
     }

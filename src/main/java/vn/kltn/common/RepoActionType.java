@@ -11,7 +11,7 @@ public enum RepoActionType {
     ENABLE_MEMBER("Kích hoạt lại thành viên"),
     MEMBER_LEAVE("Thành viên rời khỏi repository"),
     UPDATE_REPOSITORY("cập nhât repository"),
-    CHANGE_MEMBER_PERMISSION("cập nhật quyền của thành viên"),
+    CHANGE_MEMBER_ROLE("cập nhật quyền của thành viên"),
     MEMBER_ACCEPT_INVITATION("thành viên chấp nhận lời mời"),
     MEMBER_REJECT_INVITATION("thành viên từ chối lời mời"),
     SETTINGS_UPDATE("cập nhật cài đặt repository");
