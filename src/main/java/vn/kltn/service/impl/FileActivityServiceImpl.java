@@ -20,7 +20,7 @@ import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IFileActivityService;
 import vn.kltn.service.IFileService;
-import vn.kltn.validation.RequireRepoMemberActive;
+import vn.kltn.validation.RequireMemberActive;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -62,7 +62,7 @@ public class FileActivityServiceImpl implements IFileActivityService {
     }
 
     @Override
-    @RequireRepoMemberActive
+    @RequireMemberActive
     public PageResponse<List<FileActivityResponse>> advanceSearchBySpecification(Long fileId, Pageable pageable, String[] activities) {
         log.info("request search activity with specification");
         if (activities != null && activities.length > 0) {
@@ -91,7 +91,7 @@ public class FileActivityServiceImpl implements IFileActivityService {
     }
 
     @Override
-    @RequireRepoMemberActive
+    @RequireMemberActive
     public PageResponse<List<FileActivityResponse>> searchByStartDateAndEndDate(Long fileId, Pageable pageable, LocalDate startDate, LocalDate endDate) {
         LocalDateTime startOfDay = startDate.atStartOfDay(); // 2025-03-05 00:00:00
         LocalDateTime endOfDay = endDate.atTime(23, 59, 59); // 2025-03-10 23:59:59

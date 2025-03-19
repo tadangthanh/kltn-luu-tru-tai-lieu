@@ -32,7 +32,7 @@ public class RepoRest {
     @GetMapping
     public ResponseData<PageResponse<List<RepoResponseDto>>> getRepoList(Pageable pageable) {
         return new ResponseData<>(HttpStatus.OK.value(), "Lấy danh sách kho lưu trữ thành công",
-                repositoryService.getPageResponseByUserAuth(pageable));
+                repositoryService.getPageRepoResponseByUserAuth(pageable));
     }
 
     @DeleteMapping("/{repositoryId}")

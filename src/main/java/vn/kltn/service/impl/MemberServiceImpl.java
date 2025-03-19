@@ -25,7 +25,7 @@ import vn.kltn.service.IMemberRoleService;
 import vn.kltn.service.IMemberService;
 import vn.kltn.util.SasTokenValidator;
 import vn.kltn.validation.HasAnyRole;
-import vn.kltn.validation.RequireRepoMemberActive;
+import vn.kltn.validation.RequireMemberActive;
 
 import java.util.List;
 
@@ -49,6 +49,7 @@ public class MemberServiceImpl implements IMemberService {
             return new ResourceNotFoundException("Bạn không phải thành viên repository");
         });
     }
+
     @Override
     public Member updateSasTokenMember(Repo repo, Member member) {
         String newSasToken = azureStorageService.generatePermissionRepoByMemberRole(repo.getContainerName(), member.getRole());
@@ -233,10 +234,25 @@ public class MemberServiceImpl implements IMemberService {
     }
 
     @Override
-    @RequireRepoMemberActive
+    @RequireMemberActive
     public PageResponse<List<MemberResponse>> getListMemberByRepoId(Long repoId, Pageable pageable) {
         Page<Member> repoMemberPage = repoMemberRepo.findAllByRepoId(repoId, pageable);
         return PaginationUtils.convertToPageResponse(repoMemberPage, pageable, this::toRepoMemberInfoResponse);
+    }
+
+    @Override
+    public boolean userHasAnyRoleRepoId(Long repoId, Long userId, RoleName[] listRole) {
+        Member member = getMemberActiveByRepoIdAndUserId(repoId, userId);
+        return userHasAnyRole(member, listRole);
+    }
+
+    private boolean userHasAnyRole(Member member, RoleName[] listRole) {
+        for (RoleName roleName : listRole) {
+            if (member.getRole().getName().equals(roleName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String generateSasTokenForMember(String containerName, MemberRole memberRole) {

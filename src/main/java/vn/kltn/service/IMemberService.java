@@ -2,6 +2,7 @@ package vn.kltn.service;
 
 import org.springframework.data.domain.Pageable;
 import vn.kltn.common.MemberStatus;
+import vn.kltn.common.RoleName;
 import vn.kltn.dto.response.MemberResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Member;
@@ -50,5 +51,7 @@ public interface IMemberService {
     MemberResponse updateMemberRoleByRepoIdAndUserId(Long repoId, Long userId, Long roleId);
 
     PageResponse<List<MemberResponse>> getListMemberByRepoId(Long repoId, Pageable pageable);
+
+    boolean userHasAnyRoleRepoId(Long repoId, Long id, RoleName[] listRole);
 }
 

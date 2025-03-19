@@ -1,7 +1,6 @@
 package vn.kltn.service;
 
 import org.springframework.data.domain.Pageable;
-import vn.kltn.common.RoleName;
 import vn.kltn.dto.request.RepoRequestDto;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.RepoResponseDto;
@@ -24,9 +23,6 @@ public interface IRepoService {
 
     Repo getRepositoryById(Long repoId);
 
-    boolean userHasAnyRoleRepoId(Long repoId, Long userId, RoleName[] listRole);
-
-
-    PageResponse<List<RepoResponseDto>> getPageResponseByUserAuth(Pageable pageable);
+    PageResponse<List<RepoResponseDto>> getPageRepoResponseByUserAuth(Pageable pageable);
 
 }

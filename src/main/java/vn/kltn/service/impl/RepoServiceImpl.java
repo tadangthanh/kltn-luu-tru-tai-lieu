@@ -23,7 +23,7 @@ import vn.kltn.repository.RepositoryRepo;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
 import vn.kltn.validation.HasAnyRole;
-import vn.kltn.validation.RequireRepoMemberActive;
+import vn.kltn.validation.RequireMemberActive;
 
 import java.util.HashMap;
 import java.util.List;
@@ -189,29 +189,14 @@ public class RepoServiceImpl implements IRepoService {
 
 
     @Override
-    public boolean userHasAnyRoleRepoId(Long repoId, Long userId, RoleName[] listRole) {
-        Member member = memberService.getMemberActiveByRepoIdAndUserId(repoId, userId);
-        return userHasAnyRole(member, listRole);
-    }
-
-    private boolean userHasAnyRole(Member member, RoleName[] listRole) {
-        for (RoleName roleName : listRole) {
-            if (member.getRole().getName().equals(roleName)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public PageResponse<List<RepoResponseDto>> getPageResponseByUserAuth(Pageable pageable) {
+    public PageResponse<List<RepoResponseDto>> getPageRepoResponseByUserAuth(Pageable pageable) {
         User userAuth = authenticationService.getAuthUser();
         Page<Repo> repoPage = repositoryRepo.findAllByUserIdActive(userAuth.getId(), pageable);
         return PaginationUtils.convertToPageResponse(repoPage, pageable, this::convertRepositoryToResponse);
     }
 
     @Override
-    @RequireRepoMemberActive
+    @RequireMemberActive
     public Repo getRepositoryById(Long repoId) {
         return repoCommonService.getRepositoryById(repoId);
     }

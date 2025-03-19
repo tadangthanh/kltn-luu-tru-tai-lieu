@@ -24,7 +24,7 @@ import java.lang.reflect.Method;
 @Slf4j(topic = "vn.kltn.aspect.AnnotationAspect")
 public class AnnotationAspect {
     private final IAuthenticationService authService;
-    private final IRepoService repoService;
+//    private final IRepoService repoService;
     private final RepoUtil repoUtil;
     private final IMemberService repoMemberService;
 
@@ -39,12 +39,12 @@ public class AnnotationAspect {
         // Lấy thông tin user
         User authUser = authService.getAuthUser();
         // Kiểm tra quyền
-        if (!repoService.userHasAnyRoleRepoId(repoId, authUser.getId(), listRole)) {
+        if (!repoMemberService.userHasAnyRoleRepoId(repoId, authUser.getId(), listRole)) {
             throw new AccessDeniedException("Bạn không có quyền thực hiện hành động này");
         }
     }
 
-    @Before("@annotation(vn.kltn.validation.RequireRepoMemberActive)")
+    @Before("@annotation(vn.kltn.validation.RequireMemberActive)")
     public void checkRepoMembership(JoinPoint joinPoint) {
         log.info("Kiểm tra có phải thành viên repo");
         Long repoId = repoUtil.getRepoIdByJoinPoint(joinPoint);
