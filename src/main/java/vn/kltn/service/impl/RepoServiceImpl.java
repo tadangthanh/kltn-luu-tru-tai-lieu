@@ -63,8 +63,6 @@ public class RepoServiceImpl implements IRepoService {
     }
 
 
-
-
     private Repo saveRepo(RepoRequestDto repoRequestDto) {
         Repo repo = mapRequestToRepositoryEntity(repoRequestDto);
         String containerName = generateContainerName(repoRequestDto.getName());
@@ -274,6 +272,18 @@ public class RepoServiceImpl implements IRepoService {
     public PageResponse<List<RepoMemberInfoResponse>> getListMemberByRepoId(Long repoId, Pageable pageable) {
         Page<RepoMember> repoMemberPage = repoMemberService.getPageMember(repoId, pageable);
         return PaginationUtils.convertToPageResponse(repoMemberPage, pageable, repoMemberService::toRepoMemberInfoResponse);
+    }
+
+    @Override
+    public PageResponse<List<RepoResponseDto>> getPageResponseByUserAuth(Pageable pageable) {
+        Set<Long> repoIds = getRepoIdsByUserAuth();
+        Page<Repo> repoPage = repositoryRepo.findAllByRepoIdSet(repoIds, pageable);
+        return PaginationUtils.convertToPageResponse(repoPage, pageable, repoMapper::entityToResponse);
+    }
+
+    private Set<Long> getRepoIdsByUserAuth() {
+        User userAuth = authenticationService.getAuthUser();
+        return repoMemberService.getRepoIdsByUserId(userAuth.getId());
     }
 
     @Override

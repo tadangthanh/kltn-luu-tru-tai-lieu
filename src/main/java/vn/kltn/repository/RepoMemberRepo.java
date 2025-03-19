@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import vn.kltn.common.MemberStatus;
-import vn.kltn.entity.Repo;
 import vn.kltn.entity.RepoMember;
 
 import java.util.Optional;
@@ -41,4 +40,6 @@ public interface RepoMemberRepo extends JpaRepository<RepoMember, Long> {
 
     Optional<RepoMember> getMemberActiveByRepoIdAndUserId(Long repoId, Long userId);
 
+    @Query("select rm.repo.id from RepoMember rm where rm.user.id = ?1 and rm.status = 'ACTIVE'")
+    Set<Long> findRepoIdByUserIdActive(Long userId);
 }

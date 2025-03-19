@@ -29,7 +29,11 @@ public class RepoRest {
         return new ResponseData<>(HttpStatus.CREATED.value(), "Tạo kho lưu trữ thành công",
                 repositoryService.createRepository(repoRequestDto));
     }
-
+    @GetMapping
+    public ResponseData<PageResponse<List<RepoResponseDto>>> getRepoList( Pageable pageable) {
+        return new ResponseData<>(HttpStatus.OK.value(), "Lấy danh s kho lưu trữ thành công",
+                repositoryService.getPageResponseByUserAuth(pageable));
+    }
     @DeleteMapping("/{repositoryId}")
     public ResponseData<Void> deleteRepository(@PathVariable Long repositoryId) {
         repositoryService.deleteRepository(repositoryId);

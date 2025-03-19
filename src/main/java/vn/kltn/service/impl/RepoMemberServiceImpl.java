@@ -157,6 +157,11 @@ public class RepoMemberServiceImpl implements IRepoMemberService {
         return repoMember.getSasToken();
     }
 
+    @Override
+    public Set<Long> getRepoIdsByUserId(Long userId) {
+        return repoMemberRepo.findRepoIdByUserIdActive(userId);
+    }
+
     private String generateSasTokenForMember(String containerName, Set<RepoPermission> permissions) {
         return azureStorageService.generatePermissionRepo(containerName, permissions);
     }

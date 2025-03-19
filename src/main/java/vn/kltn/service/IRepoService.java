@@ -40,4 +40,6 @@ public interface IRepoService {
 
     PageResponse<List<RepoMemberInfoResponse>> getListMemberByRepoId(Long repoId, Pageable pageable);
 
+    PageResponse<List<RepoResponseDto>> getPageResponseByUserAuth(Pageable pageable);
+
 }
