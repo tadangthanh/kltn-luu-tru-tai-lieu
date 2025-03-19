@@ -14,7 +14,7 @@ import vn.kltn.repository.util.RepoUtil;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IMemberService;
 import vn.kltn.service.IRepoService;
-import vn.kltn.validation.MemberHasAnyRole;
+import vn.kltn.validation.HasAnyRole;
 
 import java.lang.reflect.Method;
 
@@ -28,11 +28,11 @@ public class AnnotationAspect {
     private final RepoUtil repoUtil;
     private final IMemberService repoMemberService;
 
-    @Before("@annotation(vn.kltn.validation.MemberHasAnyRole)")
+    @Before("@annotation(vn.kltn.validation.HasAnyRole)")
     public void checkPermissionMember(JoinPoint joinPoint) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
-        MemberHasAnyRole annotation = method.getAnnotation(MemberHasAnyRole.class);
+        HasAnyRole annotation = method.getAnnotation(HasAnyRole.class);
         RoleName[] listRole = annotation.value();
 
         Long repoId = repoUtil.getRepoIdByJoinPoint(joinPoint);

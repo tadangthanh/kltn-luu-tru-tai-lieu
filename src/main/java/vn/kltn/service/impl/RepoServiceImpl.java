@@ -22,7 +22,7 @@ import vn.kltn.map.RepoMapper;
 import vn.kltn.repository.RepositoryRepo;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
-import vn.kltn.validation.MemberHasAnyRole;
+import vn.kltn.validation.HasAnyRole;
 import vn.kltn.validation.RequireRepoMemberActive;
 
 import java.util.HashMap;
@@ -89,7 +89,7 @@ public class RepoServiceImpl implements IRepoService {
     }
 
     @Override
-    @MemberHasAnyRole(RoleName.ADMIN)
+    @HasAnyRole(RoleName.ADMIN)
     public void deleteRepository(Long id) {
         Repo repo = getRepositoryById(id);
         // xoa log cua repo
@@ -116,7 +116,7 @@ public class RepoServiceImpl implements IRepoService {
     }
 
     @Override
-    @MemberHasAnyRole({RoleName.ADMIN})
+    @HasAnyRole({RoleName.ADMIN})
     public RepoResponseDto addMemberToRepository(Long repoId, Long userId, Long roleId) {
         validateRepoExist(repoId);
         validateMemberNotExistByRepoIdAndUserId(repoId, userId);
@@ -179,7 +179,7 @@ public class RepoServiceImpl implements IRepoService {
 
 
     @Override
-    @MemberHasAnyRole(RoleName.ADMIN)
+    @HasAnyRole(RoleName.ADMIN)
     public RepoResponseDto update(Long repoId, RepoRequestDto repoRequestDto) {
         Repo repo = getRepositoryById(repoId);
         repoMapper.updateEntityFromRequest(repoRequestDto, repo);
@@ -212,8 +212,8 @@ public class RepoServiceImpl implements IRepoService {
 
     @Override
     @RequireRepoMemberActive
-    public Repo getRepositoryById(Long id) {
-        return repoCommonService.getRepositoryById(id);
+    public Repo getRepositoryById(Long repoId) {
+        return repoCommonService.getRepositoryById(repoId);
     }
 
     private RepoResponseDto convertRepositoryToResponse(Repo repo) {

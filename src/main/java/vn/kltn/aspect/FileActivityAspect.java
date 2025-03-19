@@ -79,13 +79,13 @@ public class FileActivityAspect {
         Long fileId = (Long) args[0];
         log.info("Delete file #%s: {}", fileId);
         fileActivityService.logActivity(fileId, FileActionType.DELETE,
-                String.format("Xóa file #%s khỏi repository", fileId));
+                String.format("Xóa file #%s", fileId));
     }
 
     @AfterReturning(value = "uploadFilePointCut()", returning = "fileUploaded")
     public void logUploadFile(FileResponse fileUploaded) {
         log.info("Upload file #%s: {}", fileUploaded.getId());
         fileActivityService.logActivity(fileUploaded.getId(), FileActionType.UPLOAD,
-                String.format("Upload file %s vào repository %s", fileUploaded.getFileName(), fileUploaded.getId()));
+                String.format("Upload file %s vào repository #%s", fileUploaded.getFileName(), fileUploaded.getId()));
     }
 }

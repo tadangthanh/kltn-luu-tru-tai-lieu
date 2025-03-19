@@ -24,7 +24,7 @@ import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IMemberRoleService;
 import vn.kltn.service.IMemberService;
 import vn.kltn.util.SasTokenValidator;
-import vn.kltn.validation.MemberHasAnyRole;
+import vn.kltn.validation.HasAnyRole;
 import vn.kltn.validation.RequireRepoMemberActive;
 
 import java.util.List;
@@ -224,7 +224,7 @@ public class MemberServiceImpl implements IMemberService {
     }
 
     @Override
-    @MemberHasAnyRole(RoleName.ADMIN)
+    @HasAnyRole(RoleName.ADMIN)
     public MemberResponse updateMemberRoleByRepoIdAndUserId(Long repoId, Long userId, Long roleId) {
         Repo repo = repoCommonService.getRepositoryById(repoId);
         Member member = getMemberByRepoIdAndUserId(repoId, userId);

@@ -22,7 +22,7 @@ public interface IRepoService {
 
     RepoResponseDto update(Long repoId, RepoRequestDto repoRequestDto);
 
-    Repo getRepositoryById(Long id);
+    Repo getRepositoryById(Long repoId);
 
     boolean userHasAnyRoleRepoId(Long repoId, Long userId, RoleName[] listRole);
 

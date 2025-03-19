@@ -28,7 +28,7 @@ import java.util.List;
 public class FileRest {
     private final IFileService fileService;
 
-    @PostMapping("/repo/{repoId}/upload")
+    @PostMapping("/repository/{repoId}/upload")
     public ResponseData<FileResponse> upload(@RequestPart("file") MultipartFile file, @Valid @RequestPart("data") FileRequest request, @PathVariable Long repoId) {
         return new ResponseData<>(201, "Upload file successfully", fileService.uploadFile(repoId, request, file));
     }
@@ -54,7 +54,7 @@ public class FileRest {
         return new ResponseData<>(200, "Update file successfully", fileService.updateFileMetadata(fileId, request));
     }
 
-    @GetMapping("/repo/{repoId}")
+    @GetMapping("/repository/{repoId}")
     public ResponseData<PageResponse<List<FileResponse>>> searchFile(Pageable pageable, @PathVariable Long repoId, @RequestParam(required = false, value = "file") String[] file) {
         return new ResponseData<>(200, "Search file successfully", fileService.advanceSearchBySpecification(repoId, pageable, file));
     }
@@ -64,12 +64,12 @@ public class FileRest {
         return new ResponseData<>(201, "Restore file successfully", fileService.restoreFile(fileId));
     }
 
-    @GetMapping("/repo/{repoId}/tag")
+    @GetMapping("/repository/{repoId}/tag")
     public ResponseData<PageResponse<List<FileResponse>>> searchByTagName(Pageable pageable, @PathVariable Long repoId, @RequestParam String tagName) {
         return new ResponseData<>(200, "Search file by tag name successfully", fileService.searchByTagName(repoId, tagName, pageable));
     }
 
-    @GetMapping("/repo/{repoId}/search-by-date-range")
+    @GetMapping("/repository/{repoId}/search-by-date-range")
     public ResponseData<PageResponse<List<FileResponse>>> searchByStartDateAndEndDate(Pageable pageable, @PathVariable Long repoId,
                                                                                       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
                                                                                       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {

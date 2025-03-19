@@ -23,6 +23,7 @@ import vn.kltn.repository.FileRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
+import vn.kltn.validation.HasAnyRole;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,6 +36,8 @@ import java.util.Base64;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static vn.kltn.common.RoleName.*;
 
 @Service
 @Transactional
@@ -54,6 +57,7 @@ public class FileServiceImpl implements IFileService {
 
 
     @Override
+    @HasAnyRole({ADMIN, EDITOR})
     public FileResponse uploadFile(Long repoId, FileRequest fileRequest, MultipartFile file) {
         try {
             String publicKey = getUserPublicKey();
@@ -69,7 +73,7 @@ public class FileServiceImpl implements IFileService {
 
     private void validateSignature(byte[] fileData, String signature, String publicKey) {
         if (!verifyFileSignature(fileData, signature, publicKey)) {
-            log.error("Invalid signature for file: {}", fileData);
+            log.error("Invalid signature for file");
             throw new InvalidDataException("Chữ ký không hợp lệ");
         }
     }
@@ -174,6 +178,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
+    @HasAnyRole(ADMIN)
     public void deleteFile(Long fileId) {
         File file = getFileById(fileId);
         validateFileDeleted(file);
@@ -221,6 +226,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
+    @HasAnyRole({ADMIN, EDITOR, VIEWER})
     public File getFileById(Long fileId) {
         return fileCommonService.getFileById(fileId);
     }
@@ -232,6 +238,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
+    @HasAnyRole({ADMIN, EDITOR})
     public FileResponse updateFileMetadata(Long fileId, FileRequest fileRequest) {
         File file = getFileById(fileId);
         fileMapper.updateEntity(fileRequest, file);
@@ -240,6 +247,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
+    @HasAnyRole({ADMIN, EDITOR, VIEWER})
     public FileDataResponse downloadFile(Long fileId) {
         File file = getFileById(fileId);
         // kiem tra tinh toan ven cua file
@@ -273,6 +281,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
+    @HasAnyRole({ADMIN, EDITOR, VIEWER})
     public PageResponse<List<FileResponse>> advanceSearchBySpecification(Long repoId, Pageable pageable, String[] file) {
         log.info("request get all of word with specification");
         if (file != null && file.length > 0) {
@@ -302,12 +311,14 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
+    @HasAnyRole({ADMIN, EDITOR, VIEWER})
     public PageResponse<List<FileResponse>> searchByTagName(Long repoId, String tagName, Pageable pageable) {
         Page<File> filePage = fileRepo.findActiveFilesByRepoIdAndTagName(repoId, tagName.trim(), pageable);
         return PaginationUtils.convertToPageResponse(filePage, pageable, fileMapper::entityToResponse);
     }
 
     @Override
+    @HasAnyRole({ADMIN, EDITOR, VIEWER})
     public PageResponse<List<FileResponse>> searchByStartDateAndEndDate(Long repoId, Pageable pageable, LocalDate startDate, LocalDate endDate) {
         LocalDateTime startOfDay = startDate.atStartOfDay(); // 2025-03-05 00:00:00
         LocalDateTime endOfDay = endDate.atTime(23, 59, 59); // 2025-03-10 23:59:59
@@ -316,6 +327,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
+    @HasAnyRole({ADMIN, EDITOR, VIEWER})
     public FileShareResponse shareFile(Long fileId, FileShareRequest fileShareRequest) {
         return fileShareService.createFileShareLink(fileId, fileShareRequest);
     }
@@ -326,6 +338,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
+    @HasAnyRole({ADMIN, EDITOR, VIEWER})
     public void deleteFileShareByFileId(Long fileId) {
         validateCreatedShareFile(fileShareService.getFileShareByFileId(fileId));
         fileShareService.deleteFileShareById(fileId);
