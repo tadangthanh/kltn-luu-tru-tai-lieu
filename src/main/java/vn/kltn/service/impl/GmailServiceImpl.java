@@ -105,6 +105,7 @@ public class GmailServiceImpl implements IMailService {
         context.setVariable("linkAccept", invitationRepoUrl + "/accept?repoId=" + repo.getId() + "&token=" + token);
         context.setVariable("linkReject", invitationRepoUrl + "/reject?repoId=" + repo.getId() + "&email=" + email);
         context.setVariable("repo", repo);
+        context.setVariable("owner", repo.getOwner());
         context.setVariable("expiryDayInvitation", expiryDayInvitation);
         sendEmail(email, subject, template, context);
 

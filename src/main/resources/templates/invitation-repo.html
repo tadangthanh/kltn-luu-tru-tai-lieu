@@ -33,7 +33,7 @@
         <div class="repo-icon"></div>
         <div>
             <span class="repo-name" th:text="${repo.name}">awesome-project</span>
-            <span class="repo-owner" th:text="${repo.ownerName}"> / ownerName </span>
+            <span class="repo-owner" th:text="${owner.fullName}"> / ownerName </span>
         </div>
     </div>
 
@@ -45,7 +45,7 @@
 
         <div class="repo-details">
             <div class="detail-item">
-                <span>👤 Owner: <span th:text="${repo.ownerName}"></span></span>
+                <span>👤 Owner: <span th:text="${owner.fullName}"></span></span>
             </div>
             <div class="detail-item">
                 <span>🔒 Repository: <span th:text="${repo.name}"></span></span>

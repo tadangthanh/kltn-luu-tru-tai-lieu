@@ -56,9 +56,8 @@ public class MemberServiceImpl implements IMemberService {
         Repo repo = repoCommonService.getRepositoryById(repoId);
         User memberAdd = userService.getUserById(userId);
         // save vao database
-        MemberResponse response = saveMemberWithRoleId(repo, memberAdd, roleId);
         gmailService.sendInvitationMember(memberAdd.getEmail(), repo);
-        return response;
+        return saveMemberWithRoleId(repo, memberAdd, roleId);
     }
 
     private void validateRepoExist(Long repoId) {
