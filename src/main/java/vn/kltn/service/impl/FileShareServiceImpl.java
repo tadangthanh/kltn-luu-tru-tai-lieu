@@ -36,11 +36,23 @@ public class FileShareServiceImpl implements IFileShareService {
 
     @Override
     public FileShareResponse createFileShareLink(Long fileId, FileShareRequest request) {
+        validateTimeExpire(request.getExpireAt());
         File file = fileCommonService.getFileById(fileId);
-        FileShare fileShare = fileShareRepo.findByFileId(fileId).orElseGet(() -> createNewFileShare(file, request));
-        updateFileShare(fileShare, request);
+        FileShare fileShare = fileShareRepo.findByFileId(fileId).orElse(null);
+        if (fileShare == null) {
+            fileShare = createNewFileShare(file, request);
+        } else {
+            updateFileShare(fileShare, request);
+        }
         fileShareRepo.save(fileShare);
         return fileShareMapper.toResponse(fileShare);
+    }
+
+    private void validateTimeExpire(LocalDateTime expireAt) {
+        if (expireAt != null && expireAt.isBefore(LocalDateTime.now())) {
+            log.warn("Thời gian hết hạn không hợp lệ");
+            throw new InvalidDataException("Thời gian hết hạn không hợp lệ");
+        }
     }
 
     private FileShare createNewFileShare(File file, FileShareRequest request) {
@@ -63,14 +75,13 @@ public class FileShareServiceImpl implements IFileShareService {
     public FileDataResponse viewFile(String token, String password) {
         FileShare fileShare = getShareFileByToken(token);
         // Kiểm tra thời gian hết hạn
-        if (isExpired(fileShare)) {
-            throw new InvalidDataException("File share is expired");
-        }
+        validateTimeExpire(fileShare.getExpireAt());
         String passwordHash = fileShare.getPasswordHash();
         // validate password
         validatePassword(password, passwordHash);
         return mapFileToFileDataResponse(fileShare.getFile());
     }
+
 
     private FileDataResponse mapFileToFileDataResponse(File file) {
         Repo repo = file.getRepo();
@@ -91,11 +102,14 @@ public class FileShareServiceImpl implements IFileShareService {
 
 
     private void validatePassword(String password, String passwordHash) {
+        log.info("Validate password: {}", password);
         if (passwordHash != null) {
             if (password == null || password.isEmpty()) {
+                log.warn("Password is null or empty");
                 throw new InvalidDataException("Password is required");
             }
             if (!isMatchPassword(password, passwordHash)) {
+                log.warn("Password does not match");
                 throw new InvalidDataException("Password is incorrect");
             }
         }
@@ -115,11 +129,13 @@ public class FileShareServiceImpl implements IFileShareService {
 
     @Override
     public void deleteFileShareById(Long fileId) {
+        log.info("Delete file share by id: {}", fileId);
         fileShareRepo.deleteByFileId(fileId);
     }
 
     @Override
     public void deleteFileSharedByFileId(Long fileId) {
+        log.info("Delete fileShared by FileId: {}", fileId);
         fileShareRepo.deleteByFileId(fileId);
     }
 
@@ -129,9 +145,5 @@ public class FileShareServiceImpl implements IFileShareService {
             log.warn("file share not found with id: {}", fileId);
             return new ResourceNotFoundException("File share not found");
         });
-    }
-
-    private boolean isExpired(FileShare fileShare) {
-        return fileShare.getExpireAt() != null && fileShare.getExpireAt().isBefore(LocalDateTime.now());
     }
 }
