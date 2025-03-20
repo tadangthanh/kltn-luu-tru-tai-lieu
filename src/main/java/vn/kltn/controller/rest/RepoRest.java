@@ -5,7 +5,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import vn.kltn.dto.request.MemberRequest;
 import vn.kltn.dto.request.RepoRequestDto;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.RepoResponseDto;
@@ -39,13 +38,6 @@ public class RepoRest {
     public ResponseData<Void> deleteRepository(@PathVariable Long repositoryId) {
         repositoryService.deleteRepository(repositoryId);
         return new ResponseData<>(HttpStatus.NO_CONTENT.value(), "Xóa kho lưu trữ thành công", null);
-    }
-
-    @PostMapping("/{repositoryId}/member")
-    public ResponseData<RepoResponseDto> addMemberToRepository(@PathVariable Long repositoryId,
-                                                               @Validated(Create.class) @RequestBody MemberRequest memberRequest) {
-        return new ResponseData<>(HttpStatus.CREATED.value(), "gửi lơi mời thành công",
-                repositoryService.addMemberToRepository(repositoryId, memberRequest.getUserId(), memberRequest.getRoleId()));
     }
 
     @PatchMapping("/{repositoryId}")

@@ -19,4 +19,8 @@ public class RepoCommonService {
             return new ResourceNotFoundException("Repository not found");
         });
     }
+
+    public boolean existsById(Long repoId) {
+        return repositoryRepo.existsById(repoId);
+    }
 }

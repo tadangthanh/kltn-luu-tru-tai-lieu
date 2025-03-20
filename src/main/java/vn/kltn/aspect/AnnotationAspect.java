@@ -13,7 +13,6 @@ import vn.kltn.entity.User;
 import vn.kltn.repository.util.RepoUtil;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IMemberService;
-import vn.kltn.service.IRepoService;
 import vn.kltn.validation.HasAnyRole;
 
 import java.lang.reflect.Method;
@@ -24,7 +23,6 @@ import java.lang.reflect.Method;
 @Slf4j(topic = "vn.kltn.aspect.AnnotationAspect")
 public class AnnotationAspect {
     private final IAuthenticationService authService;
-//    private final IRepoService repoService;
     private final RepoUtil repoUtil;
     private final IMemberService repoMemberService;
 

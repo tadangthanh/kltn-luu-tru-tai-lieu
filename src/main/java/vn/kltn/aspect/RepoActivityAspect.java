@@ -8,7 +8,6 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.stereotype.Component;
 import vn.kltn.common.RepoActionType;
 import vn.kltn.common.TokenType;
-import vn.kltn.dto.request.RepoRequestDto;
 import vn.kltn.dto.response.RepoResponseDto;
 import vn.kltn.service.IJwtService;
 import vn.kltn.service.IRepoActivityService;
@@ -49,7 +48,7 @@ public class RepoActivityAspect {
         String token = (String) args[1];
         String email = jwtService.extractEmail(token, TokenType.INVITATION_TOKEN);
         repoActivityService.logActivity(repoId, email, RepoActionType.MEMBER_ACCEPT_INVITATION,
-                String.format("Thành viên user email: #%s tham gia vào repository #%s", email, repoId));
+                String.format("Thành viên user email: #%s tham gia vào repository", email));
     }
 
     @AfterReturning(value = "rejectInvitation()")
@@ -58,7 +57,7 @@ public class RepoActivityAspect {
         Long repoId = (Long) args[0];
         String email = (String) args[1];
         repoActivityService.logActivity(repoId, email, RepoActionType.MEMBER_REJECT_INVITATION,
-                String.format("Thành viên user email: #%s từ chối tham gia vào repository #%s", email, repoId));
+                String.format("Thành viên user email: #%s từ chối lời mời", email));
     }
 
 
@@ -66,9 +65,8 @@ public class RepoActivityAspect {
     public void logUpdateRepo(JoinPoint joinPoint) {
         Object[] args = joinPoint.getArgs();
         Long repoId = (Long) args[0];
-        RepoRequestDto repoRequestDto = (RepoRequestDto) args[1];
         repoActivityService.logActivity(repoId, RepoActionType.UPDATE_REPOSITORY,
-                String.format("Cập nhật repository %s, new name: %s, new description: %s", repoId, repoRequestDto.getName(), repoRequestDto.getDescription()));
+                "Cập nhật repository");
     }
 
     @AfterReturning(value = "createRepoPointCut()", returning = "repoCreated")
@@ -82,7 +80,7 @@ public class RepoActivityAspect {
         Object[] args = joinPoint.getArgs();
         Long repoId = (Long) args[0];
         Long userId = (Long) args[1];
-        repoActivityService.logActivity(repoId, RepoActionType.SEND_MEMBER_INVITE, String.format("Thêm thành viên #%s vào repository #%s", userId, repoId));
+        repoActivityService.logActivity(repoId, RepoActionType.SEND_MEMBER_INVITE, String.format("Thêm thành viên #%s vào repository", userId));
     }
 
 

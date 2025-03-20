@@ -13,7 +13,6 @@ public interface IRepoService {
 
     void deleteRepository(Long id);
 
-    RepoResponseDto addMemberToRepository(Long repoId, Long userId, Long roleId);
 
     RepoResponseDto acceptInvitation(Long repoId, String token);
 

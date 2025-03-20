@@ -16,7 +16,6 @@ import vn.kltn.dto.response.RepoResponseDto;
 import vn.kltn.entity.Member;
 import vn.kltn.entity.Repo;
 import vn.kltn.entity.User;
-import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.map.RepoMapper;
 import vn.kltn.repository.RepositoryRepo;
@@ -25,7 +24,6 @@ import vn.kltn.service.*;
 import vn.kltn.validation.HasAnyRole;
 import vn.kltn.validation.RequireMemberActive;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,18 +32,13 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional
 public class RepoServiceImpl implements IRepoService {
-    private final IMailService gmailService;
     @Value("${repo.max-size-gb}")
     private int maxSizeInGB;
-    @Value("${repo.max-members}")
-    private int maxMembers;
     private final IAzureStorageService azureStorageService;
     private final RepoMapper repoMapper;
     private final RepositoryRepo repositoryRepo;
     private final IUserService userService;
     private final IJwtService jwtService;
-    @Value("${jwt.expirationDayInvitation}")
-    private long expiryDayInvitation;
     private final IAuthenticationService authenticationService;
     private final IRepoActivityService repoActivityService;
     private final IMemberService memberService;
@@ -62,7 +55,7 @@ public class RepoServiceImpl implements IRepoService {
 
 
     private Repo saveRepo(RepoRequestDto repoRequestDto) {
-        Repo repo = mapRequestToRepositoryEntity(repoRequestDto);
+        Repo repo = mapRepoRequestToEntity(repoRequestDto);
         String containerName = generateContainerName(repoRequestDto.getName());
         repo.setContainerName(containerName);
         repo.setMaxSizeInGB(maxSizeInGB);
@@ -81,7 +74,7 @@ public class RepoServiceImpl implements IRepoService {
         azureStorageService.createContainerForRepository(repo.getContainerName());
     }
 
-    private Repo mapRequestToRepositoryEntity(RepoRequestDto repoRequestDto) {
+    private Repo mapRepoRequestToEntity(RepoRequestDto repoRequestDto) {
         User owner = authenticationService.getAuthUser();
         Repo repo = repoMapper.requestToEntity(repoRequestDto);
         repo.setOwner(owner);
@@ -100,47 +93,23 @@ public class RepoServiceImpl implements IRepoService {
     }
 
 
-    private void validateMemberNotExistByRepoIdAndUserId(Long repoId, Long userId) {
-        // validate thanh vien se them da ton tai hay chua
-        if (memberService.isExistMemberActiveByRepoIdAndUserId(repoId, userId)) {
-            log.error("Thành viên đã tồn tại, userId: {}, repoId: {}", userId, repoId);
-            throw new ConflictResourceException("Người dùng này đã là thành viên");
-        }
-    }
-
-    private void validateNumberOfMembers(Repo repo) {
-        if (memberService.countMemberByRepoId(repo.getId()) >= maxMembers) {
-            log.error("Repo đã đủ thành viên, không thể thêm");
-            throw new ConflictResourceException("Repo đã đủ thành viên, không thể thêm");
-        }
-    }
-
-    @Override
-    @HasAnyRole({RoleName.ADMIN})
-    public RepoResponseDto addMemberToRepository(Long repoId, Long userId, Long roleId) {
-        validateRepoExist(repoId);
-        validateMemberNotExistByRepoIdAndUserId(repoId, userId);
-        validateNumberOfMembers(getRepositoryById(repoId));
-        Repo repo = getRepositoryById(repoId);
-        User memberAdd = userService.getUserById(userId);
-        // save vao database
-        memberService.saveMemberWithRoleId(repo, memberAdd, roleId);
-        RepoResponseDto repoResponseDto = convertRepositoryToResponse(repo);
-        sendInvitationEmail(memberAdd, repoResponseDto);
-        return repoResponseDto;
-    }
-
-    private void validateRepoExist(Long repoId) {
-        if (!repositoryRepo.existsById(repoId)) {
-            log.error("Kho lưu trữ không tồn tại, id: {}", repoId);
-            throw new InvalidDataException("Kho lưu trữ không tồn tại");
-        }
-    }
-
-    private void sendInvitationEmail(User memberAdd, RepoResponseDto repo) {
-        String token = jwtService.generateToken(TokenType.INVITATION_TOKEN, new HashMap<>(), memberAdd.getEmail());
-        gmailService.sendAddMemberToRepo(memberAdd.getEmail(), repo, expiryDayInvitation, token);
-    }
+//    @Override
+//    @HasAnyRole({RoleName.ADMIN})
+//    public RepoResponseDto addMemberToRepository(Long repoId, Long userId, Long roleId) {
+//        // xác thực repo tồn tại
+//        validateRepoExist(repoId);
+//        // xác thực thành viên chưa tồn tại trong repo
+//        validateMemberNotExistByRepoIdAndUserId(repoId, userId);
+//        // xác thực số lượng thành viên
+//        validateNumberOfMembers(getRepositoryById(repoId));
+//        Repo repo = getRepositoryById(repoId);
+//        User memberAdd = userService.getUserById(userId);
+//        // save vao database
+//        memberService.saveMemberWithRoleId(repo, memberAdd, roleId);
+//        RepoResponseDto repoResponseDto = convertRepositoryToResponse(repo);
+//        sendInvitationEmail(memberAdd.getEmail(), repoResponseDto);
+//        return repoResponseDto;
+//    }
 
 
     @Override

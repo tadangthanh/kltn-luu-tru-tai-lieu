@@ -3,6 +3,7 @@ package vn.kltn.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -14,15 +15,13 @@ import vn.kltn.entity.Member;
 import vn.kltn.entity.MemberRole;
 import vn.kltn.entity.Repo;
 import vn.kltn.entity.User;
+import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.RepoMemberMapper;
 import vn.kltn.repository.RepoMemberRepo;
 import vn.kltn.repository.util.PaginationUtils;
-import vn.kltn.service.IAuthenticationService;
-import vn.kltn.service.IAzureStorageService;
-import vn.kltn.service.IMemberRoleService;
-import vn.kltn.service.IMemberService;
+import vn.kltn.service.*;
 import vn.kltn.util.SasTokenValidator;
 import vn.kltn.validation.HasAnyRole;
 import vn.kltn.validation.RequireMemberActive;
@@ -40,6 +39,49 @@ public class MemberServiceImpl implements IMemberService {
     private final RepoCommonService repoCommonService;
     private final RepoMemberMapper repoMemberMapper;
     private final IMemberRoleService memberRoleService;
+    private final IMailService gmailService;
+    @Value("${repo.max-members}")
+    private int maxMembers;
+    private final IUserService userService;
+
+    @Override
+    @HasAnyRole({RoleName.ADMIN})
+    public MemberResponse sendInvitationRepo(Long repoId, Long userId, Long roleId) {
+        // xác thực repo tồn tại
+        validateRepoExist(repoId);
+        // xác thực thành viên chưa tồn tại trong repo
+        validateMemberNotExistByRepoIdAndUserId(repoId, userId);
+        // xác thực số lượng thành viên
+        validateNumberOfMembers(repoId);
+        Repo repo = repoCommonService.getRepositoryById(repoId);
+        User memberAdd = userService.getUserById(userId);
+        // save vao database
+        MemberResponse response = saveMemberWithRoleId(repo, memberAdd, roleId);
+        gmailService.sendInvitationMember(memberAdd.getEmail(), repo);
+        return response;
+    }
+
+    private void validateRepoExist(Long repoId) {
+        if (!repoCommonService.existsById(repoId)) {
+            log.error("Kho lưu trữ không tồn tại, id: {}", repoId);
+            throw new InvalidDataException("Kho lưu trữ không tồn tại");
+        }
+    }
+
+    private void validateMemberNotExistByRepoIdAndUserId(Long repoId, Long userId) {
+        // validate thanh vien se them da ton tai hay chua
+        if (isExistMemberActiveByRepoIdAndUserId(repoId, userId)) {
+            log.error("Thành viên đã tồn tại, userId: {}, repoId: {}", userId, repoId);
+            throw new ConflictResourceException("Người dùng này đã là thành viên");
+        }
+    }
+
+    private void validateNumberOfMembers(Long repoId) {
+        if (countMemberByRepoId(repoId) >= maxMembers) {
+            log.error("Repo đã đủ thành viên, không thể thêm");
+            throw new ConflictResourceException("Repo đã đủ thành viên, không thể thêm");
+        }
+    }
 
     @Override
     public Member getAuthMemberWithRepoId(Long repoId) {
@@ -87,11 +129,12 @@ public class MemberServiceImpl implements IMemberService {
     }
 
     @Override
-    public void saveMemberWithRoleId(Repo repo, User user, Long roleId) {
+    public MemberResponse saveMemberWithRoleId(Repo repo, User user, Long roleId) {
         Member member = mapToRepoMember(repo, user);
         MemberRole memberRole = setRoleMemberById(member, roleId);
         member.setSasToken(getSasToken(repo, memberRole));
-        repoMemberRepo.save(member);
+        member = repoMemberRepo.save(member);
+        return toRepoMemberInfoResponse(member);
     }
 
     private MemberRole setRoleMemberById(Member member, Long roleId) {
@@ -129,8 +172,7 @@ public class MemberServiceImpl implements IMemberService {
         return repoMemberRepo.countRepoMemberByRepoId(repoId);
     }
 
-    @Override
-    public Member updateMemberPermissions(Member member, MemberRole role, String containerName) {
+    private Member updateMemberPermissions(Member member, MemberRole role, String containerName) {
         String sasToken = generateSasTokenForMember(containerName, role);
         member.setRole(role);
         member.setSasToken(sasToken);
@@ -143,8 +185,7 @@ public class MemberServiceImpl implements IMemberService {
         repoMemberRepo.delete(member);
     }
 
-    @Override
-    public MemberResponse toRepoMemberInfoResponse(Member member) {
+    private MemberResponse toRepoMemberInfoResponse(Member member) {
         return repoMemberMapper.toRepoMemberInfoResponse(member);
     }
 

@@ -13,10 +13,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
-import vn.kltn.dto.response.RepoResponseDto;
+import vn.kltn.common.TokenType;
+import vn.kltn.entity.Repo;
+import vn.kltn.service.IJwtService;
 import vn.kltn.service.IMailService;
 
 import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
 import java.util.Objects;
 
 @Service
@@ -33,7 +36,9 @@ public class GmailServiceImpl implements IMailService {
     private String invitationRepoUrl;
     @Value("${spring.mail.reset-password-url}")
     private String resetPasswordUrl;
-
+    @Value("${jwt.expirationDayInvitation}")
+    private long expiryDayInvitation;
+    private final IJwtService jwtService;
 
     @Override
     public String sendEmail(String recipients, String subject, String content, MultipartFile[] files) {
@@ -91,11 +96,12 @@ public class GmailServiceImpl implements IMailService {
 
     @Override
     @Async
-    public void sendAddMemberToRepo(String email, RepoResponseDto repo, long expiryDayInvitation, String token) {
+    public void sendInvitationMember(String email, Repo repo) {
         log.info("Sending invitation repository to {}", email);
         String subject = "Lời mời tham gia";
         String template = "invitation-repo.html";
         Context context = new Context();
+        String token = jwtService.generateToken(TokenType.INVITATION_TOKEN, new HashMap<>(), email);
         context.setVariable("linkAccept", invitationRepoUrl + "/accept?repoId=" + repo.getId() + "&token=" + token);
         context.setVariable("linkReject", invitationRepoUrl + "/reject?repoId=" + repo.getId() + "&email=" + email);
         context.setVariable("repo", repo);

@@ -6,13 +6,14 @@ import vn.kltn.common.RoleName;
 import vn.kltn.dto.response.MemberResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Member;
-import vn.kltn.entity.MemberRole;
 import vn.kltn.entity.Repo;
 import vn.kltn.entity.User;
 
 import java.util.List;
 
 public interface IMemberService {
+
+    MemberResponse sendInvitationRepo(Long repoId, Long userId, Long roleId);
 
     Member getAuthMemberWithRepoId(Long repoId);
 
@@ -26,17 +27,13 @@ public interface IMemberService {
 
     boolean isExistMemberActiveByRepoIdAndUserId(Long repoId, Long userId);
 
-    void saveMemberWithRoleId(Repo repo, User user, Long roleId);
+    MemberResponse saveMemberWithRoleId(Repo repo, User user, Long roleId);
 
     void saveMemberWithRoleAdmin(Repo repo, User user);
 
     int countMemberByRepoId(Long repoId);
 
-    Member updateMemberPermissions(Member member, MemberRole role, String containerName);
-
     void deleteMemberByRepoIdAndUserId(Long repoId, Long userId);
-
-    MemberResponse toRepoMemberInfoResponse(Member member);
 
     String getSasTokenByAuthMemberWithRepo(Repo repo);
 

@@ -10,6 +10,7 @@ import vn.kltn.dto.response.MemberResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
 import vn.kltn.service.IMemberService;
+import vn.kltn.validation.Create;
 import vn.kltn.validation.Update;
 
 import java.util.List;
@@ -27,6 +28,13 @@ public class MemberRest {
                                                                   @Validated(Update.class) @RequestBody MemberRequest memberRequest) {
         return new ResponseData<>(HttpStatus.OK.value(), "Cập nhật quyền cho thành viên thành công",
                 memberService.updateMemberRoleByRepoIdAndUserId(repositoryId, userId, memberRequest.getRoleId()));
+    }
+
+    @PostMapping("/{repositoryId}/invitation")
+    public ResponseData<MemberResponse> sendInvitation(@PathVariable Long repositoryId,
+                                                       @Validated(Create.class) @RequestBody MemberRequest memberRequest) {
+        return new ResponseData<>(HttpStatus.CREATED.value(), "gửi lơi mời thành công",
+                memberService.sendInvitationRepo(repositoryId, memberRequest.getUserId(), memberRequest.getRoleId()));
     }
 
     @DeleteMapping("/{repositoryId}/user/{userId}")
