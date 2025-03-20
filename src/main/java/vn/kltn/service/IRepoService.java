@@ -13,7 +13,6 @@ public interface IRepoService {
 
     void deleteRepository(Long id);
 
-
     RepoResponseDto acceptInvitation(Long repoId, String token);
 
     RepoResponseDto rejectInvitation(Long repoId, String email);

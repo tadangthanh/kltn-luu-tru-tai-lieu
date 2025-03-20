@@ -92,26 +92,6 @@ public class RepoServiceImpl implements IRepoService {
         azureStorageService.deleteContainer(containerName);
     }
 
-
-//    @Override
-//    @HasAnyRole({RoleName.ADMIN})
-//    public RepoResponseDto addMemberToRepository(Long repoId, Long userId, Long roleId) {
-//        // xác thực repo tồn tại
-//        validateRepoExist(repoId);
-//        // xác thực thành viên chưa tồn tại trong repo
-//        validateMemberNotExistByRepoIdAndUserId(repoId, userId);
-//        // xác thực số lượng thành viên
-//        validateNumberOfMembers(getRepositoryById(repoId));
-//        Repo repo = getRepositoryById(repoId);
-//        User memberAdd = userService.getUserById(userId);
-//        // save vao database
-//        memberService.saveMemberWithRoleId(repo, memberAdd, roleId);
-//        RepoResponseDto repoResponseDto = convertRepositoryToResponse(repo);
-//        sendInvitationEmail(memberAdd.getEmail(), repoResponseDto);
-//        return repoResponseDto;
-//    }
-
-
     @Override
     public RepoResponseDto acceptInvitation(Long repoId, String token) {
         log.info("Chấp nhận lời mời vào kho lưu trữ, repoId: {}, token: {}", repoId, token);
