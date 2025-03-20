@@ -18,7 +18,8 @@ public class File extends BaseEntity {
     private String fileBlobName;
     private String fileUrl;
     private Long fileSize;
-    @Column(nullable = false, columnDefinition = "TEXT")
+    //    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String publicKey;
     @ManyToOne
     @JoinColumn(name = "repo_id")
@@ -27,7 +28,8 @@ public class File extends BaseEntity {
     private Integer version;
     private String description;
     private String checkSum;
-    @Column(nullable = false, columnDefinition = "TEXT")
+    //    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String signature;
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;

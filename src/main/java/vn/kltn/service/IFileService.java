@@ -45,10 +45,4 @@ public interface IFileService {
     FileDataResponse viewFile(String token, String password);
 
     void deleteFileShareByFileId(Long fileId);
-//    Dùng public key để giải mã chữ ký số, lấy lại giá trị hash ban đầu.
-//    Băm file tải xuống bằng cùng thuật toán (ví dụ: SHA-256) để tạo hash mới.
-//    So sánh hash từ chữ ký với hash mới tính từ file:
-//    Nếu khớp: file hợp lệ (không bị thay đổi, và đúng nguồn gốc).
-//    Nếu không khớp: file đã bị thay đổi hoặc không đúng nguồn gốc.
-
 }

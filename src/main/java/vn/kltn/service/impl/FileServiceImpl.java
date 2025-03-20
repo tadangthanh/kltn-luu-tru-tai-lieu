@@ -17,7 +17,6 @@ import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.*;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.UnauthorizedException;
-import vn.kltn.exception.UploadFailureException;
 import vn.kltn.map.FileMapper;
 import vn.kltn.repository.FileRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
@@ -52,26 +51,26 @@ public class FileServiceImpl implements IFileService {
     private final IRepoService repoService;
     private final IUserHasKeyService userHasKeyService;
     private final FileCommonService fileCommonService;
-    private final IMemberService repoMemberService;
+    private final IMemberService memberService;
     private final IFileShareService fileShareService;
     private final IFileStatisticService fileStatisticService;
 
     @Override
     @HasAnyRole({ADMIN, EDITOR})
     public FileResponse uploadFile(Long repoId, FileRequest fileRequest, MultipartFile file) {
-        try {
-            String publicKey = getUserPublicKey();
-            byte[] fileData = file.getBytes();
-            validateSignature(fileData, fileRequest.getSignature(), publicKey);
-            Repo repo = repoService.getRepositoryById(repoId);
-            File fileEntity = processValidFile(repo, fileRequest, file, publicKey);
-            // tạo thống kê của file
-            fileStatisticService.createFileStatistic(fileEntity);
-            return fileMapper.entityToResponse(fileEntity);
-        } catch (IOException e) {
-            log.error("Error reading file: {}", file.getOriginalFilename(), e);
-            throw new UploadFailureException("Lỗi khi đọc file: " + e.getMessage());
-        }
+//        try {
+//            String publicKey = getUserPublicKey();
+//            byte[] fileData = file.getBytes();
+//            validateSignature(fileData, fileRequest.getSignature(), publicKey);
+        Repo repo = repoService.getRepositoryById(repoId);
+        File fileEntity = processValidFile(repo, fileRequest, file);
+        // tạo thống kê của file
+        fileStatisticService.createFileStatistic(fileEntity);
+        return fileMapper.entityToResponse(fileEntity);
+//        } catch (IOException e) {
+//            log.error("Error reading file: {}", file.getOriginalFilename(), e);
+//            throw new UploadFailureException("Lỗi khi đọc file: " + e.getMessage());
+//        }
     }
 
     private void validateSignature(byte[] fileData, String signature, String publicKey) {
@@ -87,6 +86,19 @@ public class FileServiceImpl implements IFileService {
     }
 
     // Xử lý khi file hợp lệ và lưu vào database
+    private File processValidFile(Repo repo, FileRequest fileRequest, MultipartFile file) {
+        File fileEntity = mapToEntity(repo, fileRequest, file);
+        fileEntity.setVersion(1);
+        fileEntity = fileRepo.save(fileEntity);
+        fileHasTagService.addFileToTag(fileEntity, fileRequest.getTags());
+        // upload file to cloud
+        String fileBlobName = uploadFileToCloud(file, repo.getContainerName(), memberService.getSasTokenByAuthMemberWithRepo(repo));
+        fileEntity.setFileBlobName(fileBlobName);
+        fileEntity.setRepo(repo);
+        return fileEntity;
+    }
+
+    // Xử lý khi file hợp lệ và lưu vào database
     private File processValidFile(Repo repo, FileRequest fileRequest, MultipartFile file, String publicKey) {
         File fileEntity = mapToEntity(repo, fileRequest, file);
         fileEntity.setVersion(1);
@@ -94,7 +106,7 @@ public class FileServiceImpl implements IFileService {
         fileEntity = fileRepo.save(fileEntity);
         fileHasTagService.addFileToTag(fileEntity, fileRequest.getTags());
         // upload file to cloud
-        String fileBlobName = uploadFileToCloud(file, repo.getContainerName(), repoMemberService.getSasTokenByAuthMemberWithRepo(repo));
+        String fileBlobName = uploadFileToCloud(file, repo.getContainerName(), memberService.getSasTokenByAuthMemberWithRepo(repo));
         fileEntity.setFileBlobName(fileBlobName);
         fileEntity.setRepo(repo);
         return fileEntity;
@@ -106,7 +118,7 @@ public class FileServiceImpl implements IFileService {
         fileEntity.setFileSize(file.getSize());
         fileEntity.setFileType(file.getContentType());
         fileEntity.setRepo(repo);
-        Member uploadedBy = repoMemberService.getAuthMemberWithRepoId(repo.getId());
+        Member uploadedBy = memberService.getAuthMemberWithRepoId(repo.getId());
         fileEntity.setUploadedBy(uploadedBy);
         return fileEntity;
     }
@@ -185,11 +197,15 @@ public class FileServiceImpl implements IFileService {
     public void deleteFile(Long fileId) {
         File file = getFileById(fileId);
         validateFileDeleted(file);
-        file.setDeletedAt(LocalDateTime.now());
-        Repo repo = file.getRepo();
-        file.setDeletedBy(repoMemberService.getAuthMemberWithRepoId(repo.getId()));
+        processDeleteFile(file);
         // xóa file share liên quan
         fileShareService.deleteFileSharedByFileId(fileId);
+    }
+
+    private void processDeleteFile(File file) {
+        file.setDeletedAt(LocalDateTime.now());
+        Repo repo = file.getRepo();
+        file.setDeletedBy(memberService.getAuthMemberWithRepoId(repo.getId()));
     }
 
     private void validateFileDeleted(File file) {
@@ -201,12 +217,21 @@ public class FileServiceImpl implements IFileService {
     @Override
     public FileResponse restoreFile(Long fileId) {
         File file = getFileById(fileId);
-        validateFileExist(file);
-        validateAdminOrAuthorDeleteFile(file);
-        file.setDeletedAt(null);
-        file.setDeletedBy(null);
+        validateRestoreFileConditions(file);
+        processRestoreFile(file);
         return fileMapper.entityToResponse(file);
     }
+
+    private void validateRestoreFileConditions(File file) {
+        validateFileExist(file);
+        validateAdminOrAuthorDeleteFile(file);
+    }
+
+    private void processRestoreFile(File file) {
+        file.setDeletedAt(null);
+        file.setDeletedBy(null);
+    }
+
 
     private void validateAdminOrAuthorDeleteFile(File file) {
         User authUser = authenticationService.getAuthUser();
@@ -216,7 +241,7 @@ public class FileServiceImpl implements IFileService {
             return;
         }
         // chi co nguoi xoa hoac admin moi co quyen restore file
-        Member member = repoMemberService.getAuthMemberWithRepoId(repo.getId());
+        Member member = memberService.getAuthMemberWithRepoId(repo.getId());
         if (!member.getId().equals(file.getDeletedBy().getId())) {
             throw new InvalidDataException("Không có quyền khôi phục file");
         }
@@ -253,14 +278,19 @@ public class FileServiceImpl implements IFileService {
     @HasAnyRole({ADMIN, EDITOR, VIEWER})
     public FileDataResponse downloadFile(Long fileId) {
         File file = getFileById(fileId);
-        // kiem tra tinh toan ven cua file
-        validateFileIntegrity(file);
+//        // kiem tra tinh toan ven cua file
+//        validateFileIntegrity(file);
         String containerName = file.getRepo().getContainerName();
         String fileBlobName = file.getFileBlobName();
         byte[] data = azureStorageService.downloadBlobByteData(containerName, fileBlobName);
         // Xác minh chữ ký số
-        verifyFileSignature(data, file.getSignature(), file.getPublicKey());
-        return FileDataResponse.builder().data(data).fileType(file.getFileType()).fileName(file.getFileName() + file.getFileBlobName().substring(file.getFileBlobName().lastIndexOf('.'))).build();
+//        verifyFileSignature(data, file.getSignature(), file.getPublicKey());
+        return FileDataResponse.builder()
+                .data(data)
+                .fileType(file.getFileType())
+                .fileName(file.getFileName() + file.getFileBlobName()
+                        .substring(file.getFileBlobName().lastIndexOf('.')))
+                .build();
     }
 
     public boolean verifyFileSignature(byte[] data, String signatureBase64, String publicKeyBase64) {
