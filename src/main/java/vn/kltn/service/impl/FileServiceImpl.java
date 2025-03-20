@@ -286,7 +286,7 @@ public class FileServiceImpl implements IFileService {
     @Override
     @HasAnyRole({ADMIN, EDITOR, VIEWER})
     public PageResponse<List<FileResponse>> advanceSearchBySpecification(Long repoId, Pageable pageable, String[] file) {
-        log.info("request get all of word with specification");
+        log.info("search file by specification");
         if (file != null && file.length > 0) {
             EntitySpecificationsBuilder<File> builder = new EntitySpecificationsBuilder<>();
 //            Pattern pattern = Pattern.compile("(\\w+?)([<:>~!])(.*)(\\p{Punct}?)(\\p{Punct}?)");

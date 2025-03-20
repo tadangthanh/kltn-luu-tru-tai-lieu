@@ -3,14 +3,21 @@ package vn.kltn.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import vn.kltn.dto.response.FileStatisticResponse;
+import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.File;
 import vn.kltn.entity.FileStatistic;
 import vn.kltn.exception.DuplicateResourceException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.FileStatisticMapper;
 import vn.kltn.repository.FileStatisticRepo;
+import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IFileStatisticService;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -70,5 +77,16 @@ public class FileStatisticServiceImpl implements IFileStatisticService {
     @Override
     public void deleteFileStatisticByFileId(Long fileId) {
         fileStatisticRepo.deleteByFileId(fileId);
+    }
+
+    @Override
+    public PageResponse<List<FileStatisticResponse>> getAllByFileId(Long fileId, Pageable pageable) {
+        log.info("get all file statistic by file id: {}", fileId);
+        Page<FileStatistic> filePage = fileStatisticRepo.findAllByFileId(fileId, pageable);
+        return PaginationUtils.convertToPageResponse(filePage, pageable, this::toFileStatisticResponse);
+    }
+
+    private FileStatisticResponse toFileStatisticResponse(FileStatistic fileStatistic) {
+        return fileStatisticMapper.toFileStatisticResponse(fileStatistic);
     }
 }
