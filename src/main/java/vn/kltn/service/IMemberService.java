@@ -1,7 +1,6 @@
 package vn.kltn.service;
 
 import org.springframework.data.domain.Pageable;
-import vn.kltn.common.MemberStatus;
 import vn.kltn.common.RoleName;
 import vn.kltn.dto.response.MemberResponse;
 import vn.kltn.dto.response.PageResponse;
@@ -17,17 +16,9 @@ public interface IMemberService {
 
     Member getAuthMemberWithRepoId(Long repoId);
 
-    Member updateSasTokenMember(Repo repo, Member member);
-
-    Member getMemberActiveByRepoIdAndUserId(Long repoId, Long userId);
-
     Member getMemberByRepoIdAndUserId(Long repoId, Long userId);
 
-    Member getMemberWithStatus(Long repoId, Long userId, MemberStatus status);
-
     boolean isExistMemberActiveByRepoIdAndUserId(Long repoId, Long userId);
-
-    MemberResponse saveMemberWithRoleId(Repo repo, User user, Long roleId);
 
     void saveMemberWithRoleAdmin(Repo repo, User user);
 

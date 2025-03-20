@@ -19,9 +19,6 @@ public class RepoActivityAspect {
     private final IRepoActivityService repoActivityService;
     private final IJwtService jwtService;
 
-    @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.addMemberToRepository(..))")
-    public void addMemberRepoPointCut() {
-    }
 
     @Pointcut("execution(* vn.kltn.service.impl.RepoServiceImpl.createRepository(..))")
     public void createRepoPointCut() {
@@ -73,14 +70,6 @@ public class RepoActivityAspect {
     public void logCreateRepo(RepoResponseDto repoCreated) {
         repoActivityService.logActivity(repoCreated.getId(), RepoActionType.CREATE_REPOSITORY,
                 String.format("Tạo repository #%s", repoCreated.getId()));
-    }
-
-    @AfterReturning(value = "addMemberRepoPointCut()")
-    public void logAddMember(JoinPoint joinPoint) {
-        Object[] args = joinPoint.getArgs();
-        Long repoId = (Long) args[0];
-        Long userId = (Long) args[1];
-        repoActivityService.logActivity(repoId, RepoActionType.SEND_MEMBER_INVITE, String.format("Thêm thành viên #%s vào repository", userId));
     }
 
 

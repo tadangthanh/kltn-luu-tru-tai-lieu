@@ -21,6 +21,9 @@ public class MemberServiceAspect {
     @Pointcut("execution(* vn.kltn.service.impl.MemberServiceImpl.removeMemberByRepoIdAndUserId(..))")
     public void removeMemberRepoPointCut() {
     }
+    @Pointcut("execution(* vn.kltn.service.impl.MemberServiceImpl.sendInvitationRepo(..))")
+    public void sendInvitationRepoPointCut() {
+    }
 
     @Pointcut("execution(* vn.kltn.service.impl.MemberServiceImpl.updateMemberRoleByRepoIdAndUserId(..))")
     public void updateMemberRole() {
@@ -37,7 +40,13 @@ public class MemberServiceAspect {
     @Pointcut("execution(* vn.kltn.service.impl.MemberServiceImpl.leaveRepo(..))")
     public void memberLeave() {
     }
-
+    @AfterReturning(value = "sendInvitationRepoPointCut()")
+    public void logSendInvitation(JoinPoint joinPoint) {
+        Object[] args = joinPoint.getArgs();
+        Long repoId = (Long) args[0];
+        Long userId = (Long) args[1];
+        repoActivityService.logActivity(repoId, RepoActionType.SEND_MEMBER_INVITE, String.format("Thêm thành viên #%s vào repository", userId));
+    }
     @AfterReturning(value = "memberLeave()", returning = "memberResponse")
     public void logLeaveMember(JoinPoint joinPoint, MemberResponse memberResponse) {
         Object[] args = joinPoint.getArgs();

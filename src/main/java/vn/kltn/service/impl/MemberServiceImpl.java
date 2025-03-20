@@ -47,17 +47,45 @@ public class MemberServiceImpl implements IMemberService {
     @Override
     @HasAnyRole({RoleName.ADMIN})
     public MemberResponse sendInvitationRepo(Long repoId, Long userId, Long roleId) {
-        // xác thực repo tồn tại
+        validateInvitationConditions(repoId, userId);
+        Member newMember = createAndSaveInvitedMember(repoId, userId, roleId);
+        sendInvitationEmail(newMember);
+        return toRepoMemberInfoResponse(newMember);
+    }
+
+    // Xác thực các điều kiện trước khi gửi lời mời.
+    private void validateInvitationConditions(Long repoId, Long userId) {
         validateRepoExist(repoId);
-        // xác thực thành viên chưa tồn tại trong repo
         validateMemberNotExistByRepoIdAndUserId(repoId, userId);
-        // xác thực số lượng thành viên
         validateNumberOfMembers(repoId);
+    }
+
+    //Tạo và lưu thành viên với trạng thái INVITED.
+    private Member createAndSaveInvitedMember(Long repoId, Long userId, Long roleId) {
+        User user = userService.getUserById(userId);
         Repo repo = repoCommonService.getRepositoryById(repoId);
-        User memberAdd = userService.getUserById(userId);
-        // save vao database
-        gmailService.sendInvitationMember(memberAdd.getEmail(), repo);
-        return saveMemberWithRoleId(repo, memberAdd, roleId);
+        Member member = saveMemberWithRoleId(repo, user, roleId);
+        member.setStatus(MemberStatus.INVITED);
+        return repoMemberRepo.save(member);
+    }
+
+    //Gửi email mời thành viên.
+    private void sendInvitationEmail(Member member) {
+        gmailService.sendInvitationMember(member.getUser().getEmail(), member.getRepo());
+    }
+
+
+    private Member saveMemberWithRoleId(Repo repo, User user, Long roleId) {
+        Member member = mapToRepoMember(repo, user);
+        MemberRole memberRole = setRoleMemberById(member, roleId);
+        member.setSasToken(getSasToken(repo, memberRole));
+        return repoMemberRepo.save(member);
+    }
+
+    private MemberRole setRoleMemberById(Member member, Long roleId) {
+        MemberRole memberRole = memberRoleService.getRoleById(roleId);
+        member.setRole(memberRole);
+        return memberRole;
     }
 
     private void validateRepoExist(Long repoId) {
@@ -91,15 +119,13 @@ public class MemberServiceImpl implements IMemberService {
         });
     }
 
-    @Override
-    public Member updateSasTokenMember(Repo repo, Member member) {
+    private Member updateSasTokenMember(Repo repo, Member member) {
         String newSasToken = azureStorageService.generatePermissionRepoByMemberRole(repo.getContainerName(), member.getRole());
         member.setSasToken(newSasToken);
         return repoMemberRepo.save(member);
     }
 
-    @Override
-    public Member getMemberActiveByRepoIdAndUserId(Long repoId, Long userId) {
+    private Member getMemberActiveByRepoIdAndUserId(Long repoId, Long userId) {
         return repoMemberRepo.findRepoMemberActiveByRepoIdAndUserId(repoId, userId).orElseThrow(() -> {
             log.error("Không tìm thấy thành viên active, userId: {}, trong repo repoId: {}", userId, repoId);
             return new ResourceNotFoundException("Không tìm thấy thành viên");
@@ -114,8 +140,7 @@ public class MemberServiceImpl implements IMemberService {
         });
     }
 
-    @Override
-    public Member getMemberWithStatus(Long repoId, Long userId, MemberStatus status) {
+    private Member getMemberByRepoAndUserIdWithStatus(Long repoId, Long userId, MemberStatus status) {
         return repoMemberRepo.findRepoMemberByRepoIdAndUserIdAndStatus(repoId, userId, status).orElseThrow(() -> {
             log.error("Không tìm thấy thành viên {}, userId: {}, trong repo repoId: {}", status, userId, repoId);
             return new ResourceNotFoundException("Không tìm thấy thành viên");
@@ -127,25 +152,11 @@ public class MemberServiceImpl implements IMemberService {
         return repoMemberRepo.isExistMemberActiveByRepoIdAndUserId(repoId, userId);
     }
 
-    @Override
-    public MemberResponse saveMemberWithRoleId(Repo repo, User user, Long roleId) {
-        Member member = mapToRepoMember(repo, user);
-        MemberRole memberRole = setRoleMemberById(member, roleId);
-        member.setSasToken(getSasToken(repo, memberRole));
-        member = repoMemberRepo.save(member);
-        return toRepoMemberInfoResponse(member);
-    }
-
-    private MemberRole setRoleMemberById(Member member, Long roleId) {
-        MemberRole memberRole = memberRoleService.getRoleById(roleId);
-        member.setRole(memberRole);
-        return memberRole;
-    }
-
 
     @Override
     public void saveMemberWithRoleAdmin(Repo repo, User user) {
         Member member = mapToRepoMember(repo, user);
+        member.setStatus(MemberStatus.ACTIVE);
         MemberRole memberRole = memberRoleService.getRoleByName(RoleName.ADMIN);
         member.setRole(memberRole);
         member.setSasToken(getSasToken(repo, memberRole));
@@ -161,8 +172,6 @@ public class MemberServiceImpl implements IMemberService {
         Member member = new Member();
         member.setUser(user);
         member.setRepo(repo);
-        MemberStatus status = getMemberStatus(repo, user);
-        member.setStatus(status);
         return member;
     }
 
@@ -171,12 +180,6 @@ public class MemberServiceImpl implements IMemberService {
         return repoMemberRepo.countRepoMemberByRepoId(repoId);
     }
 
-    private Member updateMemberPermissions(Member member, MemberRole role, String containerName) {
-        String sasToken = generateSasTokenForMember(containerName, role);
-        member.setRole(role);
-        member.setSasToken(sasToken);
-        return repoMemberRepo.save(member);
-    }
 
     @Override
     public void deleteMemberByRepoIdAndUserId(Long repoId, Long userId) {
@@ -203,9 +206,14 @@ public class MemberServiceImpl implements IMemberService {
     public MemberResponse disableMemberByRepoIdAndUserId(Long repoId, Long userId) {
         Member member = getMemberActiveByRepoIdAndUserId(repoId, userId);
         validateNotSelfMember(member);
+        member = disableMember(member);
+        return toRepoMemberInfoResponse(member);
+    }
+
+    private Member disableMember(Member member) {
         member.setStatus(MemberStatus.DISABLED);
         member.setSasToken(null);
-        return toRepoMemberInfoResponse(member);
+        return repoMemberRepo.save(member);
     }
 
     private void validateNotSelfMember(Member member) {
@@ -218,22 +226,31 @@ public class MemberServiceImpl implements IMemberService {
 
     @Override
     public MemberResponse enableMemberByRepoIdAndUserId(Long repoId, Long userId) {
-        Member member = getMemberWithStatus(repoId, userId, MemberStatus.DISABLED);
+        Member member = getMemberByRepoAndUserIdWithStatus(repoId, userId, MemberStatus.DISABLED);
         validateNotSelfMember(member);
-        member.setStatus(MemberStatus.ACTIVE);
-        Repo repo = repoCommonService.getRepositoryById(repoId);
-        member.setSasToken(getSasToken(repo, member.getRole()));
+        member = enableMember(member);
         return toRepoMemberInfoResponse(member);
+    }
+
+    private Member enableMember(Member member) {
+        member.setStatus(MemberStatus.ACTIVE);
+        Repo repo = member.getRepo();
+        member.setSasToken(getSasToken(repo, member.getRole()));
+        return repoMemberRepo.save(member);
     }
 
     @Override
     public MemberResponse leaveRepo(Long repoId) {
         Member member = getAuthMemberWithRepoId(repoId);
+        validateLeaveConditions(member);
+        member.setStatus(MemberStatus.EXITED);
+        return toRepoMemberInfoResponse(member);
+    }
+
+    private void validateLeaveConditions(Member member) {
         validateMemberNotOwner(member);
         validateMemberNotRemoved(member);
         validateMemberNotExited(member);
-        member.setStatus(MemberStatus.EXITED);
-        return toRepoMemberInfoResponse(member);
     }
 
     private void validateMemberNotOwner(Member member) {
@@ -267,10 +284,17 @@ public class MemberServiceImpl implements IMemberService {
     @Override
     @HasAnyRole(RoleName.ADMIN)
     public MemberResponse updateMemberRoleByRepoIdAndUserId(Long repoId, Long userId, Long roleId) {
-        Repo repo = repoCommonService.getRepositoryById(repoId);
         Member member = getMemberByRepoIdAndUserId(repoId, userId);
-        member = updateMemberPermissions(member, memberRoleService.getRoleById(roleId), repo.getContainerName());
+        member = updateRoleMember(member, roleId);
         return toRepoMemberInfoResponse(member);
+    }
+
+    private Member updateRoleMember(Member member, Long roleId) {
+        MemberRole role = memberRoleService.getRoleById(roleId);
+        Repo repo = member.getRepo();
+        member.setRole(role);
+        member = updateSasTokenMember(repo, member);
+        return repoMemberRepo.save(member);
     }
 
     @Override
@@ -299,16 +323,4 @@ public class MemberServiceImpl implements IMemberService {
         return azureStorageService.generatePermissionRepoByMemberRole(containerName, memberRole);
     }
 
-
-    private boolean isOwnerRepo(Repo repo, User user) {
-        return repo.getOwner().getId().equals(user.getId());
-    }
-
-    private MemberStatus getMemberStatus(Repo repo, User user) {
-        // neu member la chu so huu thi luon la active
-        if (isOwnerRepo(repo, user)) {
-            return MemberStatus.ACTIVE;
-        }
-        return MemberStatus.INVITED;
-    }
 }
