@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import vn.kltn.common.RoleName;
 import vn.kltn.dto.response.FileStatisticResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.File;
@@ -16,6 +17,7 @@ import vn.kltn.map.FileStatisticMapper;
 import vn.kltn.repository.FileStatisticRepo;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IFileStatisticService;
+import vn.kltn.validation.HasAnyRole;
 
 import java.util.List;
 
@@ -80,6 +82,7 @@ public class FileStatisticServiceImpl implements IFileStatisticService {
     }
 
     @Override
+    @HasAnyRole(RoleName.ADMIN)
     public PageResponse<List<FileStatisticResponse>> getAllByFileId(Long fileId, Pageable pageable) {
         log.info("get all file statistic by file id: {}", fileId);
         Page<FileStatistic> filePage = fileStatisticRepo.findAllByFileId(fileId, pageable);
