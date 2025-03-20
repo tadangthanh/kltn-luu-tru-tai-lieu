@@ -33,6 +33,12 @@ public class FileHasTagServiceImpl implements IFileHasTagService {
             }
         }
     }
+
+    @Override
+    public void deleteByFileId(Long fileId) {
+        fileHasTagRepo.deleteByFileId(fileId);
+    }
+
     private void saveFileHasTag(File file, Tag tag) {
         FileHasTag fileHasTag = new FileHasTag();
         fileHasTag.setFile(file);

@@ -22,7 +22,9 @@ public interface IFileService {
 
     void validateFileIntegrity(File file); // kiem tra tinh toan ven cua file
 
-    void deleteFile(Long fileId);
+    void softDeleteFile(Long fileId); // xóa file nhưng chưa xóa vĩnh viễn
+
+    void deleteFileExpired(); // xóa file vĩnh viễn
 
     FileResponse restoreFile(Long fileId);
 

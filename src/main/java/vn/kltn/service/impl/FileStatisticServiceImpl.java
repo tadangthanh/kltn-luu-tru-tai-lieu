@@ -77,7 +77,7 @@ public class FileStatisticServiceImpl implements IFileStatisticService {
     }
 
     @Override
-    public void deleteFileStatisticByFileId(Long fileId) {
+    public void deleteByFileId(Long fileId) {
         fileStatisticRepo.deleteByFileId(fileId);
     }
 

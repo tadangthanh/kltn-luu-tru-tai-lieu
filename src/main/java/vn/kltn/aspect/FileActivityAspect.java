@@ -23,7 +23,7 @@ public class FileActivityAspect {
     public void uploadFilePointCut() {
     }
 
-    @Pointcut("execution(* vn.kltn.service.impl.FileServiceImpl.deleteFile(..))")
+    @Pointcut("execution(* vn.kltn.service.impl.FileServiceImpl.softDeleteFile(..))")
     public void deleteFileFilePointCut() {
     }
 

@@ -54,6 +54,7 @@ public class FileServiceImpl implements IFileService {
     private final IMemberService memberService;
     private final IFileShareService fileShareService;
     private final IFileStatisticService fileStatisticService;
+    private final IFileActivityService fileActivityService;
 
     @Override
     @HasAnyRole({ADMIN, EDITOR})
@@ -194,7 +195,7 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     @HasAnyRole(ADMIN)
-    public void deleteFile(Long fileId) {
+    public void softDeleteFile(Long fileId) {
         File file = getFileById(fileId);
         validateFileDeleted(file);
         processDeleteFile(file);
@@ -202,10 +203,32 @@ public class FileServiceImpl implements IFileService {
         fileShareService.deleteFileSharedByFileId(fileId);
     }
 
+    @Override
+    public void deleteFileExpired() {
+        log.info("Xóa file vĩnh viễn");
+        List<File> expiredFiles = fileRepo.findFilesForPermanentDeletion(LocalDateTime.now());
+        // xóa file share liên quan
+        // xóa file_has_tag liên quan
+        //xóa file statistic liên quan
+        //xóa file activity liên quan
+        //xóa file trên cloud
+        for (File file : expiredFiles) {
+            fileShareService.deleteFileSharedByFileId(file.getId());
+            fileHasTagService.deleteByFileId(file.getId());
+            fileStatisticService.deleteByFileId(file.getId());
+            fileActivityService.deleteActivitiesByFileId(file.getId());
+            azureStorageService.deleteBlob(file.getRepo().getContainerName(), file.getFileBlobName());
+            fileRepo.delete(file);
+            log.info("Xóa vĩnh viễn file: {}", file.getFileName());
+        }
+        log.info("Xóa file vĩnh viễn thành công");
+    }
+
     private void processDeleteFile(File file) {
         file.setDeletedAt(LocalDateTime.now());
         Repo repo = file.getRepo();
         file.setDeletedBy(memberService.getAuthMemberWithRepoId(repo.getId()));
+        file.setPermanentDeleteAt(LocalDateTime.now().plusDays(7)); // Xóa sau 7 ngày
     }
 
     private void validateFileDeleted(File file) {
@@ -230,6 +253,7 @@ public class FileServiceImpl implements IFileService {
     private void processRestoreFile(File file) {
         file.setDeletedAt(null);
         file.setDeletedBy(null);
+        file.setPermanentDeleteAt(null);
     }
 
 

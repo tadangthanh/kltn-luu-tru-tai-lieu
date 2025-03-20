@@ -35,10 +35,9 @@ public class FileRest {
 
     @DeleteMapping("/{fileId}")
     public ResponseData<Void> delete(@PathVariable Long fileId) {
-        fileService.deleteFile(fileId);
+        fileService.softDeleteFile(fileId);
         return new ResponseData<>(204, "Delete file successfully", null);
     }
-
     @GetMapping("/download/{fileId}")
     public ResponseEntity<byte[]> download(@PathVariable Long fileId) {
         FileDataResponse fileDataResponse = fileService.downloadFile(fileId);

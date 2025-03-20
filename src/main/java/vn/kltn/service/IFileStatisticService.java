@@ -16,7 +16,7 @@ public interface IFileStatisticService {
 
     void createFileStatistic(File file);
 
-    void deleteFileStatisticByFileId(Long fileId);
+    void deleteByFileId(Long fileId);
 
     PageResponse<List<FileStatisticResponse>> getAllByFileId(Long fileId, Pageable pageable);
 }

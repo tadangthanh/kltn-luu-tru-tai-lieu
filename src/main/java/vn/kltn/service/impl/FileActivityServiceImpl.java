@@ -19,7 +19,6 @@ import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IFileActivityService;
-import vn.kltn.service.IFileService;
 import vn.kltn.validation.RequireMemberActive;
 
 import java.time.LocalDate;
@@ -35,13 +34,13 @@ import java.util.regex.Pattern;
 public class FileActivityServiceImpl implements IFileActivityService {
     private final FileActivityRepo fileActivityRepo;
     private final IAuthenticationService authService;
-    private final IFileService fileService;
+    private final FileCommonService fileCommonService;
     private final FileActivityMapper fileActivityMapper;
 
     @Override
     public void logActivity(Long fileId, FileActionType action, String detail) {
         log.info("Log activity for repoId: {}, action: {}, detail: {}", fileId, action, detail);
-        File file = fileService.getFileById(fileId);
+        File file = fileCommonService.getFileById(fileId);
         saveActivity(file, action, detail);
     }
 

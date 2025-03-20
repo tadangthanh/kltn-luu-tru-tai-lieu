@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import vn.kltn.entity.File;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
 public interface FileRepo extends JpaRepository<File, Long>, JpaSpecificationExecutor<File> {
@@ -22,4 +23,6 @@ public interface FileRepo extends JpaRepository<File, Long>, JpaSpecificationExe
                                                          @Param("endOfDay") LocalDateTime endOfDay,
                                                          Pageable pageable);
 
+    @Query("SELECT f FROM File f WHERE f.permanentDeleteAt <= ?1")
+    List<File> findFilesForPermanentDeletion(LocalDateTime now);
 }

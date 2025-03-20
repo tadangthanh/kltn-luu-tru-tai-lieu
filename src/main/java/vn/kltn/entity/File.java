@@ -33,6 +33,8 @@ public class File extends BaseEntity {
     private String signature;
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+    @Column(name = "permanent_delete_at")
+    private LocalDateTime permanentDeleteAt; // thoi gian xoa vinh vien
     @ManyToOne
     @JoinColumn(name = "deleted_by")
     private Member deletedBy;
