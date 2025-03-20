@@ -52,7 +52,7 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.OK);
     }
 
-    @ExceptionHandler({BadRequestException.class, UploadFailureException.class, InvalidDataException.class, PasswordMismatchException.class, PropertyReferenceException.class})
+    @ExceptionHandler({BadRequestException.class, DuplicateResourceException.class, UploadFailureException.class, InvalidDataException.class, PasswordMismatchException.class, PropertyReferenceException.class})
     public final ResponseEntity<ErrorResponse> handleBadRequestException(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(LocalDateTime.now());

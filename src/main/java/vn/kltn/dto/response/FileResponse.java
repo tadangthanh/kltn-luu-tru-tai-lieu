@@ -23,5 +23,4 @@ public class FileResponse extends BaseDto {
     private String uploadedBy;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private LocalDateTime deletedAt;
-
 }

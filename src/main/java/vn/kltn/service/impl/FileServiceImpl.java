@@ -54,7 +54,7 @@ public class FileServiceImpl implements IFileService {
     private final FileCommonService fileCommonService;
     private final IMemberService repoMemberService;
     private final IFileShareService fileShareService;
-
+    private final IFileStatisticService fileStatisticService;
 
     @Override
     @HasAnyRole({ADMIN, EDITOR})
@@ -64,7 +64,10 @@ public class FileServiceImpl implements IFileService {
             byte[] fileData = file.getBytes();
             validateSignature(fileData, fileRequest.getSignature(), publicKey);
             Repo repo = repoService.getRepositoryById(repoId);
-            return processValidFile(repo, fileRequest, file, publicKey);
+            File fileEntity = processValidFile(repo, fileRequest, file, publicKey);
+            // tạo thống kê của file
+            fileStatisticService.createFileStatistic(fileEntity);
+            return fileMapper.entityToResponse(fileEntity);
         } catch (IOException e) {
             log.error("Error reading file: {}", file.getOriginalFilename(), e);
             throw new UploadFailureException("Lỗi khi đọc file: " + e.getMessage());
@@ -84,7 +87,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     // Xử lý khi file hợp lệ và lưu vào database
-    private FileResponse processValidFile(Repo repo, FileRequest fileRequest, MultipartFile file, String publicKey) {
+    private File processValidFile(Repo repo, FileRequest fileRequest, MultipartFile file, String publicKey) {
         File fileEntity = mapToEntity(repo, fileRequest, file);
         fileEntity.setVersion(1);
         fileEntity.setPublicKey(publicKey);
@@ -94,7 +97,7 @@ public class FileServiceImpl implements IFileService {
         String fileBlobName = uploadFileToCloud(file, repo.getContainerName(), repoMemberService.getSasTokenByAuthMemberWithRepo(repo));
         fileEntity.setFileBlobName(fileBlobName);
         fileEntity.setRepo(repo);
-        return fileMapper.entityToResponse(fileEntity);
+        return fileEntity;
     }
 
     private File mapToEntity(Repo repo, FileRequest fileRequest, MultipartFile file) {

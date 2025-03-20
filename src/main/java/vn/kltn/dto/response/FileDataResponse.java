@@ -8,6 +8,7 @@ import java.io.Serializable;
 @Builder
 @Getter
 public class FileDataResponse implements Serializable {
+    private Long fileId;
     private byte[] data;
     private String fileName;
     private String fileType;

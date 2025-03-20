@@ -81,6 +81,7 @@ public class FileShareServiceImpl implements IFileShareService {
                     .data(inputStream.readAllBytes())
                     .fileName(file.getFileName() + file.getFileBlobName().substring(file.getFileBlobName().lastIndexOf('.')))
                     .fileType(file.getFileType())
+                    .fileId(file.getId())
                     .build();
         } catch (IOException e) {
             log.error("Error reading file from Azure Storage: {}", e.getMessage());
