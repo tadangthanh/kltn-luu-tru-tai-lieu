@@ -29,4 +29,7 @@ public class SubscriptionPlanRequest implements Serializable {
     @NotNull(message = "Giá không được để trống")
     @DecimalMin(value = "0.01", message = "Giá phải lớn hơn 0")
     private BigDecimal price;
+
+    private String description;
+
 }

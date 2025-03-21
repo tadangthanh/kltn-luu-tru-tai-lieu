@@ -25,4 +25,6 @@ public class SubscriptionPlan extends BaseEntity {
 
     @Column(nullable = false)
     private BigDecimal price;
+    @Column(columnDefinition = "TEXT", name = "description")
+    private String description;
 }

@@ -12,6 +12,7 @@ public class SubscriptionPlanResponse extends BaseDto {
     private String name;
     private int maxReposPerMember;
     private int maxMembersPerRepo;
+    private String description;
     private Long maxStorage;
     private BigDecimal price;
 }
