@@ -32,8 +32,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional
 public class RepoServiceImpl implements IRepoService {
-    @Value("${repo.max-size-gb}")
-    private int maxSizeInGB;
+    @Value("${repo.max-storage-default}")
+    private int maxStorageDefault;
     private final IAzureStorageService azureStorageService;
     private final RepoMapper repoMapper;
     private final RepositoryRepo repositoryRepo;
@@ -58,8 +58,8 @@ public class RepoServiceImpl implements IRepoService {
         Repo repo = mapRepoRequestToEntity(repoRequestDto);
         String containerName = generateContainerName(repoRequestDto.getName());
         repo.setContainerName(containerName);
-        repo.setMaxSizeInGB(maxSizeInGB);
-        repo.setAvailableSizeInGB(maxSizeInGB * 1.0);
+        repo.setMaxSizeInGB(maxStorageDefault);
+        repo.setAvailableSizeInGB(maxStorageDefault * 1.0);
         return repositoryRepo.save(repo);
     }
 

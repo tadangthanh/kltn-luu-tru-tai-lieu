@@ -40,10 +40,10 @@ public class MemberServiceImpl implements IMemberService {
     private final RepoMemberMapper repoMemberMapper;
     private final IMemberRoleService memberRoleService;
     private final IMailService gmailService;
-    @Value("${repo.max-members-per-repo}")
-    private int maxMembers; // số lượng thành viên tối đa của 1 repo
-    @Value("${repo.max-repos-per-member}")
-    private int maxRepoPerMember; // số lượng repo mà 1 user có thể tham gia
+    @Value("${repo.max-members-per-repo-default}")
+    private int maxMembersDefault; // số lượng thành viên tối đa của 1 repo theo mặc dịnh
+    @Value("${repo.max-repos-per-member-default}")
+    private int maxRepoPerMembersDefault; // số lượng repo mà 1 user có thể tham gia theo mac dinh
     private final IUserService userService;
 
     @Override
@@ -118,7 +118,7 @@ public class MemberServiceImpl implements IMemberService {
     }
 
     private void validateNumberOfMembers(Long repoId) {
-        if (countMemberByRepoId(repoId) >= maxMembers) {
+        if (countMemberByRepoId(repoId) >= maxMembersDefault) {
             log.error("Repo đã đủ thành viên, không thể thêm");
             throw new ConflictResourceException("Repository đã đủ thành viên, không thể thêm, bạn có thể nâng cấp gói để thêm thành viên");
         }
