@@ -296,6 +296,8 @@ public class MemberServiceImpl implements IMemberService {
     @Override
     @HasAnyRole(RoleName.ADMIN)
     public MemberResponse updateMemberRoleByRepoIdAndUserId(Long repoId, Long userId, Long roleId) {
+        // role gán cho thành viên ko được là admin
+        validateRoleNotIsAdminById(roleId);
         Member member = getMemberByRepoIdAndUserId(repoId, userId);
         member = updateRoleMember(member, roleId);
         return toRepoMemberInfoResponse(member);
