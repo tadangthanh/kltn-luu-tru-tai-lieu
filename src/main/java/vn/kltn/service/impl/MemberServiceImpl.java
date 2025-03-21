@@ -118,7 +118,7 @@ public class MemberServiceImpl implements IMemberService {
     private void validateNumberOfMembers(Long repoId) {
         if (countMemberByRepoId(repoId) >= maxMembers) {
             log.error("Repo đã đủ thành viên, không thể thêm");
-            throw new ConflictResourceException("Repo đã đủ thành viên, không thể thêm");
+            throw new ConflictResourceException("Repository đã đủ thành viên, không thể thêm, bạn có thể nâng cấp gói để thêm thành viên");
         }
     }
 
