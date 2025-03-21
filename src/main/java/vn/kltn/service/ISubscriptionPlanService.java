@@ -16,4 +16,6 @@ public interface ISubscriptionPlanService {
     PageResponse<List<SubscriptionPlanResponse>> getPage(Pageable pageable);
 
     SubscriptionPlan getSubscriptionPlanByIdOrThrow(Long planId);
+
+    SubscriptionPlanResponse softDeleteSubscriptionPlan(Long planId);
 }

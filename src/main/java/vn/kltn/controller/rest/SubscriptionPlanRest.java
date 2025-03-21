@@ -34,6 +34,12 @@ public class SubscriptionPlanRest {
                 subscriptionPlanService.updateSubscriptionPlan(planId, subscriptionPlanRequest));
     }
 
+    @DeleteMapping("/{planId}")
+    public ResponseData<SubscriptionPlanResponse> softDeleteSubscriptionPlan(@PathVariable Long planId) {
+        return new ResponseData<>(HttpStatus.NO_CONTENT.value(), "Xóa thành công",
+                subscriptionPlanService.softDeleteSubscriptionPlan(planId));
+    }
+
     @GetMapping
     public ResponseData<PageResponse<List<SubscriptionPlanResponse>>> getPagePlan(Pageable pageable) {
         return new ResponseData<>(HttpStatus.OK.value(), "thành công",

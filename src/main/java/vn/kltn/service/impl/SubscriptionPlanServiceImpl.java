@@ -10,6 +10,7 @@ import vn.kltn.dto.request.SubscriptionPlanRequest;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.SubscriptionPlanResponse;
 import vn.kltn.entity.SubscriptionPlan;
+import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.DuplicateResourceException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.SubscriptionPlanMapper;
@@ -103,5 +104,20 @@ public class SubscriptionPlanServiceImpl implements ISubscriptionPlanService {
             log.warn("Không tìm thấy gói plan với id: {}", planId);
             return new ResourceNotFoundException("Không tìm thấy gói plan với id: " + planId);
         });
+    }
+
+    @Override
+    public SubscriptionPlanResponse softDeleteSubscriptionPlan(Long planId) {
+        validatePlanNotDeleted(planId);
+        SubscriptionPlan subscriptionPlan = getSubscriptionPlanByIdOrThrow(planId);
+        subscriptionPlan.setDeleted(true);
+        return mapToResponse(planRepo.save(subscriptionPlan));
+    }
+
+    private void validatePlanNotDeleted(Long planId) {
+        if (planRepo.existsByIdAndDeletedTrue(planId)) {
+            log.error("Gói plan đã bị xóa");
+            throw new ConflictResourceException("Gói plan đã bị xóa");
+        }
     }
 }

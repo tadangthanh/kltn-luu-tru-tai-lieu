@@ -25,6 +25,10 @@ public class SubscriptionPlan extends BaseEntity {
 
     @Column(nullable = false)
     private BigDecimal price;
+
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
     @Column(columnDefinition = "TEXT", name = "description")
     private String description;
 }

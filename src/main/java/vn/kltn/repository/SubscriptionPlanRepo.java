@@ -21,9 +21,12 @@ public interface SubscriptionPlanRepo extends JpaRepository<SubscriptionPlan, Lo
 
     @Query("SELECT CASE WHEN COUNT(s) > 0 THEN TRUE ELSE FALSE END FROM SubscriptionPlan s WHERE" +
             " lower(s.name) = lower(?1) and s.id <> ?2")
-    boolean existsPlanByNameExceptId(String name,Long id);
+    boolean existsPlanByNameExceptId(String name, Long id);
 
     @Query("SELECT CASE WHEN COUNT(s) > 0 THEN TRUE ELSE FALSE END FROM SubscriptionPlan s WHERE" +
             " s.maxReposPerMember = ?1 AND s.maxMembersPerRepo = ?2 AND s.maxStorage = ?3 AND s.price = ?4 and s.id <> ?5")
     boolean existPlanLimitExceptId(int maxReposPerMember, int maxMembersPerRepo, Long maxStorage, BigDecimal price, Long id);
+
+    @Query("SELECT CASE WHEN COUNT(s) > 0 THEN TRUE ELSE FALSE END FROM SubscriptionPlan s WHERE s.id = ?1 and s.isDeleted = true")
+    boolean existsByIdAndDeletedTrue(Long planId);
 }
