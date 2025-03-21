@@ -32,4 +32,9 @@ public class MemberRoleServiceImpl implements IMemberRoleService {
             return new ResourceNotFoundException("Role id: " + roleId + " not found");
         });
     }
+
+    @Override
+    public boolean isRoleAdminByRoleId(Long roleId) {
+        return memberRoleRepo.isRoleAdminByRoleId(roleId);
+    }
 }

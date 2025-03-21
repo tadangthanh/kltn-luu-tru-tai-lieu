@@ -7,4 +7,5 @@ public interface IMemberRoleService {
     MemberRole getRoleByName(RoleName roleName);
 
     MemberRole getRoleById(Long roleId);
+    boolean isRoleAdminByRoleId(Long roleId);
 }

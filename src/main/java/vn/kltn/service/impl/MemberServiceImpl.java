@@ -47,17 +47,29 @@ public class MemberServiceImpl implements IMemberService {
     @Override
     @HasAnyRole({RoleName.ADMIN})
     public MemberResponse sendInvitationRepo(Long repoId, Long userId, Long roleId) {
-        validateInvitationConditions(repoId, userId);
+        validateInvitationConditions(repoId, userId, roleId);
         Member newMember = createAndSaveInvitedMember(repoId, userId, roleId);
         sendInvitationEmail(newMember);
         return toRepoMemberInfoResponse(newMember);
     }
 
+    private void validateRoleNotIsAdminById(Long roleId) {
+        if (memberRoleService.isRoleAdminByRoleId(roleId)) {
+            log.error("Không thể thêm quyền admin cho thành viên");
+            throw new InvalidDataException("Không thể thêm quyền admin cho thành viên");
+        }
+    }
+
     // Xác thực các điều kiện trước khi gửi lời mời.
-    private void validateInvitationConditions(Long repoId, Long userId) {
+    private void validateInvitationConditions(Long repoId, Long userId, Long roleId) {
+        // repo phải tồn tại
         validateRepoExist(repoId);
+        // thành viên phải chưa có trong repo đó
         validateMemberNotExistByRepoIdAndUserId(repoId, userId);
+        // số lượng thành viên không vượt quá giới hạn
         validateNumberOfMembers(repoId);
+        // role gán cho thành viên ko được là admin
+        validateRoleNotIsAdminById(roleId);
     }
 
     //Tạo và lưu thành viên với trạng thái INVITED.
@@ -76,7 +88,7 @@ public class MemberServiceImpl implements IMemberService {
 
 
     private Member saveMemberWithRoleId(Repo repo, User user, Long roleId) {
-        Member member = mapToRepoMember(repo, user);
+        Member member = mapToMember(repo, user);
         MemberRole memberRole = setRoleMemberById(member, roleId);
         member.setSasToken(getSasToken(repo, memberRole));
         return repoMemberRepo.save(member);
@@ -155,7 +167,7 @@ public class MemberServiceImpl implements IMemberService {
 
     @Override
     public void saveMemberWithRoleAdmin(Repo repo, User user) {
-        Member member = mapToRepoMember(repo, user);
+        Member member = mapToMember(repo, user);
         member.setStatus(MemberStatus.ACTIVE);
         MemberRole memberRole = memberRoleService.getRoleByName(RoleName.ADMIN);
         member.setRole(memberRole);
@@ -163,12 +175,12 @@ public class MemberServiceImpl implements IMemberService {
         repoMemberRepo.save(member);
     }
 
-
+    // tạo sas token của azure storage
     private String getSasToken(Repo repo, MemberRole role) {
         return azureStorageService.generatePermissionRepoByMemberRole(repo.getContainerName(), role);
     }
 
-    private Member mapToRepoMember(Repo repo, User user) {
+    private Member mapToMember(Repo repo, User user) {
         Member member = new Member();
         member.setUser(user);
         member.setRepo(repo);
