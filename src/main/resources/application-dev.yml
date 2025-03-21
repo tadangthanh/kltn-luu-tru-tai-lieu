@@ -78,7 +78,7 @@ jwt:
   expirationDayInvitation: ${JWT_EXPIRATION_DAY_INVITATION:7} #thoi gian ton tai cua token moi thanh vien
 
 repo:
-  max-storage-default: ${REPO_MAX_STORAGE_DEFAULT:10}
+  max-total-storage-per-user: ${MAX_TOTAL_STORAGE_PER_USER:10737418240} #10GB, được tính bằng tổng dung lượng của tất cả các repo
   max-members-per-repo-default: ${MAX_MEMBER_PER_REPO_DEFAULT:10}
   max-repos-per-member-default: ${MAX_REPOS_PER_MEMBER_DEFAULT:5}
 

@@ -20,10 +20,6 @@ public class Repo extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "owner_id")
     private User owner;
-    @Column(name = "max_size_in_gb", nullable = false)
-    private Integer maxSizeInGB; // dung luong toi da cua repository
-    @Column(name = "available_size_in_gb", nullable = false)
-    private Double availableSizeInGB; // dung luong con lai cua repository
     @OneToMany(mappedBy = "repo", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<File> files;
     @OneToMany(mappedBy = "repo", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

@@ -3,7 +3,6 @@ package vn.kltn.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,8 +31,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional
 public class RepoServiceImpl implements IRepoService {
-    @Value("${repo.max-storage-default}")
-    private int maxStorageDefault;
     private final IAzureStorageService azureStorageService;
     private final RepoMapper repoMapper;
     private final RepositoryRepo repositoryRepo;
@@ -58,8 +55,6 @@ public class RepoServiceImpl implements IRepoService {
         Repo repo = mapRepoRequestToEntity(repoRequestDto);
         String containerName = generateContainerName(repoRequestDto.getName());
         repo.setContainerName(containerName);
-        repo.setMaxSizeInGB(maxStorageDefault);
-        repo.setAvailableSizeInGB(maxStorageDefault * 1.0);
         return repositoryRepo.save(repo);
     }
 
