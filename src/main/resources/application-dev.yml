@@ -79,7 +79,8 @@ jwt:
 
 repo:
   max-size-gb: ${REPO_MAX_SIZE_GB:10}
-  max-members: ${REPO_MAX_MEMBER:10}
+  max-members-per-repo: ${MAX_MEMBER_PER_REPO:10}
+  max-repos-per-member: ${MAX_REPOS_PER_MEMBER:5}
 google:
   api-key: ${googleapikey}
 

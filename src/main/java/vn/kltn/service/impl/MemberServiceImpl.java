@@ -40,8 +40,10 @@ public class MemberServiceImpl implements IMemberService {
     private final RepoMemberMapper repoMemberMapper;
     private final IMemberRoleService memberRoleService;
     private final IMailService gmailService;
-    @Value("${repo.max-members}")
-    private int maxMembers;
+    @Value("${repo.max-members-per-repo}")
+    private int maxMembers; // số lượng thành viên tối đa của 1 repo
+    @Value("${repo.max-repos-per-member}")
+    private int maxRepoPerMember; // số lượng repo mà 1 user có thể tham gia
     private final IUserService userService;
 
     @Override
