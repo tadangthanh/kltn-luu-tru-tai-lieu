@@ -16,6 +16,10 @@ public interface IMemberService {
 
     Member getAuthMemberWithRepoId(Long repoId);
 
+    Member getMemberById(Long memberId);
+
+    Member getMemberByEmailWithRepoId(Long repoId, String email);
+
     Member getMemberByRepoIdAndUserId(Long repoId, Long userId);
 
     boolean isExistMemberActiveByRepoIdAndUserId(Long repoId, Long userId);
@@ -28,15 +32,15 @@ public interface IMemberService {
 
     String getSasTokenByAuthMemberWithRepo(Repo repo);
 
-    MemberResponse disableMemberByRepoIdAndUserId(Long repoId, Long userId);
+    MemberResponse disableMemberById(Long memberId);
 
-    MemberResponse enableMemberByRepoIdAndUserId(Long repoId, Long userId);
+    MemberResponse enableMemberById(Long memberId);
 
     MemberResponse leaveRepo(Long repoId);
 
-    void removeMemberByRepoIdAndUserId(Long repoId, Long userId);
+    MemberResponse removeMemberById(Long memberId);
 
-    MemberResponse updateMemberRoleByRepoIdAndUserId(Long repoId, Long userId, Long roleId);
+    MemberResponse updateMemberRoleById(Long memberId, Long roleId);
 
     PageResponse<List<MemberResponse>> getListMemberByRepoId(Long repoId, Pageable pageable);
 

@@ -22,12 +22,11 @@ import java.util.List;
 public class MemberRest {
     private final IMemberService memberService;
 
-    @PostMapping("/{repositoryId}/user/{userId}")
-    public ResponseData<MemberResponse> updatePermissionForMember(@PathVariable Long repositoryId,
-                                                                  @PathVariable Long userId,
+    @PostMapping("/{memberId}")
+    public ResponseData<MemberResponse> updatePermissionForMember(@PathVariable Long memberId,
                                                                   @Validated(Update.class) @RequestBody MemberRequest memberRequest) {
         return new ResponseData<>(HttpStatus.OK.value(), "Cập nhật quyền cho thành viên thành công",
-                memberService.updateMemberRoleByRepoIdAndUserId(repositoryId, userId, memberRequest.getRoleId()));
+                memberService.updateMemberRoleById(memberId, memberRequest.getRoleId()));
     }
 
     @PostMapping("/{repositoryId}/invitation")
@@ -37,9 +36,9 @@ public class MemberRest {
                 memberService.sendInvitationRepo(repositoryId, memberRequest.getUserId(), memberRequest.getRoleId()));
     }
 
-    @DeleteMapping("/{repositoryId}/user/{userId}")
-    public ResponseData<Void> removeMemberFromRepository(@PathVariable Long repositoryId, @PathVariable Long userId) {
-        memberService.removeMemberByRepoIdAndUserId(repositoryId, userId);
+    @DeleteMapping("/{memberId}")
+    public ResponseData<Void> removeMemberFromRepository(@PathVariable Long memberId) {
+        memberService.removeMemberById(memberId);
         return new ResponseData<>(HttpStatus.NO_CONTENT.value(), "Xóa thành viên khỏi kho lưu trữ thành công", null);
     }
 
@@ -49,16 +48,16 @@ public class MemberRest {
                 memberService.getListMemberByRepoId(repositoryId, pageable));
     }
 
-    @PostMapping("/{repositoryId}/user/{userId}/enable")
-    public ResponseData<MemberResponse> enableMember(@PathVariable Long repositoryId, @PathVariable Long userId) {
-        return new ResponseData<>(HttpStatus.OK.value(), "Kích hoạt thành viên thành công",
-                memberService.enableMemberByRepoIdAndUserId(repositoryId, userId));
+    @PostMapping("/{memberId}/enable")
+    public ResponseData<MemberResponse> enableMember(@PathVariable Long memberId) {
+        return new ResponseData<>(HttpStatus.OK.value(), "thành công",
+                memberService.enableMemberById(memberId));
     }
 
-    @PostMapping("/{repositoryId}/user/{userId}/disable")
-    public ResponseData<MemberResponse> disableMember(@PathVariable Long repositoryId, @PathVariable Long userId) {
-        return new ResponseData<>(HttpStatus.OK.value(), "Vô hiệu hóa thành viên thành công",
-                memberService.disableMemberByRepoIdAndUserId(repositoryId, userId));
+    @PostMapping("/{memberId}/disable")
+    public ResponseData<MemberResponse> disableMember(@PathVariable Long memberId) {
+        return new ResponseData<>(HttpStatus.OK.value(), "thành công",
+                memberService.disableMemberById(memberId));
     }
 
     @PostMapping("/{repositoryId}/leave")

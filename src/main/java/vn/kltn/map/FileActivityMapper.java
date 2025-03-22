@@ -11,8 +11,8 @@ import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 public interface FileActivityMapper {
     @Mapping(target = "fileName", source = "file.fileName")
     @Mapping(target = "fileId", source = "file.id")
-    @Mapping(target = "authorName", source = "user.fullName")
-    @Mapping(target = "authorEmail", source = "user.email")
-    @Mapping(target = "authorId", source = "user.id")
+    @Mapping(target = "memberName", source = "member.user.fullName")
+    @Mapping(target = "memberEmail", source = "member.user.email")
+    @Mapping(target = "memberId", source = "member.id")
     FileActivityResponse toResponse(FileActivity entity);
 }

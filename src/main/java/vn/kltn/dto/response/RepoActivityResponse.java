@@ -10,9 +10,9 @@ import vn.kltn.dto.BaseDto;
 public class RepoActivityResponse extends BaseDto {
     private String repoName;
     private String repoId;
-    private String authorName;
-    private String authorEmail;
-    private Long authorId;
+    private String memberId;
     private RepoActionType action;
+    private String memberEmail;
+    private String memberName;
     private String details;
 }

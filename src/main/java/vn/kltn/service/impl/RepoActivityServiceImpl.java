@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import vn.kltn.common.RepoActionType;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.RepoActivityResponse;
+import vn.kltn.entity.Member;
 import vn.kltn.entity.Repo;
 import vn.kltn.entity.RepoActivity;
 import vn.kltn.entity.User;
@@ -17,7 +18,7 @@ import vn.kltn.map.RepoActivityMapper;
 import vn.kltn.repository.RepoActivityRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.util.PaginationUtils;
-import vn.kltn.service.IAuthenticationService;
+import vn.kltn.service.IMemberService;
 import vn.kltn.service.IRepoActivityService;
 import vn.kltn.service.IUserService;
 import vn.kltn.validation.RequireMemberActive;
@@ -35,9 +36,9 @@ import java.util.regex.Pattern;
 public class RepoActivityServiceImpl implements IRepoActivityService {
     private final RepoActivityRepo activityRepo;
     private final RepoCommonService repoCommonService;
-    private final IAuthenticationService authService;
     private final RepoActivityMapper repoActivityMapper;
     private final IUserService userService;
+    private final IMemberService memberService;
 
     @Override
     public void logActivity(Long repoId, RepoActionType action, String detail) {
@@ -107,19 +108,28 @@ public class RepoActivityServiceImpl implements IRepoActivityService {
 
     private void saveActivityByAuthUser(Repo repo, RepoActionType action, String detail) {
         RepoActivity activity = new RepoActivity();
-        User authUser = authService.getAuthUser();
         activity.setRepo(repo);
-        activity.setUser(authUser);
+        Member member = getMemberUserAuthByRepoId(repo.getId());
+        activity.setMember(member);
         activity.setAction(action);
         activity.setDetails(detail);
         activityRepo.save(activity);
+    }
+
+    private Member getMemberUserAuthByRepoId(Long repoId) {
+        return memberService.getAuthMemberWithRepoId(repoId);
+    }
+
+    private Member getMemberByEmailAndRepoId(Long repoId, String email) {
+        return memberService.getMemberByEmailWithRepoId(repoId, email);
     }
 
     private void saveActivityByActionByEmail(Repo repo, String actionByEmail, RepoActionType action, String detail) {
         RepoActivity activity = new RepoActivity();
         User authUser = userService.getUserByEmail(actionByEmail);
         activity.setRepo(repo);
-        activity.setUser(authUser);
+        Member member = getMemberByEmailAndRepoId(repo.getId(), authUser.getEmail());
+        activity.setMember(member);
         activity.setAction(action);
         activity.setDetails(detail);
         activityRepo.save(activity);

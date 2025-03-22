@@ -18,28 +18,30 @@ import vn.kltn.service.IRepoActivityService;
 public class MemberServiceAspect {
     private final IRepoActivityService repoActivityService;
 
-    @Pointcut("execution(* vn.kltn.service.impl.MemberServiceImpl.removeMemberByRepoIdAndUserId(..))")
+    @Pointcut("execution(* vn.kltn.service.impl.MemberServiceImpl.removeMemberById(..))")
     public void removeMemberRepoPointCut() {
     }
+
     @Pointcut("execution(* vn.kltn.service.impl.MemberServiceImpl.sendInvitationRepo(..))")
     public void sendInvitationRepoPointCut() {
     }
 
-    @Pointcut("execution(* vn.kltn.service.impl.MemberServiceImpl.updateMemberRoleByRepoIdAndUserId(..))")
+    @Pointcut("execution(* vn.kltn.service.impl.MemberServiceImpl.updateMemberRoleById(..))")
     public void updateMemberRole() {
     }
 
-    @Pointcut("execution(* vn.kltn.service.impl.MemberServiceImpl.disableMemberByRepoIdAndUserId(..))")
+    @Pointcut("execution(* vn.kltn.service.impl.MemberServiceImpl.disableMemberById(..))")
     public void disableMember() {
     }
 
-    @Pointcut("execution(* vn.kltn.service.impl.MemberServiceImpl.enableMemberByRepoIdAndUserId(..))")
+    @Pointcut("execution(* vn.kltn.service.impl.MemberServiceImpl.enableMemberById(..))")
     public void enableMember() {
     }
 
     @Pointcut("execution(* vn.kltn.service.impl.MemberServiceImpl.leaveRepo(..))")
     public void memberLeave() {
     }
+
     @AfterReturning(value = "sendInvitationRepoPointCut()")
     public void logSendInvitation(JoinPoint joinPoint) {
         Object[] args = joinPoint.getArgs();
@@ -47,48 +49,39 @@ public class MemberServiceAspect {
         Long userId = (Long) args[1];
         repoActivityService.logActivity(repoId, RepoActionType.SEND_MEMBER_INVITE, String.format("Thêm thành viên #%s vào repository", userId));
     }
+
     @AfterReturning(value = "memberLeave()", returning = "memberResponse")
     public void logLeaveMember(JoinPoint joinPoint, MemberResponse memberResponse) {
         Object[] args = joinPoint.getArgs();
         Long repoId = (Long) args[0];
         Long userId = memberResponse.getUserId();
-        repoActivityService.logActivity(repoId, RepoActionType.MEMBER_LEAVE,  String.format("Thành viên user #%s rời khỏi repository: ", userId));
+        repoActivityService.logActivity(repoId, RepoActionType.MEMBER_LEAVE, String.format("Thành viên user #%s rời khỏi repository: ", userId));
     }
 
-    @AfterReturning(value = "removeMemberRepoPointCut()")
-    public void logRemoveMember(JoinPoint joinPoint) {
-        Object[] args = joinPoint.getArgs();
-        Long repoId = (Long) args[0];
-        Long memberId = (Long) args[1];
-        repoActivityService.logActivity(repoId, RepoActionType.REMOVE_MEMBER, "Xoá thành viên #%s: " + memberId);
+    @AfterReturning(value = "removeMemberRepoPointCut()", returning = "memberResponse")
+    public void logRemoveMember(MemberResponse memberResponse) {
+        repoActivityService.logActivity(memberResponse.getRepoId(), RepoActionType.REMOVE_MEMBER, "Xoá thành viên #%s: " + memberResponse.getId());
     }
 
     @AfterReturning(value = "updateMemberRole()", returning = "memberResponse")
     public void logUpdateMemberRole(JoinPoint joinPoint, MemberResponse memberResponse) {
         Object[] args = joinPoint.getArgs();
-        Long repoId = (Long) args[0];
-        Long memberId = (Long) args[1];
-        repoActivityService.logActivity(repoId, RepoActionType.CHANGE_MEMBER_ROLE, String.format("cập nhật quyền cho thành viên #%s trong repository #%s thành #%s", memberId, repoId, memberResponse.getRole()));
+        Long memberId = (Long) args[0];
+        repoActivityService.logActivity(memberResponse.getRepoId(),
+                RepoActionType.CHANGE_MEMBER_ROLE, String.format("cập nhật quyền cho thành viên #%s trong repository #%s thành #%s",
+                        memberId, memberResponse.getRepoId(), memberResponse.getRole()));
     }
 
-    @AfterReturning(value = "enableMember()", returning = "memberResponse")
-    public void logMemberLeave(JoinPoint joinPoint, MemberResponse memberResponse) {
-        Object[] args = joinPoint.getArgs();
-        Long repoId = (Long) args[0];
-        repoActivityService.logActivity(repoId, RepoActionType.MEMBER_LEAVE, String.format("Thành viên user id: #%s (member id: #%s) rời khỏi repository #%s", memberResponse.getUserId(), memberResponse.getId(), repoId));
-    }
 
     @AfterReturning(value = "enableMember()", returning = "memberResponse")
-    public void logEnableMember(JoinPoint joinPoint, MemberResponse memberResponse) {
-        Object[] args = joinPoint.getArgs();
-        Long repoId = (Long) args[0];
+    public void logEnableMember(MemberResponse memberResponse) {
+        Long repoId = memberResponse.getRepoId();
         repoActivityService.logActivity(repoId, RepoActionType.ENABLE_MEMBER, String.format("Kích hoạt lại thành viên user id: #%s (member id: #%s) trong repository #%s", memberResponse.getUserId(), memberResponse.getId(), repoId));
     }
 
     @AfterReturning(value = "disableMember()", returning = "memberResponse")
-    public void logDisableMember(JoinPoint joinPoint, MemberResponse memberResponse) {
-        Object[] args = joinPoint.getArgs();
-        Long repoId = (Long) args[0];
+    public void logDisableMember(MemberResponse memberResponse) {
+        Long repoId = memberResponse.getRepoId();
         repoActivityService.logActivity(repoId, RepoActionType.DISABLE_MEMBER, String.format("Vô hiệu thành viên user id: #%s (member id: #%s) trong repository #%s", memberResponse.getUserId(), memberResponse.getId(), repoId));
     }
 

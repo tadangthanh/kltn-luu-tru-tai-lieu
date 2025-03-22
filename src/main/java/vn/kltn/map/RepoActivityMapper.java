@@ -11,8 +11,8 @@ import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 public interface RepoActivityMapper {
     @Mapping(target = "repoName", source = "repo.name")
     @Mapping(target = "repoId", source = "repo.id")
-    @Mapping(target = "authorName", source = "user.fullName")
-    @Mapping(target = "authorEmail", source = "user.email")
-    @Mapping(target = "authorId", source = "user.id")
+    @Mapping(target = "memberId", source = "member.id")
+    @Mapping(target = "memberEmail", source = "member.user.email")
+    @Mapping(target = "memberName", source = "member.user.fullName")
     RepoActivityResponse toResponse(RepoActivity entity);
 }

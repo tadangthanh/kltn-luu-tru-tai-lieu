@@ -12,13 +12,13 @@ import vn.kltn.dto.response.FileActivityResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.File;
 import vn.kltn.entity.FileActivity;
-import vn.kltn.entity.User;
+import vn.kltn.entity.Member;
 import vn.kltn.map.FileActivityMapper;
 import vn.kltn.repository.FileActivityRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.util.PaginationUtils;
-import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IFileActivityService;
+import vn.kltn.service.IMemberService;
 import vn.kltn.validation.RequireMemberActive;
 
 import java.time.LocalDate;
@@ -33,9 +33,9 @@ import java.util.regex.Pattern;
 @Slf4j(topic = "FILE_ACTIVITY_SERVICE")
 public class FileActivityServiceImpl implements IFileActivityService {
     private final FileActivityRepo fileActivityRepo;
-    private final IAuthenticationService authService;
     private final FileCommonService fileCommonService;
     private final FileActivityMapper fileActivityMapper;
+    private final IMemberService memberService;
 
     @Override
     public void logActivity(Long fileId, FileActionType action, String detail) {
@@ -46,12 +46,16 @@ public class FileActivityServiceImpl implements IFileActivityService {
 
     private void saveActivity(File file, FileActionType action, String detail) {
         FileActivity activity = new FileActivity();
-        User authUser = authService.getAuthUser();
         activity.setFile(file);
-        activity.setUser(authUser);
+        Member member = getMemberAuth(file.getRepo().getId());
+        activity.setMember(member);
         activity.setAction(action);
         activity.setDetails(detail);
         fileActivityRepo.save(activity);
+    }
+
+    private Member getMemberAuth(Long repoId) {
+        return memberService.getAuthMemberWithRepoId(repoId);
     }
 
     @Override

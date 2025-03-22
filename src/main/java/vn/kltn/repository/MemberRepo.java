@@ -9,7 +9,7 @@ import vn.kltn.entity.Member;
 
 import java.util.Optional;
 
-public interface RepoMemberRepo extends JpaRepository<Member, Long> {
+public interface MemberRepo extends JpaRepository<Member, Long> {
 
     @Query("select count(rm) from Member rm where rm.repo.id = ?1")
     int countRepoMemberByRepoId(Long repoId);
@@ -17,8 +17,11 @@ public interface RepoMemberRepo extends JpaRepository<Member, Long> {
     @Query("select rm from Member rm where rm.repo.id = ?1 and rm.user.id = ?2 and rm.status = 'ACTIVE'")
     Optional<Member> findRepoMemberActiveByRepoIdAndUserId(Long repoId, Long userId);
 
-    @Query("select rm from Member rm where rm.repo.id = ?1 and rm.user.id = ?2 and rm.status = ?3")
-    Optional<Member> findRepoMemberByRepoIdAndUserIdAndStatus(Long repoId, Long userId, MemberStatus status);
+    @Query("select rm from Member rm where rm.id = ?1  and rm.status = 'ACTIVE'")
+    Optional<Member> findMemberActiveById(Long id);
+
+    @Query("select rm from Member rm where rm.id = ?1  and rm.status = ?2")
+    Optional<Member> findMemberByIdAndStatus(Long id, MemberStatus status);
 
     @Query("select rm from Member rm where rm.repo.id = ?1 and rm.user.id = ?2")
     Optional<Member> findRepoMemberByRepoIdAndUserId(Long repoId, Long userId);

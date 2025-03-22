@@ -10,9 +10,9 @@ import vn.kltn.dto.BaseDto;
 public class FileActivityResponse extends BaseDto {
     private String fileName;
     private String fileId;
-    private String authorName;
-    private String authorEmail;
-    private Long authorId;
+    private String memberName;
+    private String memberEmail;
+    private Long memberId;
     private FileActionType action;
     private String details;
 }
