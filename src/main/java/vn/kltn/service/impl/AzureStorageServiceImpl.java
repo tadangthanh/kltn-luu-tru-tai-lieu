@@ -33,15 +33,48 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     @Value("${azure.blob-storage.account-name}")
     private String accountName;
     private final BlobServiceClient blobServiceClient;
+    @Value("${spring.cloud.azure.storage.blob.container-name}")
+    private String containerNameDefault;
 
     @Override
-    public String uploadChunked(InputStream data, String originalFileName, String containerName, String sasToken, long length, int chunkSize) {
+    public String uploadChunkedWithContainerName(InputStream data, String originalFileName, String containerName, String sasToken, long length, int chunkSize) {
         try {
             String containerUrl = String.format("https://%s.blob.core.windows.net/%s?%s", accountName, containerName, sasToken);
             BlobContainerClient blobContainerClient = new BlobServiceClientBuilder().endpoint(containerUrl).buildClient().getBlobContainerClient(containerName);
             String newFileName = UUID.randomUUID() + "_" + originalFileName;
             BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(newFileName).getBlockBlobClient();
 
+            List<String> blockIds = new ArrayList<>();
+            byte[] buffer = new byte[chunkSize];
+            int bytesRead;
+            int blockNumber = 0;
+
+            while ((bytesRead = data.read(buffer)) != -1) {
+                String blockId = Base64.getEncoder().encodeToString(String.format("%06d", blockNumber).getBytes()); // Tạo Block ID
+                blockBlobClient.stageBlock(blockId, new ByteArrayInputStream(buffer, 0, bytesRead), bytesRead);  // Upload từng phần
+                blockIds.add(blockId);
+                // 📌 In log để biết phần nào đã upload xong
+                // 📌 In log với số phần upload thành công
+                System.out.println("✅ Đã upload thành công phần " + (blockNumber + 1) + " trên tổng số " + ((length + chunkSize - 1) / chunkSize) + " phần");
+                blockNumber++;
+            }
+
+            // Ghép các phần lại
+            blockBlobClient.commitBlockList(blockIds);
+
+            return blockBlobClient.getBlobName();
+        } catch (IOException | BlobStorageException e) {
+            log.error("Error uploading file from InputStream: {}", e.getMessage());
+            throw new CustomBlobStorageException("Lỗi upload file ");
+        }
+    }
+
+    @Override
+    public String uploadChunkedWithContainerDefault(InputStream data, String originalFileName, long length, int chunkSize) {
+        try {
+            BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerNameDefault);
+            String newFileName = UUID.randomUUID() + "_" + originalFileName;
+            BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(newFileName).getBlockBlobClient();
             List<String> blockIds = new ArrayList<>();
             byte[] buffer = new byte[chunkSize];
             int bytesRead;

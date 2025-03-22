@@ -126,7 +126,7 @@ public class FileServiceImpl implements IFileService {
 
     private String uploadFileToCloud(MultipartFile file, String containerName, String sasToken) {
         try (InputStream inputStream = file.getInputStream()) {
-            return azureStorageService.uploadChunked(inputStream, file.getOriginalFilename(), containerName, sasToken, file.getSize(), 10 * 1024 * 1024);
+            return azureStorageService.uploadChunkedWithContainerName(inputStream, file.getOriginalFilename(), containerName, sasToken, file.getSize(), 10 * 1024 * 1024);
         } catch (IOException e) {
             throw new InvalidDataException(e.getMessage());
         }

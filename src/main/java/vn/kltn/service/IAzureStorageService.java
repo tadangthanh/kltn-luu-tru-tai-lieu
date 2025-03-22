@@ -5,7 +5,9 @@ import vn.kltn.entity.MemberRole;
 import java.io.InputStream;
 
 public interface IAzureStorageService {
-    String uploadChunked(InputStream data, String originalFileName, String containerName, String sasToken, long length, int chunkSize);
+    String uploadChunkedWithContainerName(InputStream data, String originalFileName, String containerName, String sasToken, long length, int chunkSize);
+
+    String uploadChunkedWithContainerDefault(InputStream data, String originalFileName, long length, int chunkSize);
 
     void createContainerForRepository(String repoName);
 
