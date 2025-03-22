@@ -15,8 +15,8 @@ public class RepoActivity extends BaseEntity {
     private Repo repo;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     @Column(columnDefinition = "TEXT")
     private String details; // Lưu thông tin chi tiết (ví dụ: tên file, nội dung sửa đổi)

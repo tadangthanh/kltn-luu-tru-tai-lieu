@@ -5,17 +5,21 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.SubscriptionPlanRequest;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.SubscriptionPlanResponse;
+import vn.kltn.entity.Role;
 import vn.kltn.entity.SubscriptionPlan;
+import vn.kltn.entity.User;
 import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.DuplicateResourceException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.SubscriptionPlanMapper;
 import vn.kltn.repository.SubscriptionPlanRepo;
 import vn.kltn.repository.util.PaginationUtils;
+import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.ISubscriptionPlanService;
 
 import java.util.List;
@@ -27,6 +31,7 @@ import java.util.List;
 public class SubscriptionPlanServiceImpl implements ISubscriptionPlanService {
     private final SubscriptionPlanMapper subscriptionPlanMapper;
     private final SubscriptionPlanRepo planRepo;
+    private final IAuthenticationService authenticationService;
 
     @Override
     public SubscriptionPlanResponse createSubscriptionPlan(SubscriptionPlanRequest request) {
