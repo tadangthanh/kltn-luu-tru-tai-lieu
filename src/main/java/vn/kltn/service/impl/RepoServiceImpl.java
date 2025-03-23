@@ -70,7 +70,7 @@ public class RepoServiceImpl implements IRepoService {
     }
 
     private Repo mapRepoRequestToEntity(RepoRequestDto repoRequestDto) {
-        User owner = authenticationService.getAuthUser();
+        User owner = authenticationService.getCurrentUser();
         Repo repo = repoMapper.requestToEntity(repoRequestDto);
         repo.setOwner(owner);
         return repo;
@@ -134,7 +134,7 @@ public class RepoServiceImpl implements IRepoService {
 
     @Override
     public PageResponse<List<RepoResponseDto>> getPageRepoResponseByUserAuth(Pageable pageable) {
-        User userAuth = authenticationService.getAuthUser();
+        User userAuth = authenticationService.getCurrentUser();
         Page<Repo> repoPage = repositoryRepo.findAllByUserIdActive(userAuth.getId(), pageable);
         return PaginationUtils.convertToPageResponse(repoPage, pageable, this::convertRepositoryToResponse);
     }

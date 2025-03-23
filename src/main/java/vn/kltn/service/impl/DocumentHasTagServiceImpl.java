@@ -10,6 +10,8 @@ import vn.kltn.repository.DocumentHasTagRepo;
 import vn.kltn.service.IDocumentHasTagService;
 import vn.kltn.service.ITagService;
 
+import java.util.Set;
+
 @Service
 @Transactional
 @Slf4j(topic = "DOCUMENT_HAS_TAG_SERVICE")
@@ -32,6 +34,13 @@ public class DocumentHasTagServiceImpl implements IDocumentHasTagService {
         }
     }
 
+    @Override
+    public void addDocumentToTag(Document document, Set<Tag> tags) {
+        for (Tag tag : tags) {
+            saveDocumentTag(document, tag);
+        }
+    }
+
     private void saveDocumentTag(Document document, Tag tag) {
         DocumentHasTag documentHasTag = new DocumentHasTag();
         documentHasTag.setDocument(document);
@@ -42,5 +51,11 @@ public class DocumentHasTagServiceImpl implements IDocumentHasTagService {
     @Override
     public void deleteByDocumentId(Long documentId) {
         documentHasTagRepo.deleteByDocumentId(documentId);
+    }
+
+    @Override
+    public Set<Tag> getTagsByDocumentId(Long id) {
+        log.info("getTagsByDocumentId: " + id);
+        return tagService.getTagsByDocumentId(id);
     }
 }

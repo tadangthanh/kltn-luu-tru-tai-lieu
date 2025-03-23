@@ -15,6 +15,9 @@ public class Document extends BaseEntity {
     private String type;
     private String blobName;
     private Long size;
+    @ManyToOne
+    @JoinColumn(name = "owner_id")
+    private User owner;
     private Integer version;
     private String description;
     @Column(name = "permanent_delete_at")

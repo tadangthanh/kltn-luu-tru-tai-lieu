@@ -258,7 +258,7 @@ public class FileServiceImpl implements IFileService {
 
 
     private void validateAdminOrAuthorDeleteFile(File file) {
-        User authUser = authenticationService.getAuthUser();
+        User authUser = authenticationService.getCurrentUser();
         Repo repo = file.getRepo();
         User owner = repo.getOwner();
         if (authUser.getId().equals(owner.getId())) {
@@ -402,7 +402,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     private void validateCreatedShareFile(FileShare fileShare) {
-        User authUser = authenticationService.getAuthUser();
+        User authUser = authenticationService.getCurrentUser();
         if (!authUser.getEmail().equals(fileShare.getCreatedBy())) {
             throw new UnauthorizedException("Không có quyền xóa link chia sẻ");
         }

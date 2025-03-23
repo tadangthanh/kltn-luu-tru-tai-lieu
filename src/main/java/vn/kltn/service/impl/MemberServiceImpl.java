@@ -126,7 +126,7 @@ public class MemberServiceImpl implements IMemberService {
 
     @Override
     public Member getAuthMemberWithRepoId(Long repoId) {
-        User authUser = authenticationService.getAuthUser();
+        User authUser = authenticationService.getCurrentUser();
         return memberRepo.getMemberActiveByRepoIdAndUserId(repoId, authUser.getId()).orElseThrow(() -> {
             log.error("{} không phải thành viên repository: {}", authUser.getEmail(), repoId);
             return new ResourceNotFoundException("Bạn không phải thành viên repository");
@@ -231,7 +231,7 @@ public class MemberServiceImpl implements IMemberService {
 
     @Override
     public String getSasTokenByAuthMemberWithRepo(Repo repo) {
-        User authUser = authenticationService.getAuthUser();
+        User authUser = authenticationService.getCurrentUser();
         Member member = getMemberActiveByRepoIdAndUserId(repo.getId(), authUser.getId());
         String sasToken = member.getSasToken();
         if (!SasTokenValidator.isSasTokenValid(sasToken)) {
@@ -256,7 +256,7 @@ public class MemberServiceImpl implements IMemberService {
     }
 
     private void validateNotSelfMember(Member member) {
-        User userAuth = authenticationService.getAuthUser();
+        User userAuth = authenticationService.getCurrentUser();
         if (userAuth.getId().equals(member.getUser().getId())) {
             log.error("email {} không thể thực hiện hành động này với mình", userAuth.getEmail());
             throw new InvalidDataException("Bạn không thể thực hiện hành động này với mình");

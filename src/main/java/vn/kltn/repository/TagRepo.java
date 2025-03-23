@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import vn.kltn.entity.Tag;
 
 import java.util.Optional;
+import java.util.Set;
 
 public interface TagRepo extends JpaRepository<Tag, Long> {
     @Query("SELECT CASE WHEN COUNT(t) > 0 THEN TRUE ELSE FALSE END FROM Tag t WHERE lower(t.name) = lower(?1)")
@@ -14,5 +15,6 @@ public interface TagRepo extends JpaRepository<Tag, Long> {
 
     Optional<Tag> findByName(String name);
 
-
+    @Query("select t from Tag t join DocumentHasTag dht on t.id=dht.tag.id where dht.document.id=?1")
+    Set<Tag> getTagsByDocumentId(Long documentId);
 }

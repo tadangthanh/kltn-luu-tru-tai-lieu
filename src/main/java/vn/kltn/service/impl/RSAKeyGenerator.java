@@ -45,7 +45,7 @@ public class RSAKeyGenerator implements IKeyGenerator {
     @Override
     public byte[] getPrivateKey() {
         KeysResponse keysResponse = generatePublicAndPrivateKey();
-        User authUser = authenticationService.getAuthUser();
+        User authUser = authenticationService.getCurrentUser();
         userHasKeyService.savePublicKey(authUser, keysResponse.getPublicKey());
         return keysResponse.getPrivateKey().getBytes();
     }

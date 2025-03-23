@@ -8,6 +8,7 @@ public interface IAzureStorageService {
     String uploadChunkedWithContainerName(InputStream data, String originalFileName, String containerName, String sasToken, long length, int chunkSize);
 
     String uploadChunkedWithContainerDefault(InputStream data, String originalFileName, long length, int chunkSize);
+    String copyBlob(String sourceBlobName, String destinationBlobName);
 
     void createContainerForRepository(String repoName);
 

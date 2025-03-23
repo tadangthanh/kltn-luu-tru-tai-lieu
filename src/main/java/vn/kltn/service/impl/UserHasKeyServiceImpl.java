@@ -31,7 +31,7 @@ public class UserHasKeyServiceImpl implements IUserHasKeyService {
 
     @Override
     public String getPublicKeyActiveByUserAuth() {
-        User authUser = authenticationService.getAuthUser();
+        User authUser = authenticationService.getCurrentUser();
         return userHasKeyRepo.getPublicKeyActiveByUserId(authUser.getId());
     }
 }

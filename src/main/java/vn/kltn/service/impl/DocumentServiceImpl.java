@@ -8,15 +8,22 @@ import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.entity.Document;
+import vn.kltn.entity.Tag;
+import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
+import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.DocumentMapper;
 import vn.kltn.repository.DocumentRepo;
+import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IDocumentHasTagService;
 import vn.kltn.service.IDocumentService;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDateTime;
+import java.util.Set;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -27,6 +34,7 @@ public class DocumentServiceImpl implements IDocumentService {
     private final DocumentMapper documentMapper;
     private final IAzureStorageService azureStorageService;
     private final IDocumentHasTagService documentHasTagService;
+    private final IAuthenticationService authenticationService;
 
 
     @Override
@@ -39,6 +47,8 @@ public class DocumentServiceImpl implements IDocumentService {
         Document document = mapToDocument(documentRequest, file);
         document.setVersion(1);
         document = documentRepo.save(document);
+        User uploader = authenticationService.getCurrentUser();
+        document.setOwner(uploader);
         documentHasTagService.addDocumentToTag(document, documentRequest.getTags());
         // upload file to cloud
         String blobName = uploadDocumentToCloud(file);
@@ -52,6 +62,14 @@ public class DocumentServiceImpl implements IDocumentService {
         } catch (IOException e) {
             throw new InvalidDataException(e.getMessage());
         }
+    }
+
+    @Override
+    public Document getDocumentByIdOrThrow(Long documentId) {
+        return documentRepo.findById(documentId).orElseThrow(() -> {
+            log.warn("Document with id {} not found", documentId);
+            return new ResourceNotFoundException("Không tìm thấy document");
+        });
     }
 
     private Document mapToDocument(DocumentRequest documentRequest, MultipartFile file) {
@@ -68,12 +86,39 @@ public class DocumentServiceImpl implements IDocumentService {
 
     @Override
     public void softDeleteDocumentById(Long documentId) {
-
+        Document document = getDocumentByIdOrThrow(documentId);
+        document.setDeletedAt(LocalDateTime.now());
+        documentRepo.save(document);
     }
 
     @Override
-    public DocumentResponse cloneDocumentById(Long documentId) {
-        return null;
+    public DocumentResponse copyDocumentById(Long documentId) {
+        Document document = getDocumentByIdOrThrow(documentId);
+        Document copied = copyDocument(document);
+        return mapToDocumentResponse(copied);
+    }
+
+    private Document copyDocument(Document document) {
+        Document copied = documentMapper.copyDocument(document);
+        documentRepo.save(copied);
+        copied.setDeletedAt(null);
+        copied.setPermanentDeleteAt(null);
+        copyDocumentHasTag(document, copied);
+        String blobDestinationCopied = azureStorageService.copyBlob(document.getBlobName(), generateBlobDestinationFromDocSource(document));
+        copied.setBlobName(blobDestinationCopied);
+        return copied;
+    }
+
+    private String generateBlobDestinationFromDocSource(Document documentSource) {
+        String uuid = UUID.randomUUID().toString();
+        String name = documentSource.getName();
+        String extension = documentSource.getBlobName().substring(documentSource.getBlobName().lastIndexOf("."));
+        return uuid + "_" + name + "." + extension;
+    }
+
+    private void copyDocumentHasTag(Document document, Document docCopy) {
+        Set<Tag> tags = documentHasTagService.getTagsByDocumentId(document.getId());
+        documentHasTagService.addDocumentToTag(docCopy, tags);
     }
 
     @Override

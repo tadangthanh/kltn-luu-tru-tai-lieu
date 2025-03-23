@@ -35,7 +35,7 @@ public class AnnotationAspect {
 
         Long repoId = repoUtil.getRepoIdByJoinPoint(joinPoint);
         // Lấy thông tin user
-        User authUser = authService.getAuthUser();
+        User authUser = authService.getCurrentUser();
         // thành viên có trạng thái ACTIVE và có role trong listRole thì được tiếp tục
         if (!repoMemberService.userHasAnyRoleRepoId(repoId, authUser.getId(), listRole)) {
             throw new AccessDeniedException("Bạn không có quyền thực hiện hành động này");
@@ -46,7 +46,7 @@ public class AnnotationAspect {
     public void checkRepoMembership(JoinPoint joinPoint) {
         log.info("Kiểm tra có phải thành viên repo");
         Long repoId = repoUtil.getRepoIdByJoinPoint(joinPoint);
-        User authUser = authService.getAuthUser();
+        User authUser = authService.getCurrentUser();
         if (!repoMemberService.isExistMemberActiveByRepoIdAndUserId(repoId, authUser.getId())) {
             log.error("{} Không phải thành viên repo, repoId: {}", authUser.getEmail(), repoId);
             throw new AccessDeniedException("Bạn không có quyền thực hiện hành động này");

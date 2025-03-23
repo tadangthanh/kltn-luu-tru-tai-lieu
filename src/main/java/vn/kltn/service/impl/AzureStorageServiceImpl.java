@@ -1,5 +1,6 @@
 package vn.kltn.service.impl;
 
+import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
@@ -97,6 +98,34 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
         } catch (IOException | BlobStorageException e) {
             log.error("Error uploading file from InputStream: {}", e.getMessage());
             throw new CustomBlobStorageException("Lỗi upload file ");
+        }
+    }
+
+    @Override
+    public String copyBlob(String sourceBlobName, String destinationBlobName) {
+        try {
+            // Lấy client của container
+            BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerNameDefault);
+
+            // Tạo client cho blob nguồn và blob đích
+            BlobClient sourceBlobClient = blobContainerClient.getBlobClient(sourceBlobName);
+            BlobClient destinationBlobClient = blobContainerClient.getBlobClient(destinationBlobName);
+
+            // Kiểm tra xem file nguồn có tồn tại không
+            if (!sourceBlobClient.exists()) {
+                throw new CustomBlobStorageException("File nguồn không tồn tại: " + sourceBlobName);
+            }
+
+            // Lấy URL của file nguồn
+            String sourceUrl = sourceBlobClient.getBlobUrl();
+
+            // Sao chép file
+            destinationBlobClient.beginCopy(sourceUrl, null);
+
+            return destinationBlobClient.getBlobName();
+        } catch (BlobStorageException e) {
+            log.error("Lỗi khi sao chép file: {}", e.getMessage());
+            throw new CustomBlobStorageException("Lỗi khi sao chép file: " + e.getMessage());
         }
     }
 

@@ -12,6 +12,7 @@ import vn.kltn.repository.TagRepo;
 import vn.kltn.service.ITagService;
 
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -29,6 +30,11 @@ public class TagServiceImpl implements ITagService {
     @Override
     public Tag requestToEntity(TagRequest tagRequest) {
         return tagMapper.requestToEntity(tagRequest);
+    }
+
+    @Override
+    public Set<Tag> getTagsByDocumentId(Long documentId) {
+        return tagRepo.getTagsByDocumentId(documentId);
     }
 
     @Override
