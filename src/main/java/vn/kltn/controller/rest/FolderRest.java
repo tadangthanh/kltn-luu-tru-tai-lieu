@@ -27,7 +27,7 @@ public class FolderRest {
 
     @DeleteMapping("/{folderId}")
     public ResponseData<Void> deleteFolder(@PathVariable Long folderId) {
-        folderService.deleteFolderById(folderId);
+        folderService.softDeleteFolderById(folderId);
         return new ResponseData<>(204, "Xóa thành công", null);
     }
 

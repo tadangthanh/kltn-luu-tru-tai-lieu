@@ -15,10 +15,12 @@ import vn.kltn.entity.Folder;
 import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.FolderMapper;
+import vn.kltn.repository.DocumentRepo;
 import vn.kltn.repository.FolderRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
+import vn.kltn.service.IDocumentService;
 import vn.kltn.service.IFolderService;
 
 import java.time.LocalDateTime;
@@ -34,7 +36,7 @@ public class FolderServiceImpl implements IFolderService {
     private final FolderMapper folderMapper;
     private final FolderRepo folderRepo;
     private final IAuthenticationService authenticationService;
-
+    private final IDocumentService documentService;
     @Override
     public FolderResponse createFolder(FolderRequest folderRequest) {
         if (folderRequest.getFolderParentId() == null) {
@@ -82,11 +84,13 @@ public class FolderServiceImpl implements IFolderService {
     }
 
     @Override
-    public void deleteFolderById(Long folderId) {
+    public void softDeleteFolderById(Long folderId) {
         Folder folder = getFolderByIdOrThrow(folderId);
         validateFolderNotDeleted(folder);
         deleteFolder(folder);
     }
+
+
 
     @Override
     public PageResponse<List<FolderResponse>> searchByCurrentUser(Pageable pageable, String[] folders) {

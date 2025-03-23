@@ -10,7 +10,7 @@ import java.util.List;
 public interface IFolderService {
     FolderResponse createFolder(FolderRequest folderRequest);
 
-    void deleteFolderById(Long folderId);
+    void softDeleteFolderById(Long folderId);
 
     PageResponse<List<FolderResponse>> searchByCurrentUser(Pageable pageable, String[] folders);
 

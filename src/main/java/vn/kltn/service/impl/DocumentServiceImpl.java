@@ -124,7 +124,10 @@ public class DocumentServiceImpl implements IDocumentService {
         document.setDeletedAt(LocalDateTime.now());
         documentRepo.save(document);
     }
-
+    @Override
+    public void softDeleteDocumentsByFolderId(Long folderId) {
+        documentRepo.setDeletedDocumentByFolderId(folderId);
+    }
     private void validateDocumentNotDeleted(Document document) {
         if (document.getDeletedAt() != null) {
             throw new InvalidDataException("Document đã bị xóa");
