@@ -3,10 +3,15 @@ package vn.kltn.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentResponse;
+import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.Tag;
 import vn.kltn.entity.User;
@@ -14,6 +19,8 @@ import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.DocumentMapper;
 import vn.kltn.repository.DocumentRepo;
+import vn.kltn.repository.specification.EntitySpecificationsBuilder;
+import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IDocumentHasTagService;
@@ -22,8 +29,11 @@ import vn.kltn.service.IDocumentService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @Transactional
@@ -46,9 +56,9 @@ public class DocumentServiceImpl implements IDocumentService {
     private Document processValidDocument(DocumentRequest documentRequest, MultipartFile file) {
         Document document = mapToDocument(documentRequest, file);
         document.setVersion(1);
-        document = documentRepo.save(document);
         User uploader = authenticationService.getCurrentUser();
         document.setOwner(uploader);
+        document = documentRepo.save(document);
         documentHasTagService.addDocumentToTag(document, documentRequest.getTags());
         // upload file to cloud
         String blobName = uploadDocumentToCloud(file);
@@ -72,6 +82,29 @@ public class DocumentServiceImpl implements IDocumentService {
         });
     }
 
+    @Override
+    public PageResponse<List<DocumentResponse>> searchByCurrentUser(Pageable pageable, String[] documents) {
+        log.info("search document by current user");
+        if (documents != null && documents.length > 0) {
+            EntitySpecificationsBuilder<Document> builder = new EntitySpecificationsBuilder<>();
+            Pattern pattern = Pattern.compile("([a-zA-Z0-9_.]+?)([<:>~!])(.*)(\\p{Punct}?)(\\p{Punct}?)");
+            for (String s : documents) {
+                Matcher matcher = pattern.matcher(s);
+                if (matcher.find()) {
+                    builder.with(matcher.group(1), matcher.group(2), matcher.group(3), matcher.group(4), matcher.group(5));
+                }
+            }
+            Specification<Document> spec = builder.build();
+            // nó trả trả về 1 spec mới
+            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdBy"), email));
+            Page<Document> docPage = documentRepo.findAll(spec, pageable);
+            return PaginationUtils.convertToPageResponse(docPage, pageable, this::mapToDocumentResponse);
+        }
+        return PaginationUtils.convertToPageResponse(documentRepo.findAll(pageable), pageable, this::mapToDocumentResponse);
+    }
+
     private Document mapToDocument(DocumentRequest documentRequest, MultipartFile file) {
         Document document = documentMapper.toDocument(documentRequest);
         document.setSize(file.getSize());
@@ -87,8 +120,15 @@ public class DocumentServiceImpl implements IDocumentService {
     @Override
     public void softDeleteDocumentById(Long documentId) {
         Document document = getDocumentByIdOrThrow(documentId);
+        validateDocumentNotDeleted(document);
         document.setDeletedAt(LocalDateTime.now());
         documentRepo.save(document);
+    }
+
+    private void validateDocumentNotDeleted(Document document) {
+        if (document.getDeletedAt() != null) {
+            throw new InvalidDataException("Document đã bị xóa");
+        }
     }
 
     @Override

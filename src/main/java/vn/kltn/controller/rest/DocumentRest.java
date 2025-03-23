@@ -2,12 +2,16 @@ package vn.kltn.controller.rest;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentResponse;
+import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
 import vn.kltn.service.IDocumentService;
+
+import java.util.List;
 
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/documents")
@@ -20,8 +24,8 @@ public class DocumentRest {
         return new ResponseData<>(201, "Thành công", documentService.uploadDocumentWithoutFolder(documentRequest, file));
     }
 
-    @DeleteMapping
-    public ResponseData<Void> delete(@RequestParam Long documentId) {
+    @DeleteMapping("/{documentId}")
+    public ResponseData<Void> delete(@PathVariable Long documentId) {
         documentService.softDeleteDocumentById(documentId);
         return new ResponseData<>(204, "Xóa thành công", null);
     }
@@ -34,5 +38,9 @@ public class DocumentRest {
     @PutMapping("/{documentId}")
     public ResponseData<DocumentResponse> update(@PathVariable Long documentId, @Valid @RequestBody DocumentRequest documentRequest) {
         return new ResponseData<>(200, "Thành công", documentService.updateDocumentById(documentId, documentRequest));
+    }
+    @GetMapping
+    public ResponseData<PageResponse<List<DocumentResponse>>> search(Pageable pageable, @RequestParam(required = false, value = "documents") String[] documents) {
+        return new ResponseData<>(200, "Thành công", documentService.searchByCurrentUser(pageable, documents));
     }
 }
