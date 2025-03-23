@@ -19,5 +19,6 @@ public interface IDocumentService {
     Document getDocumentByIdOrThrow(Long documentId);
 
     PageResponse<List<DocumentResponse>> searchByCurrentUser(Pageable pageable, String[] documents);
+
     DocumentResponse updateDocumentById(Long documentId, DocumentRequest documentRequest); //cap nhat document
 }

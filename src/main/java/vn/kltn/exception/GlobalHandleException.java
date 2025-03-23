@@ -1,6 +1,7 @@
 package vn.kltn.exception;
 
 import lombok.NonNull;
+import org.hibernate.query.sqm.PathElementException;
 import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
