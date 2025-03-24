@@ -26,9 +26,7 @@ public interface FolderRepo extends JpaRepository<Folder, Long>, JpaSpecificatio
 
     @Modifying
     @Transactional
-    @Query(value = """
-            UPDATE folder SET deleted_at = :deletedAt WHERE id IN :folderIds
-            """, nativeQuery = true)
-    void updateDeletedAtForFolders(@Param("folderIds") List<Long> folderIds,@Param("deletedAt") LocalDateTime localDateTime);
+    @Query("update Folder f set f.deletedAt= :deletedAt,f.permanentDeleteAt=:permanentDeletedAt where f.id in :folderIds")
+    void setDeleteForFolders(@Param("folderIds") List<Long> folderIds, @Param("deletedAt") LocalDateTime deletedAt,@Param("permanentDeletedAt") LocalDateTime permanentDeletedAt);
 
 }

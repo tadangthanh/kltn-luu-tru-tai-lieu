@@ -9,6 +9,8 @@ server:
       force: true
 app:
   base-url: ${BASE_URL:http://localhost:8080}
+  delete:
+    document-retention-days: 30 #số ngày giữ lại tài liệu đã xóa
 spring:
   config:
     activate:
@@ -81,7 +83,6 @@ repo:
   max-total-storage-per-user: ${MAX_TOTAL_STORAGE_PER_USER:10737418240} #10GB, được tính bằng tổng dung lượng của tất cả các repo
   max-members-per-repo-default: ${MAX_MEMBER_PER_REPO_DEFAULT:10}
   max-repos-per-member-default: ${MAX_REPOS_PER_MEMBER_DEFAULT:5}
-
 google:
   api-key: ${googleapikey}
 

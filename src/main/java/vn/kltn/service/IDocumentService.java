@@ -24,12 +24,13 @@ public interface IDocumentService {
 
     DocumentResponse restoreDocumentById(Long documentId);
 
+    DocumentResponse moveDocumentToFolder(Long documentId, Long folderId);
+
     DocumentResponse copyDocumentById(Long documentId); //tao ban sao document
 
     Document getDocumentByIdOrThrow(Long documentId);
 
     PageResponse<List<DocumentResponse>> searchByCurrentUser(Pageable pageable, String[] documents);
-
 
     DocumentResponse updateDocumentById(Long documentId, DocumentRequest documentRequest); //cap nhat document
 

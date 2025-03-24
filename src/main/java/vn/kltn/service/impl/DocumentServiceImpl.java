@@ -3,6 +3,7 @@ package vn.kltn.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -47,6 +48,8 @@ public class DocumentServiceImpl implements IDocumentService {
     private final IDocumentHasTagService documentHasTagService;
     private final IAuthenticationService authenticationService;
     private final FolderCommonService folderCommonService;
+    @Value("${app.delete.document-retention-days}")
+    private int documentRetentionDays;
 
 
     @Override
@@ -137,7 +140,7 @@ public class DocumentServiceImpl implements IDocumentService {
 
     @Override
     public void softDeleteDocumentsByFolderIds(List<Long> folderIds) {
-        documentRepo.setDeletedDocumentByListFolderId(folderIds, LocalDateTime.now());
+        documentRepo.setDeleteDocument(folderIds, LocalDateTime.now(), LocalDateTime.now().plusDays(documentRetentionDays));
     }
 
     @Override
@@ -167,6 +170,20 @@ public class DocumentServiceImpl implements IDocumentService {
         return mapToDocumentResponse(document);
     }
 
+    @Override
+    public DocumentResponse moveDocumentToFolder(Long documentId, Long folderId) {
+        Document document = getDocumentByIdOrThrow(documentId);
+        Folder folder = folderCommonService.getFolderByIdOrThrow(folderId);
+        // xac nhan folder la cua user hien tai
+        folderCommonService.validateCurrentUserIsOwnerFolder(folder);
+        // xac nhan folder chua bi xoa
+        folderCommonService.validateFolderNotDeleted(folder);
+        // xac nhan document chua bi xoa
+        validateDocumentNotDeleted(document);
+        document.setFolder(folder);
+        return mapToDocumentResponse(document);
+    }
+
     private void validateDocumentDeleted(Document document) {
         if (document.getDeletedAt() == null) {
             throw new InvalidDataException("Document chưa bị xóa");
@@ -181,7 +198,7 @@ public class DocumentServiceImpl implements IDocumentService {
 
     @Override
     public void restoreDocumentsByFolderIds(List<Long> folderIds) {
-        documentRepo.setDeletedDocumentByListFolderId(folderIds, null);
+        documentRepo.setDeleteDocument(folderIds, null, null);
     }
 
     @Override

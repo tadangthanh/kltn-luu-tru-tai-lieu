@@ -15,6 +15,8 @@ public class Folder extends BaseEntity {
     private String name;
     private String description;
     private LocalDateTime deletedAt;
+    @Column(name = "permanent_delete_at")
+    private LocalDateTime permanentDeleteAt; // thoi gian xoa vinh vien
     @ManyToOne
     @JoinColumn(name = "parent_id")
     private Folder parent; // thư mục cha

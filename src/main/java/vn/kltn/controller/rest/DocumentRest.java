@@ -57,6 +57,11 @@ public class DocumentRest {
         return new ResponseData<>(200, "Thành công", documentService.updateDocumentById(documentId, documentRequest));
     }
 
+    @PutMapping("/{documentId}/move/{folderId}")
+    public ResponseData<DocumentResponse> moveDocumentToFolder(@PathVariable Long documentId, @PathVariable Long folderId) {
+        return new ResponseData<>(200, "Thành công", documentService.moveDocumentToFolder(documentId, folderId));
+    }
+
     @GetMapping
     public ResponseData<PageResponse<List<DocumentResponse>>> search(Pageable pageable, @RequestParam(required = false, value = "documents") String[] documents) {
         return new ResponseData<>(200, "Thành công", documentService.searchByCurrentUser(pageable, documents));

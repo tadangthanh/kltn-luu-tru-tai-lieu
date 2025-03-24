@@ -3,6 +3,7 @@ package vn.kltn.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -36,6 +37,8 @@ public class FolderServiceImpl implements IFolderService {
     private final IAuthenticationService authenticationService;
     private final IDocumentService documentService;
     private final FolderCommonService folderCommonService;
+    @Value("${app.delete.document-retention-days}")
+    private int documentRetentionDays;
 
     @Override
     public FolderResponse createFolder(FolderRequest folderRequest) {
@@ -80,11 +83,11 @@ public class FolderServiceImpl implements IFolderService {
     @Override
     public void softDeleteFolderById(Long folderId) {
         Folder folder = getFolderByIdOrThrow(folderId);
-        validateFolderNotDeleted(folder);
+        folderCommonService.validateFolderNotDeleted(folder);
         // lay danh sach id cac folder va cac folder con can xoa
         List<Long> folderIdsDelete = folderRepo.findCurrentAndChildFolderIdsByFolderId(folderId);
         // update deletedAt cho cac folder va cac folder con
-        folderRepo.updateDeletedAtForFolders(folderIdsDelete, LocalDateTime.now());
+        folderRepo.setDeleteForFolders(folderIdsDelete, LocalDateTime.now(), LocalDateTime.now().plusDays(documentRetentionDays));
         // xoa document cua cac folder va cac folder con
         documentService.softDeleteDocumentsByFolderIds(folderIdsDelete);
     }
@@ -108,7 +111,7 @@ public class FolderServiceImpl implements IFolderService {
         Folder folder = getFolderByIdOrThrow(folderId);
         validateFolderDeleted(folder);
         List<Long> folderIdsRestore = folderRepo.findCurrentAndChildFolderIdsByFolderId(folderId);
-        folderRepo.updateDeletedAtForFolders(folderIdsRestore, null);
+        folderRepo.setDeleteForFolders(folderIdsRestore, null, null);
         List<Long> folderIds = folderRepo.findCurrentAndChildFolderIdsByFolderId(folderId);
         documentService.restoreDocumentsByFolderIds(folderIds);
         return mapToFolderResponse(folder);
@@ -145,13 +148,6 @@ public class FolderServiceImpl implements IFolderService {
         return PaginationUtils.convertToPageResponse(folderRepo.findAll(pageable), pageable, this::mapToFolderResponse);
     }
 
-
-    private void validateFolderNotDeleted(Folder folder) {
-        if (folder.getDeletedAt() != null) {
-            log.warn("Folder with id {} is already deleted", folder.getId());
-            throw new ConflictResourceException("Thư mục đã bị xóa");
-        }
-    }
 
     @Override
     public FolderResponse updateFolderById(Long folderId, FolderRequest folderRequest) {
