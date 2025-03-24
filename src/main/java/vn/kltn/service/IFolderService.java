@@ -15,6 +15,7 @@ public interface IFolderService {
 
     Folder getFolderByIdOrThrow(Long folderId);
 
+
     void hardDeleteFolderById(Long folderId);
 
     FolderResponse restoreFolderById(Long folderId);
@@ -22,5 +23,7 @@ public interface IFolderService {
     PageResponse<List<FolderResponse>> searchByCurrentUser(Pageable pageable, String[] folders);
 
     FolderResponse updateFolderById(Long folderId, FolderRequest folderRequest);
+
+    FolderResponse moveFolderToFolder(Long folderId, Long folderParentId);
 
 }

@@ -155,4 +155,15 @@ public class FolderServiceImpl implements IFolderService {
         folderMapper.updateFolderFromRequest(folderRequest, folder);
         return mapToFolderResponse(folderRepo.save(folder));
     }
+
+    @Override
+    public FolderResponse moveFolderToFolder(Long folderId, Long folderParentId) {
+        Folder folderToMove = getFolderByIdOrThrow(folderId);
+        // folder cha va folder can di chuyen chua bi xoa
+        folderCommonService.validateFolderNotDeleted(folderToMove);
+        Folder folderDestination = getFolderByIdOrThrow(folderParentId);
+        folderCommonService.validateFolderNotDeleted(folderDestination);
+        folderToMove.setParent(folderDestination);
+        return mapToFolderResponse(folderRepo.save(folderToMove));
+    }
 }
