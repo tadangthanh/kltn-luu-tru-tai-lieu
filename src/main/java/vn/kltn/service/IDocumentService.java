@@ -13,6 +13,7 @@ public interface IDocumentService {
     DocumentResponse uploadDocumentWithoutFolder(DocumentRequest documentRequest, MultipartFile file);
 
     void softDeleteDocumentById(Long documentId); // xóa document nhưng chưa xóa vĩnh viễn
+    void softDeleteDocumentsByFolderIds(List<Long> folderIds); // xóa document theo danh sach folder id nhưng chưa xóa vĩnh viễn
 
     DocumentResponse copyDocumentById(Long documentId); //tao ban sao document
 

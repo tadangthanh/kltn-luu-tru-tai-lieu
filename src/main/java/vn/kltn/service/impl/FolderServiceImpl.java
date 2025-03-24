@@ -15,7 +15,6 @@ import vn.kltn.entity.Folder;
 import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.FolderMapper;
-import vn.kltn.repository.DocumentRepo;
 import vn.kltn.repository.FolderRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.util.PaginationUtils;
@@ -23,7 +22,6 @@ import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IDocumentService;
 import vn.kltn.service.IFolderService;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,6 +35,7 @@ public class FolderServiceImpl implements IFolderService {
     private final FolderRepo folderRepo;
     private final IAuthenticationService authenticationService;
     private final IDocumentService documentService;
+
     @Override
     public FolderResponse createFolder(FolderRequest folderRequest) {
         if (folderRequest.getFolderParentId() == null) {
@@ -87,9 +86,11 @@ public class FolderServiceImpl implements IFolderService {
     public void softDeleteFolderById(Long folderId) {
         Folder folder = getFolderByIdOrThrow(folderId);
         validateFolderNotDeleted(folder);
-        deleteFolder(folder);
+        List<Long> folderIdsDelete = folderRepo.findFolderIdsToDelete(folderId);
+        folderRepo.updateDeletedAtForFolders(folderIdsDelete);
+        List<Long> folderIds = folderRepo.findIdsFolderByParentId(folderId);
+        documentService.softDeleteDocumentsByFolderIds(folderIds);
     }
-
 
 
     @Override
@@ -115,10 +116,6 @@ public class FolderServiceImpl implements IFolderService {
         return PaginationUtils.convertToPageResponse(folderRepo.findAll(pageable), pageable, this::mapToFolderResponse);
     }
 
-    private void deleteFolder(Folder folder) {
-        folder.setDeletedAt(LocalDateTime.now());
-        folderRepo.save(folder);
-    }
 
     private void validateFolderNotDeleted(Folder folder) {
         if (folder.getDeletedAt() != null) {
