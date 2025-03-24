@@ -22,7 +22,7 @@ public interface FolderRepo extends JpaRepository<Folder, Long>, JpaSpecificatio
             )
             SELECT id FROM sub_folders;
             """, nativeQuery = true)
-    List<Long> findFolderIdsToDelete(@Param("folderId") Long folderId);
+    List<Long> findCurrentAndChildFolderIds(@Param("folderId") Long folderId);
 
     @Modifying
     @Transactional

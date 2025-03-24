@@ -24,4 +24,6 @@ public interface IDocumentService {
     void softDeleteDocumentsByFolderId(Long folderId);
 
     DocumentResponse updateDocumentById(Long documentId, DocumentRequest documentRequest); //cap nhat document
+
+    void restoreDocumentsByFolderIds(List<Long> folderIds);
 }

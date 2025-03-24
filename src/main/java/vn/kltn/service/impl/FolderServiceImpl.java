@@ -87,10 +87,28 @@ public class FolderServiceImpl implements IFolderService {
     public void softDeleteFolderById(Long folderId) {
         Folder folder = getFolderByIdOrThrow(folderId);
         validateFolderNotDeleted(folder);
-        List<Long> folderIdsDelete = folderRepo.findFolderIdsToDelete(folderId);
+        List<Long> folderIdsDelete = folderRepo.findCurrentAndChildFolderIds(folderId);
         folderRepo.updateDeletedAtForFolders(folderIdsDelete, LocalDateTime.now());
         List<Long> folderIds = folderRepo.findIdsFolderByParentId(folderId);
         documentService.softDeleteDocumentsByFolderIds(folderIds);
+    }
+
+    @Override
+    public FolderResponse restoreFolderById(Long folderId) {
+        Folder folder = getFolderByIdOrThrow(folderId);
+        validateFolderDeleted(folder);
+        List<Long> folderIdsRestore = folderRepo.findCurrentAndChildFolderIds(folderId);
+        folderRepo.updateDeletedAtForFolders(folderIdsRestore, null);
+        List<Long> folderIds = folderRepo.findIdsFolderByParentId(folderId);
+        documentService.restoreDocumentsByFolderIds(folderIds);
+        return mapToFolderResponse(folder);
+    }
+
+    private void validateFolderDeleted(Folder folder) {
+        if (folder.getDeletedAt() == null) {
+            log.warn("Folder with id {} is not deleted", folder.getId());
+            throw new ConflictResourceException("Thư mục chưa bị xóa");
+        }
     }
 
 

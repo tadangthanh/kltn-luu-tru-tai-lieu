@@ -134,10 +134,16 @@ public class DocumentServiceImpl implements IDocumentService {
     public void softDeleteDocumentsByFolderId(Long folderId) {
         documentRepo.setDeletedDocumentByFolderId(folderId);
     }
+
     private void validateDocumentNotDeleted(Document document) {
         if (document.getDeletedAt() != null) {
             throw new InvalidDataException("Document đã bị xóa");
         }
+    }
+
+    @Override
+    public void restoreDocumentsByFolderIds(List<Long> folderIds) {
+        documentRepo.setDeletedDocumentByListFolderId(folderIds, null);
     }
 
     @Override
@@ -174,4 +180,5 @@ public class DocumentServiceImpl implements IDocumentService {
     public DocumentResponse updateDocumentById(Long documentId, DocumentRequest documentRequest) {
         return null;
     }
+
 }

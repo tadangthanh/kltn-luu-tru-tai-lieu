@@ -30,6 +30,10 @@ public class FolderRest {
         folderService.softDeleteFolderById(folderId);
         return new ResponseData<>(204, "Xóa thành công", null);
     }
+    @PostMapping("/{folderId}/restore")
+    public ResponseData<FolderResponse> restoreFolder(@PathVariable Long folderId) {
+        return new ResponseData<>(200, "Thành công", folderService.restoreFolderById(folderId));
+    }
 
     @PutMapping("/{folderId}")
     public ResponseData<FolderResponse> updateFolder(@PathVariable Long folderId, @RequestBody @Validated(Create.class) FolderRequest folderRequest) {
