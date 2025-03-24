@@ -17,5 +17,6 @@ public class DocumentAccess extends BaseEntity {
     @JoinColumn(name = "recipient_id")
     private User recipient; //nguời được cấp quyền truy cập
     @Enumerated(EnumType.STRING)
+    @Column(name = "permission",nullable = false)
     private Permission permission;
 }
