@@ -22,7 +22,7 @@ public interface FolderRepo extends JpaRepository<Folder, Long>, JpaSpecificatio
             )
             SELECT id FROM sub_folders;
             """, nativeQuery = true)
-    List<Long> findCurrentAndChildFolderIds(@Param("folderId") Long folderId);
+    List<Long> findCurrentAndChildFolderIdsByFolderId(@Param("folderId") Long folderId);
 
     @Modifying
     @Transactional
@@ -30,15 +30,5 @@ public interface FolderRepo extends JpaRepository<Folder, Long>, JpaSpecificatio
             UPDATE folder SET deleted_at = :deletedAt WHERE id IN :folderIds
             """, nativeQuery = true)
     void updateDeletedAtForFolders(@Param("folderIds") List<Long> folderIds,@Param("deletedAt") LocalDateTime localDateTime);
-
-    @Query(value = """
-            WITH RECURSIVE sub_folders AS (
-                SELECT id FROM folder WHERE id = :parentId
-                UNION ALL
-                SELECT f.id FROM folder f INNER JOIN sub_folders sf ON f.parent_id = sf.id
-            )
-            SELECT * FROM sub_folders;
-            """, nativeQuery = true)
-    List<Long> findIdsFolderByParentId(Long parentId);
 
 }

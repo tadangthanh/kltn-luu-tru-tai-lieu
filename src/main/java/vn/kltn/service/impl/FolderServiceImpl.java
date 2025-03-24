@@ -81,10 +81,12 @@ public class FolderServiceImpl implements IFolderService {
     public void softDeleteFolderById(Long folderId) {
         Folder folder = getFolderByIdOrThrow(folderId);
         validateFolderNotDeleted(folder);
-        List<Long> folderIdsDelete = folderRepo.findCurrentAndChildFolderIds(folderId);
+        // lay danh sach id cac folder va cac folder con can xoa
+        List<Long> folderIdsDelete = folderRepo.findCurrentAndChildFolderIdsByFolderId(folderId);
+        // update deletedAt cho cac folder va cac folder con
         folderRepo.updateDeletedAtForFolders(folderIdsDelete, LocalDateTime.now());
-        List<Long> folderIds = folderRepo.findIdsFolderByParentId(folderId);
-        documentService.softDeleteDocumentsByFolderIds(folderIds);
+        // xoa document cua cac folder va cac folder con
+        documentService.softDeleteDocumentsByFolderIds(folderIdsDelete);
     }
 
     @Override
@@ -96,7 +98,7 @@ public class FolderServiceImpl implements IFolderService {
     public void hardDeleteFolderById(Long folderId) {
         Folder folder = getFolderByIdOrThrow(folderId);
         validateFolderDeleted(folder);
-        List<Long> folderIdsDelete = folderRepo.findCurrentAndChildFolderIds(folderId);
+        List<Long> folderIdsDelete = folderRepo.findCurrentAndChildFolderIdsByFolderId(folderId);
         documentService.hardDeleteDocumentByFolderIds(folderIdsDelete);
         folderRepo.delete(folder);
     }
@@ -105,9 +107,9 @@ public class FolderServiceImpl implements IFolderService {
     public FolderResponse restoreFolderById(Long folderId) {
         Folder folder = getFolderByIdOrThrow(folderId);
         validateFolderDeleted(folder);
-        List<Long> folderIdsRestore = folderRepo.findCurrentAndChildFolderIds(folderId);
+        List<Long> folderIdsRestore = folderRepo.findCurrentAndChildFolderIdsByFolderId(folderId);
         folderRepo.updateDeletedAtForFolders(folderIdsRestore, null);
-        List<Long> folderIds = folderRepo.findIdsFolderByParentId(folderId);
+        List<Long> folderIds = folderRepo.findCurrentAndChildFolderIdsByFolderId(folderId);
         documentService.restoreDocumentsByFolderIds(folderIds);
         return mapToFolderResponse(folder);
     }
