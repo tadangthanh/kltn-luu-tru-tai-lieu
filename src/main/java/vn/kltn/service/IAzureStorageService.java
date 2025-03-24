@@ -20,6 +20,8 @@ public interface IAzureStorageService {
 
     void deleteBlob(String containerName, String blobName);
 
+    void deleteBlob( String blobName);
+
     void deleteBLobs(List<String> blobNames);
 
     InputStream downloadBlobInputStream(String containerName, String blobName); // Tải blob về

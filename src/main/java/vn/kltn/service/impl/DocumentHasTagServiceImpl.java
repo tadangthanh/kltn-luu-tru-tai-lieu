@@ -60,7 +60,7 @@ public class DocumentHasTagServiceImpl implements IDocumentHasTagService {
     }
 
     @Override
-    public void deleteByDocumentId(Long documentId) {
+    public void deleteAllByDocumentId(Long documentId) {
         documentHasTagRepo.deleteByDocumentId(documentId);
     }
 
@@ -69,4 +69,5 @@ public class DocumentHasTagServiceImpl implements IDocumentHasTagService {
         log.info("getTagsByDocumentId: " + id);
         return tagService.getTagsByDocumentId(id);
     }
+
 }

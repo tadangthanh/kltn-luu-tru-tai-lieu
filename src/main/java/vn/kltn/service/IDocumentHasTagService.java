@@ -14,9 +14,11 @@ public interface IDocumentHasTagService {
     void addDocumentToTag(Document document, Set<Tag> tags);
 
     void deleteAllByDocumentIds(List<Long> documentIds);
+
     void deleteAllByFolderIds(List<Long> folderIds);
 
-    void deleteByDocumentId(Long documentId);
+    void deleteAllByDocumentId(Long documentId);
 
     Set<Tag> getTagsByDocumentId(Long id);
+
 }

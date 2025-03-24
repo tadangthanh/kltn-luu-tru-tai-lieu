@@ -151,6 +151,29 @@ public class DocumentServiceImpl implements IDocumentService {
     }
 
     @Override
+    public void hardDeleteDocumentById(Long documentId) {
+        Document document = getDocumentByIdOrThrow(documentId);
+        validateDocumentDeleted(document);
+        azureStorageService.deleteBlob(document.getBlobName());
+        documentHasTagService.deleteAllByDocumentId(documentId);
+        documentRepo.delete(document);
+    }
+
+    @Override
+    public DocumentResponse restoreDocumentById(Long documentId) {
+        Document document = getDocumentByIdOrThrow(documentId);
+        validateDocumentDeleted(document);
+        document.setDeletedAt(null);
+        return mapToDocumentResponse(document);
+    }
+
+    private void validateDocumentDeleted(Document document) {
+        if (document.getDeletedAt() == null) {
+            throw new InvalidDataException("Document chưa bị xóa");
+        }
+    }
+
+    @Override
     public void softDeleteDocumentsByFolderId(Long folderId) {
         documentRepo.setDeletedDocumentByFolderId(folderId);
     }

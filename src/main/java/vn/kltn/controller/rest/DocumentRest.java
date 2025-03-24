@@ -30,15 +30,26 @@ public class DocumentRest {
         return new ResponseData<>(201, "Thành công", documentService.uploadDocumentWithFolder(folderId, documentRequest, file));
     }
 
-    @DeleteMapping("/{documentId}")
-    public ResponseData<Void> delete(@PathVariable Long documentId) {
+    @DeleteMapping("/{documentId}/soft")
+    public ResponseData<Void> softDelete(@PathVariable Long documentId) {
         documentService.softDeleteDocumentById(documentId);
+        return new ResponseData<>(204, "Xóa thành công", null);
+    }
+
+    @DeleteMapping("/{documentId}/hard")
+    public ResponseData<Void> hardDelete(@PathVariable Long documentId) {
+        documentService.hardDeleteDocumentById(documentId);
         return new ResponseData<>(204, "Xóa thành công", null);
     }
 
     @PostMapping("/{documentId}/copy")
     public ResponseData<DocumentResponse> copy(@PathVariable Long documentId) {
         return new ResponseData<>(201, "Thành công", documentService.copyDocumentById(documentId));
+    }
+
+    @PostMapping("/{documentId}/restore")
+    public ResponseData<DocumentResponse> restore(@PathVariable Long documentId) {
+        return new ResponseData<>(200, "Thành công", documentService.restoreDocumentById(documentId));
     }
 
     @PutMapping("/{documentId}")

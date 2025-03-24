@@ -12,6 +12,7 @@ public interface IFolderService {
     FolderResponse createFolder(FolderRequest folderRequest);
 
     void softDeleteFolderById(Long folderId);
+
     Folder getFolderByIdOrThrow(Long folderId);
 
     void hardDeleteFolderById(Long folderId);

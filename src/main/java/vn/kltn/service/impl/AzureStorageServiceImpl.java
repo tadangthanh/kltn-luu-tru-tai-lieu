@@ -174,8 +174,16 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
 
     @Override
     public void deleteBlob(String containerName, String blobName) {
-        log.info("Deleting blob '{}' in container '{}'", blobName, containerName);
+        deleteBlobByContainerAndBlob(containerName, blobName);
+    }
 
+    @Override
+    public void deleteBlob(String blobName) {
+        deleteBlobByContainerAndBlob(containerNameDefault, blobName);
+    }
+
+    private void deleteBlobByContainerAndBlob(String containerName, String blobName) {
+        log.info("Deleting blob '{}' in container '{}'", blobName, containerName);
         try {
             BlockBlobClient blobClient = getBlockBlobClient(containerName, blobName);
 
@@ -183,7 +191,6 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
                 log.warn("Blob '{}' does not exist in container '{}'", blobName, containerName);
                 return;
             }
-
             blobClient.delete();
             log.info("Deleted blob '{}' successfully", blobName);
 
@@ -195,21 +202,8 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     @Override
     public void deleteBLobs(List<String> blobNames) {
         log.info("Deleting blobs {}", blobNames);
-        try {
-            for (String blobName : blobNames) {
-                BlockBlobClient blobClient = getBlockBlobClient(containerNameDefault, blobName);
-
-                if (!blobClient.exists()) {
-                    log.warn("Blob '{}' does not exist in container '{}'", blobName, containerNameDefault);
-                    return;
-                }
-
-                blobClient.delete();
-                log.info("Deleted blob '{}' successfully", blobName);
-
-            }
-        } catch (Exception e) {
-            log.error("Failed to delete blobs '{}' in container '{}': {}", blobNames, containerNameDefault, e.getMessage(), e);
+        for (String blobName : blobNames) {
+            deleteBlobByContainerAndBlob(containerNameDefault, blobName);
         }
     }
 
