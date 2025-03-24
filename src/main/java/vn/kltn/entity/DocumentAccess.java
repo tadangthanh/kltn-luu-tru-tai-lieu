@@ -14,8 +14,8 @@ public class DocumentAccess extends BaseEntity {
     @JoinColumn(name = "document_id")
     private Document document;
     @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+    @JoinColumn(name = "recipient_id")
+    private User recipient; //nguời được cấp quyền truy cập
     @Enumerated(EnumType.STRING)
     private Permission permission;
 }
