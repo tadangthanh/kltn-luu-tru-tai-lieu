@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.dto.response.FolderResponse;
 import vn.kltn.dto.response.PageResponse;
+import vn.kltn.entity.Document;
 import vn.kltn.entity.Folder;
 import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.ResourceNotFoundException;
@@ -91,6 +92,15 @@ public class FolderServiceImpl implements IFolderService {
         folderRepo.updateDeletedAtForFolders(folderIdsDelete, LocalDateTime.now());
         List<Long> folderIds = folderRepo.findIdsFolderByParentId(folderId);
         documentService.softDeleteDocumentsByFolderIds(folderIds);
+    }
+
+    @Override
+    public void hardDeleteFolderById(Long folderId) {
+        Folder folder = getFolderByIdOrThrow(folderId);
+        validateFolderDeleted(folder);
+        List<Long> folderIdsDelete = folderRepo.findCurrentAndChildFolderIds(folderId);
+        documentService.hardDeleteDocumentByFolderIds(folderIdsDelete);
+        folderRepo.delete(folder);
     }
 
     @Override

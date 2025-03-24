@@ -27,4 +27,14 @@ public interface DocumentRepo extends JpaRepository<Document, Long>, JpaSpecific
     @Transactional
     @Query("update Document d set d.deletedAt=?2 where d.folder.id in ?1")
     void setDeletedDocumentByListFolderId(List<Long> folderIds, LocalDateTime localDateTime);
+
+    @Modifying
+    @Transactional
+    @Query("delete from Document d where d.folder.id in ?1 ")
+    void deleteDocumentByListFolderId(List<Long> folderIds);
+
+
+
+    @Query("select d.blobName from Document d where d.folder.id in ?1")
+    List<String> getBlobNameDocumentsByFolderIds(List<Long> folderIds);
 }

@@ -131,6 +131,16 @@ public class DocumentServiceImpl implements IDocumentService {
     }
 
     @Override
+    public void hardDeleteDocumentByFolderIds(List<Long> folderIds) {
+        // xóa blob trên azure trước
+        // sau đó xóa document
+        List<String> documentBlobsToDelete = documentRepo.getBlobNameDocumentsByFolderIds(folderIds);
+        azureStorageService.deleteBLobs(documentBlobsToDelete);
+        documentHasTagService.deleteAllByFolderIds(folderIds);
+        documentRepo.deleteDocumentByListFolderId(folderIds);
+    }
+
+    @Override
     public void softDeleteDocumentsByFolderId(Long folderId) {
         documentRepo.setDeletedDocumentByFolderId(folderId);
     }

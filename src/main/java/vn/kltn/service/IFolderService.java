@@ -11,6 +11,9 @@ public interface IFolderService {
     FolderResponse createFolder(FolderRequest folderRequest);
 
     void softDeleteFolderById(Long folderId);
+
+    void hardDeleteFolderById(Long folderId);
+
     FolderResponse restoreFolderById(Long folderId);
 
     PageResponse<List<FolderResponse>> searchByCurrentUser(Pageable pageable, String[] folders);

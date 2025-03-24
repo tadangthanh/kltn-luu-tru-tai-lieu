@@ -193,6 +193,27 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     }
 
     @Override
+    public void deleteBLobs(List<String> blobNames) {
+        log.info("Deleting blobs {}", blobNames);
+        try {
+            for (String blobName : blobNames) {
+                BlockBlobClient blobClient = getBlockBlobClient(containerNameDefault, blobName);
+
+                if (!blobClient.exists()) {
+                    log.warn("Blob '{}' does not exist in container '{}'", blobName, containerNameDefault);
+                    return;
+                }
+
+                blobClient.delete();
+                log.info("Deleted blob '{}' successfully", blobName);
+
+            }
+        } catch (Exception e) {
+            log.error("Failed to delete blobs '{}' in container '{}': {}", blobNames, containerNameDefault, e.getMessage(), e);
+        }
+    }
+
+    @Override
     public InputStream downloadBlobInputStream(String containerName, String blobName) {
         try {
             BlockBlobClient blobClient = getBlockBlobClient(containerName, blobName);

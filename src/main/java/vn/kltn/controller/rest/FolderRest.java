@@ -25,9 +25,14 @@ public class FolderRest {
         return new ResponseData<>(201, "Thành công", folderService.createFolder(folderRequest));
     }
 
-    @DeleteMapping("/{folderId}")
-    public ResponseData<Void> deleteFolder(@PathVariable Long folderId) {
+    @DeleteMapping("/{folderId}/soft")
+    public ResponseData<Void> softDeleteFolder(@PathVariable Long folderId) {
         folderService.softDeleteFolderById(folderId);
+        return new ResponseData<>(204, "Xóa thành công", null);
+    }
+    @DeleteMapping("/{folderId}/hard")
+    public ResponseData<Void> hardDeleteFolder(@PathVariable Long folderId) {
+        folderService.hardDeleteFolderById(folderId);
         return new ResponseData<>(204, "Xóa thành công", null);
     }
     @PostMapping("/{folderId}/restore")

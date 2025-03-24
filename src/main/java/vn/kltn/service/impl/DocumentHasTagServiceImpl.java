@@ -10,6 +10,7 @@ import vn.kltn.repository.DocumentHasTagRepo;
 import vn.kltn.service.IDocumentHasTagService;
 import vn.kltn.service.ITagService;
 
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -39,6 +40,16 @@ public class DocumentHasTagServiceImpl implements IDocumentHasTagService {
         for (Tag tag : tags) {
             saveDocumentTag(document, tag);
         }
+    }
+
+    @Override
+    public void deleteAllByDocumentIds(List<Long> documentIds) {
+        documentHasTagRepo.deleteAllByDocumentIds(documentIds);
+    }
+
+    @Override
+    public void deleteAllByFolderIds(List<Long> folderIds) {
+        documentHasTagRepo.deleteTagDocumentByListFolderId(folderIds);
     }
 
     private void saveDocumentTag(Document document, Tag tag) {
