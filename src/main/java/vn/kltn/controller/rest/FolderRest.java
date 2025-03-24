@@ -57,4 +57,8 @@ public class FolderRest {
         return new ResponseData<>(200, "Thành công", folderService.searchByCurrentUser(pageable, folders));
     }
 
+    @GetMapping("/{folderId}")
+    public ResponseData<FolderResponse> getFolder(@PathVariable Long folderId) {
+        return new ResponseData<>(200, "Thành công", folderService.getFolderById(folderId));
+    }
 }

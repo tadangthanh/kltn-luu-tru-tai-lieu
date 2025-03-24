@@ -15,6 +15,7 @@ public interface IFolderService {
 
     Folder getFolderByIdOrThrow(Long folderId);
 
+    FolderResponse getFolderById(Long folderId);
 
     void hardDeleteFolderById(Long folderId);
 

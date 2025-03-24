@@ -98,6 +98,13 @@ public class FolderServiceImpl implements IFolderService {
     }
 
     @Override
+    public FolderResponse getFolderById(Long folderId) {
+        Folder folder = getFolderByIdOrThrow(folderId);
+
+        return mapToFolderResponse(folder);
+    }
+
+    @Override
     public void hardDeleteFolderById(Long folderId) {
         Folder folder = getFolderByIdOrThrow(folderId);
         validateFolderDeleted(folder);

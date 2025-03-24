@@ -118,6 +118,12 @@ public class DocumentServiceImpl implements IDocumentService {
         return PaginationUtils.convertToPageResponse(documentRepo.findAll(pageable), pageable, this::mapToDocumentResponse);
     }
 
+    @Override
+    public DocumentResponse getDocumentById(Long documentId) {
+        Document document =getDocumentByIdOrThrow(documentId);
+        return mapToDocumentResponse(document);
+    }
+
     private Document mapToDocument(DocumentRequest documentRequest, MultipartFile file) {
         Document document = documentMapper.toDocument(documentRequest);
         document.setSize(file.getSize());

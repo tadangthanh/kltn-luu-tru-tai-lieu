@@ -32,6 +32,8 @@ public interface IDocumentService {
 
     PageResponse<List<DocumentResponse>> searchByCurrentUser(Pageable pageable, String[] documents);
 
+    DocumentResponse getDocumentById(Long documentId);
+
     DocumentResponse updateDocumentById(Long documentId, DocumentRequest documentRequest); //cap nhat document
 
     void restoreDocumentsByFolderIds(List<Long> folderIds);

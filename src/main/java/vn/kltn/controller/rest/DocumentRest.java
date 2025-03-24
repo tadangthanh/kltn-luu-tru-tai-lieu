@@ -66,4 +66,9 @@ public class DocumentRest {
     public ResponseData<PageResponse<List<DocumentResponse>>> search(Pageable pageable, @RequestParam(required = false, value = "documents") String[] documents) {
         return new ResponseData<>(200, "Thành công", documentService.searchByCurrentUser(pageable, documents));
     }
+
+    @GetMapping("/{documentId}")
+    public ResponseData<DocumentResponse> getDocumentById(@PathVariable Long documentId) {
+        return new ResponseData<>(200, "Thành công", documentService.getDocumentById(documentId));
+    }
 }
