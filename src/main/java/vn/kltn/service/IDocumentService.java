@@ -12,6 +12,8 @@ import java.util.List;
 public interface IDocumentService {
     DocumentResponse uploadDocumentWithoutFolder(DocumentRequest documentRequest, MultipartFile file);
 
+    DocumentResponse uploadDocumentWithFolder(Long folderId,DocumentRequest documentRequest, MultipartFile file);
+
     void softDeleteDocumentById(Long documentId); // xóa document nhưng chưa xóa vĩnh viễn
 
     void softDeleteDocumentsByFolderIds(List<Long> folderIds); // xóa document theo danh sach folder id nhưng chưa xóa vĩnh viễn

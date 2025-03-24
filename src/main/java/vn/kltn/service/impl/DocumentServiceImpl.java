@@ -13,6 +13,7 @@ import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Document;
+import vn.kltn.entity.Folder;
 import vn.kltn.entity.Tag;
 import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
@@ -45,11 +46,20 @@ public class DocumentServiceImpl implements IDocumentService {
     private final IAzureStorageService azureStorageService;
     private final IDocumentHasTagService documentHasTagService;
     private final IAuthenticationService authenticationService;
+    private final FolderCommonService folderCommonService;
 
 
     @Override
     public DocumentResponse uploadDocumentWithoutFolder(DocumentRequest documentRequest, MultipartFile file) {
         Document document = processValidDocument(documentRequest, file);
+        return mapToDocumentResponse(document);
+    }
+
+    @Override
+    public DocumentResponse uploadDocumentWithFolder(Long folderId, DocumentRequest documentRequest, MultipartFile file) {
+        Document document = processValidDocument(documentRequest, file);
+        Folder folder = folderCommonService.getFolderByIdOrThrow(folderId);
+        document.setFolder(folder);
         return mapToDocumentResponse(document);
     }
 

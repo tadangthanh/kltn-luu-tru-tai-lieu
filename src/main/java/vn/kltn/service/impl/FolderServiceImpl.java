@@ -11,10 +11,8 @@ import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.dto.response.FolderResponse;
 import vn.kltn.dto.response.PageResponse;
-import vn.kltn.entity.Document;
 import vn.kltn.entity.Folder;
 import vn.kltn.exception.ConflictResourceException;
-import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.FolderMapper;
 import vn.kltn.repository.FolderRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
@@ -37,6 +35,7 @@ public class FolderServiceImpl implements IFolderService {
     private final FolderRepo folderRepo;
     private final IAuthenticationService authenticationService;
     private final IDocumentService documentService;
+    private final FolderCommonService folderCommonService;
 
     @Override
     public FolderResponse createFolder(FolderRequest folderRequest) {
@@ -77,12 +76,6 @@ public class FolderServiceImpl implements IFolderService {
         return folderResponse;
     }
 
-    private Folder getFolderByIdOrThrow(Long folderId) {
-        return folderRepo.findById(folderId).orElseThrow(() -> {
-            log.warn("Folder with id {} not found", folderId);
-            return new ResourceNotFoundException("Không tìm thấy thư mục");
-        });
-    }
 
     @Override
     public void softDeleteFolderById(Long folderId) {
@@ -92,6 +85,11 @@ public class FolderServiceImpl implements IFolderService {
         folderRepo.updateDeletedAtForFolders(folderIdsDelete, LocalDateTime.now());
         List<Long> folderIds = folderRepo.findIdsFolderByParentId(folderId);
         documentService.softDeleteDocumentsByFolderIds(folderIds);
+    }
+
+    @Override
+    public Folder getFolderByIdOrThrow(Long folderId) {
+        return folderCommonService.getFolderByIdOrThrow(folderId);
     }
 
     @Override

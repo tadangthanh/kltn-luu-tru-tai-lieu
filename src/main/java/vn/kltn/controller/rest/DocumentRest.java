@@ -24,6 +24,12 @@ public class DocumentRest {
         return new ResponseData<>(201, "Thành công", documentService.uploadDocumentWithoutFolder(documentRequest, file));
     }
 
+    @PostMapping("/folder/{folderId}")
+    public ResponseData<DocumentResponse> upload(@PathVariable Long folderId, @RequestPart("file") MultipartFile file,
+                                                 @Valid @RequestPart("data") DocumentRequest documentRequest) {
+        return new ResponseData<>(201, "Thành công", documentService.uploadDocumentWithFolder(folderId, documentRequest, file));
+    }
+
     @DeleteMapping("/{documentId}")
     public ResponseData<Void> delete(@PathVariable Long documentId) {
         documentService.softDeleteDocumentById(documentId);
@@ -39,6 +45,7 @@ public class DocumentRest {
     public ResponseData<DocumentResponse> update(@PathVariable Long documentId, @Valid @RequestBody DocumentRequest documentRequest) {
         return new ResponseData<>(200, "Thành công", documentService.updateDocumentById(documentId, documentRequest));
     }
+
     @GetMapping
     public ResponseData<PageResponse<List<DocumentResponse>>> search(Pageable pageable, @RequestParam(required = false, value = "documents") String[] documents) {
         return new ResponseData<>(200, "Thành công", documentService.searchByCurrentUser(pageable, documents));
