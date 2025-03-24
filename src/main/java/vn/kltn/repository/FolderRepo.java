@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.kltn.entity.Folder;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -26,9 +27,9 @@ public interface FolderRepo extends JpaRepository<Folder, Long>, JpaSpecificatio
     @Modifying
     @Transactional
     @Query(value = """
-            UPDATE folder SET deleted_at = CURRENT_TIMESTAMP WHERE id IN :folderIds
+            UPDATE folder SET deleted_at = :deletedAt WHERE id IN :folderIds
             """, nativeQuery = true)
-    void updateDeletedAtForFolders(@Param("folderIds") List<Long> folderIds);
+    void updateDeletedAtForFolders(@Param("folderIds") List<Long> folderIds,@Param("deletedAt") LocalDateTime localDateTime);
 
     @Query(value = """
             WITH RECURSIVE sub_folders AS (

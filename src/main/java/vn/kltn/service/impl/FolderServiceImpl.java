@@ -22,6 +22,7 @@ import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IDocumentService;
 import vn.kltn.service.IFolderService;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -87,7 +88,7 @@ public class FolderServiceImpl implements IFolderService {
         Folder folder = getFolderByIdOrThrow(folderId);
         validateFolderNotDeleted(folder);
         List<Long> folderIdsDelete = folderRepo.findFolderIdsToDelete(folderId);
-        folderRepo.updateDeletedAtForFolders(folderIdsDelete);
+        folderRepo.updateDeletedAtForFolders(folderIdsDelete, LocalDateTime.now());
         List<Long> folderIds = folderRepo.findIdsFolderByParentId(folderId);
         documentService.softDeleteDocumentsByFolderIds(folderIds);
     }

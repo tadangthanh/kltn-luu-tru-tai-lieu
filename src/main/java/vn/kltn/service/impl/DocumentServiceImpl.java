@@ -127,7 +127,7 @@ public class DocumentServiceImpl implements IDocumentService {
 
     @Override
     public void softDeleteDocumentsByFolderIds(List<Long> folderIds) {
-        documentRepo.setDeletedDocumentByListFolderId(folderIds);
+        documentRepo.setDeletedDocumentByListFolderId(folderIds, LocalDateTime.now());
     }
 
     @Override
