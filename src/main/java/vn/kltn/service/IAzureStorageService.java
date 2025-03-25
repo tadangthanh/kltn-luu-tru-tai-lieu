@@ -25,6 +25,7 @@ public interface IAzureStorageService {
     void deleteBLobs(List<String> blobNames);
 
     InputStream downloadBlobInputStream(String containerName, String blobName); // Tải blob về
+    InputStream downloadBlobInputStream(String blobName); // Tải blob về
 
     byte[] downloadBlobByteData(String containerName, String blobName); // Tải blob về dạng byte[]
 }

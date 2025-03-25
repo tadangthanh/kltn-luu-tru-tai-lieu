@@ -2,15 +2,21 @@ package vn.kltn.controller.rest;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.request.DocumentRequest;
+import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
 import vn.kltn.service.IDocumentService;
 
+import java.io.ByteArrayInputStream;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -71,4 +77,14 @@ public class DocumentRest {
     public ResponseData<DocumentResponse> getDocumentById(@PathVariable Long documentId) {
         return new ResponseData<>(200, "Thành công", documentService.getDocumentById(documentId));
     }
+
+    @GetMapping("/open")
+    public ResponseEntity<InputStreamResource> openDoc(@RequestParam(value = "documentId") Long documentId) {
+        DocumentDataResponse documentDataResponse = documentService.openDocumentById(documentId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + documentDataResponse.getName() + "\"")
+                .contentType(MediaType.parseMediaType(documentDataResponse.getType()))
+                .body(new InputStreamResource(new ByteArrayInputStream(documentDataResponse.getData())));
+    }
+
 }

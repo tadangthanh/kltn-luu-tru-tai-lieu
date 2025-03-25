@@ -209,14 +209,21 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
 
     @Override
     public InputStream downloadBlobInputStream(String containerName, String blobName) {
+        return getInputStreamBlob(containerName, blobName);
+    }
+
+    @Override
+    public InputStream downloadBlobInputStream(String blobName) {
+        return getInputStreamBlob(containerNameDefault, blobName);
+    }
+
+    private InputStream getInputStreamBlob(String containerName, String blobName) {
         try {
             BlockBlobClient blobClient = getBlockBlobClient(containerName, blobName);
-
             if (!blobClient.exists()) {
                 log.error("Blob not found: {}", blobName);
                 throw new ResourceNotFoundException("File không tồn tại: " + blobName);
             }
-
             // Đọc file từ Azure Blob Storage
             return blobClient.openInputStream();
         } catch (Exception e) {

@@ -11,6 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.request.DocumentRequest;
+import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Document;
@@ -120,7 +121,7 @@ public class DocumentServiceImpl implements IDocumentService {
 
     @Override
     public DocumentResponse getDocumentById(Long documentId) {
-        Document document =getDocumentByIdOrThrow(documentId);
+        Document document = getDocumentByIdOrThrow(documentId);
         return mapToDocumentResponse(document);
     }
 
@@ -205,6 +206,27 @@ public class DocumentServiceImpl implements IDocumentService {
     @Override
     public void restoreDocumentsByFolderIds(List<Long> folderIds) {
         documentRepo.setDeleteDocument(folderIds, null, null);
+    }
+
+    @Override
+    public DocumentDataResponse openDocumentById(Long documentId) {
+        Document document = getDocumentByIdOrThrow(documentId);
+        return mapDocToDocDataResponse(document);
+    }
+
+    private DocumentDataResponse mapDocToDocDataResponse(Document document) {
+        String blobName = document.getBlobName();
+        try (InputStream inputStream = azureStorageService.downloadBlobInputStream(blobName)) {
+            return DocumentDataResponse.builder()
+                    .data(inputStream.readAllBytes())
+                    .name(document.getName() + document.getBlobName().substring(document.getBlobName().lastIndexOf('.')))
+                    .type(document.getType())
+                    .documentId(document.getId())
+                    .build();
+        } catch (IOException e) {
+            log.error("Error reading file from Azure Storage: {}", e.getMessage());
+            throw new InvalidDataException("Lỗi đọc dữ liệu từ file");
+        }
     }
 
     @Override

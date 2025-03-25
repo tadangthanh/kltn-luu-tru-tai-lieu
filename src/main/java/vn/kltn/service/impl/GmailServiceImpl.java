@@ -35,6 +35,8 @@ public class GmailServiceImpl implements IMailService {
     private String emailFrom;
     @Value("${spring.mail.confirm-url}")
     private String confirmUrl;
+    @Value("${app.link.open-document}")
+    private String openDocLink;
     @Value("${spring.mail.invitation-repo-url}")
     private String invitationRepoUrl;
     @Value("${spring.mail.reset-password-url}")
@@ -107,7 +109,7 @@ public class GmailServiceImpl implements IMailService {
         String subject = String.format("%s đã chia sẻ một tài liệu với bạn", owner.getFullName());
         String template = "email-invite.html";
         Context context = new Context();
-        context.setVariable("accessLink", confirmUrl + "?token=" + "token");
+        context.setVariable("openDocLink", openDocLink + document.getId());
         context.setVariable("ownerName", owner.getFullName());
         context.setVariable("documentName", document.getName());
         context.setVariable("permission", documentAccess.getPermission().getDescription());

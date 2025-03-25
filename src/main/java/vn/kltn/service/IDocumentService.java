@@ -3,7 +3,9 @@ package vn.kltn.service;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.request.DocumentRequest;
+import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentResponse;
+import vn.kltn.dto.response.FileDataResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Document;
 
@@ -37,4 +39,7 @@ public interface IDocumentService {
     DocumentResponse updateDocumentById(Long documentId, DocumentRequest documentRequest); //cap nhat document
 
     void restoreDocumentsByFolderIds(List<Long> folderIds);
+
+    DocumentDataResponse openDocumentById(Long documentId);
+
 }
