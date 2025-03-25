@@ -1,11 +1,13 @@
 package vn.kltn.service;
 
 import org.springframework.web.multipart.MultipartFile;
-import vn.kltn.dto.response.RepoResponseDto;
+import vn.kltn.entity.DocumentAccess;
 import vn.kltn.entity.Repo;
 
 public interface IMailService {
     String sendEmail(String recipients, String subject, String content, MultipartFile[] files);
+
+    void sendEmailInviteDocumentAccess(String recipientEmail, DocumentAccess documentAccess);
 
     void sendConfirmLink(String email, Long id, String token);
 

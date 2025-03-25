@@ -14,7 +14,10 @@ import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import vn.kltn.common.TokenType;
+import vn.kltn.entity.Document;
+import vn.kltn.entity.DocumentAccess;
 import vn.kltn.entity.Repo;
+import vn.kltn.entity.User;
 import vn.kltn.service.IJwtService;
 import vn.kltn.service.IMailService;
 
@@ -68,6 +71,7 @@ public class GmailServiceImpl implements IMailService {
         return "Email sent successfully";
     }
 
+
     @Override
     @Async
     public void sendConfirmLink(String email, Long id, String token) {
@@ -78,7 +82,7 @@ public class GmailServiceImpl implements IMailService {
         Context context = new Context();
         context.setVariable("linkConfirm", confirmUrl + "?token=" + token);
 
-        sendEmail(email, subject, template, context);
+        sendEmail("Ta dang thanh", email, subject, template, context);
     }
 
     @Override
@@ -91,7 +95,23 @@ public class GmailServiceImpl implements IMailService {
         Context context = new Context();
         context.setVariable("linkResetPassword", resetPasswordUrl + "?token=" + token);
 
-        sendEmail(email, subject, template, context);
+        sendEmail("Ta dang thanh", email, subject, template, context);
+    }
+
+    @Override
+    @Async
+    public void sendEmailInviteDocumentAccess(String recipientEmail, DocumentAccess documentAccess) {
+        log.info("sending email invite to: {}", recipientEmail);
+        Document document = documentAccess.getDocument();
+        User owner = document.getOwner();
+        String subject = String.format("%s đã chia sẻ một tài liệu với bạn", owner.getFullName());
+        String template = "email-invite.html";
+        Context context = new Context();
+        context.setVariable("accessLink", confirmUrl + "?token=" + "token");
+        context.setVariable("ownerName", owner.getFullName());
+        context.setVariable("documentName", document.getName());
+        context.setVariable("permission", documentAccess.getPermission().getDescription());
+        sendEmail(owner.getFullName(), recipientEmail, subject, template, context);
     }
 
     @Override
@@ -107,16 +127,17 @@ public class GmailServiceImpl implements IMailService {
         context.setVariable("repo", repo);
         context.setVariable("owner", repo.getOwner());
         context.setVariable("expiryDayInvitation", expiryDayInvitation);
-        sendEmail(email, subject, template, context);
+        sendEmail("Ta dang thanh", email, subject, template, context);
 
     }
 
-    private void sendEmail(String recipient, String subject, String template, Context context) {
+
+    private void sendEmail(String from, String recipient, String subject, String template, Context context) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
 
-            helper.setFrom(emailFrom, "Ta Dang Thanh");
+            helper.setFrom(emailFrom, from);
             helper.setTo(recipient);
             helper.setSubject(subject);
             helper.setText(springTemplateEngine.process(template, context), true);

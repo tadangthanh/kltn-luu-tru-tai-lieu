@@ -15,4 +15,5 @@ public class DocumentAccessRequest implements Serializable {
     private String recipientEmail;
     @NotNull(message = "Quyền truy cập không được để trống")
     private Permission permission;
+    private String message;
 }

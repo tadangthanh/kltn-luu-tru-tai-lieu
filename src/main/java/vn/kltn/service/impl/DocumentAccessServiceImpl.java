@@ -13,6 +13,7 @@ import vn.kltn.map.DocumentAccessMapper;
 import vn.kltn.repository.DocumentAccessRepo;
 import vn.kltn.service.IDocumentAccessService;
 import vn.kltn.service.IDocumentService;
+import vn.kltn.service.IMailService;
 import vn.kltn.service.IUserService;
 
 @Service
@@ -24,11 +25,13 @@ public class DocumentAccessServiceImpl implements IDocumentAccessService {
     private final DocumentAccessMapper documentAccessMapper;
     private final IDocumentService documentService;
     private final IUserService userService;
+    private final IMailService mailService;
 
     @Override
     public DocumentAccessResponse createDocumentAccess(Long documentId, DocumentAccessRequest accessRequest) {
         DocumentAccess documentAccess = mapToDocumentAccess(documentId, accessRequest);
         documentAccess = documentAccessRepo.save(documentAccess);
+        mailService.sendEmailInviteDocumentAccess(accessRequest.getRecipientEmail(), documentAccess);
         return mapToDocumentAccessResponse(documentAccess);
     }
 
