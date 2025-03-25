@@ -13,8 +13,8 @@ import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 public interface FolderMapper {
     Folder toFolder(FolderRequest folderRequest);
 
-    @Mapping(target = "ownerName", source = "user.fullName")
-    @Mapping(target = "ownerEmail", source = "user.email")
+    @Mapping(target = "ownerName", source = "owner.fullName")
+    @Mapping(target = "ownerEmail", source = "owner.email")
     FolderResponse toFolderResponse(Folder folder);
 
     void updateFolderFromRequest(FolderRequest folderRequest, @MappingTarget Folder folder);

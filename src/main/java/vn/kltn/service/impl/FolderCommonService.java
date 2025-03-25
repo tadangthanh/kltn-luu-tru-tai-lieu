@@ -30,7 +30,7 @@ public class FolderCommonService {
     public void validateCurrentUserIsOwnerFolder(Folder folder) {
         log.info("validate current user is owner folder");
         User currentUser = authenticationService.getCurrentUser();
-        if (!folder.getUser().getId().equals(currentUser.getId())) {
+        if (!folder.getOwner().getId().equals(currentUser.getId())) {
             log.warn("Current user is not owner folder: {}", folder.getId());
             throw new InvalidDataException("Không có quyền thực hiện hành động này");
         }

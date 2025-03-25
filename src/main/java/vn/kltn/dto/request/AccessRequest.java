@@ -10,7 +10,7 @@ import java.io.Serializable;
 
 @Getter
 @Setter
-public class DocumentAccessRequest implements Serializable {
+public class AccessRequest implements Serializable {
     @NotBlank(message = "Email nguời được chia sẻ không được để trống")
     private String recipientEmail;
     @NotNull(message = "Quyền truy cập không được để trống")

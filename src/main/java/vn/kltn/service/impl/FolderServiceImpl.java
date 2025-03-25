@@ -54,7 +54,7 @@ public class FolderServiceImpl implements IFolderService {
 
     private Folder saveFolderWithoutParent(FolderRequest folderRequest) {
         Folder folder = mapToFolder(folderRequest);
-        folder.setUser(authenticationService.getCurrentUser());
+        folder.setOwner(authenticationService.getCurrentUser());
         return folderRepo.save(folder);
     }
 
@@ -62,7 +62,7 @@ public class FolderServiceImpl implements IFolderService {
         Folder folderParent = getFolderByIdOrThrow(folderRequest.getFolderParentId());
         Folder folder = mapToFolder(folderRequest);
         folder = folderRepo.save(folder);
-        folder.setUser(authenticationService.getCurrentUser());
+        folder.setOwner(authenticationService.getCurrentUser());
         folder.setParent(folderParent);
         return folderRepo.save(folder);
     }

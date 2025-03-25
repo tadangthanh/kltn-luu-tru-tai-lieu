@@ -14,10 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import vn.kltn.common.TokenType;
-import vn.kltn.entity.Document;
-import vn.kltn.entity.DocumentAccess;
-import vn.kltn.entity.Repo;
-import vn.kltn.entity.User;
+import vn.kltn.entity.*;
 import vn.kltn.service.IJwtService;
 import vn.kltn.service.IMailService;
 
@@ -37,6 +34,8 @@ public class GmailServiceImpl implements IMailService {
     private String confirmUrl;
     @Value("${app.link.open-document}")
     private String openDocLink;
+    @Value("${app.link.open-folder}")
+    private String openFolderLink;
     @Value("${spring.mail.invitation-repo-url}")
     private String invitationRepoUrl;
     @Value("${spring.mail.reset-password-url}")
@@ -107,12 +106,28 @@ public class GmailServiceImpl implements IMailService {
         Document document = documentAccess.getDocument();
         User owner = document.getOwner();
         String subject = String.format("%s đã chia sẻ một tài liệu với bạn", owner.getFullName());
-        String template = "email-invite.html";
+        String template = "email-invite-document.html";
         Context context = new Context();
         context.setVariable("openDocLink", openDocLink + document.getId());
         context.setVariable("ownerName", owner.getFullName());
         context.setVariable("documentName", document.getName());
         context.setVariable("permission", documentAccess.getPermission().getDescription());
+        sendEmail(owner.getFullName(), recipientEmail, subject, template, context);
+    }
+
+    @Override
+    @Async
+    public void sendEmailInviteFolderAccess(String recipientEmail, FolderAccess folderAccess) {
+        log.info("sending email invite to: {}", recipientEmail);
+        Folder folder = folderAccess.getFolder();
+        User owner = folder.getOwner();
+        String subject = String.format("%s đã chia sẻ một tài liệu với bạn", owner.getFullName());
+        String template = "email-invite-folder.html";
+        Context context = new Context();
+        context.setVariable("openFolderLink", openFolderLink + folder.getId());
+        context.setVariable("ownerName", owner.getFullName());
+        context.setVariable("folderName", folder.getName());
+        context.setVariable("permission", folderAccess.getPermission().getDescription());
         sendEmail(owner.getFullName(), recipientEmail, subject, template, context);
     }
 

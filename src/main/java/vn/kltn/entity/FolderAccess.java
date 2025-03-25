@@ -14,8 +14,8 @@ public class FolderAccess extends BaseEntity {
     @JoinColumn(name = "folder_id")
     private Folder folder;
     @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+    @JoinColumn(name = "recipient_id")
+    private User recipient;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, name = "permission")
     private Permission permission;

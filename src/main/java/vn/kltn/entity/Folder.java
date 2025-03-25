@@ -28,6 +28,6 @@ public class Folder extends BaseEntity {
     private Set<Document> documents; // danh sách tài liệu
 
     @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user; // chủ sở hữu
+    @JoinColumn(name = "owner_id")
+    private User owner; // chủ sở hữu
 }

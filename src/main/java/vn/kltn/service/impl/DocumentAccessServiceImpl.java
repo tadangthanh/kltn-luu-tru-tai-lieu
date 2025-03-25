@@ -4,7 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import vn.kltn.dto.request.DocumentAccessRequest;
+import vn.kltn.dto.request.AccessRequest;
 import vn.kltn.dto.response.DocumentAccessResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.DocumentAccess;
@@ -28,7 +28,7 @@ public class DocumentAccessServiceImpl implements IDocumentAccessService {
     private final IMailService mailService;
 
     @Override
-    public DocumentAccessResponse createDocumentAccess(Long documentId, DocumentAccessRequest accessRequest) {
+    public DocumentAccessResponse createDocumentAccess(Long documentId, AccessRequest accessRequest) {
         DocumentAccess documentAccess = mapToDocumentAccess(documentId, accessRequest);
         documentAccess = documentAccessRepo.save(documentAccess);
         mailService.sendEmailInviteDocumentAccess(accessRequest.getRecipientEmail(), documentAccess);
@@ -39,7 +39,7 @@ public class DocumentAccessServiceImpl implements IDocumentAccessService {
         return documentAccessMapper.toDocumentAccessResponse(documentAccess);
     }
 
-    private DocumentAccess mapToDocumentAccess(Long documentId, DocumentAccessRequest accessRequest) {
+    private DocumentAccess mapToDocumentAccess(Long documentId, AccessRequest accessRequest) {
         DocumentAccess documentAccess = new DocumentAccess();
         Document document = documentService.getDocumentByIdOrThrow(documentId);
         documentAccess.setDocument(document);
