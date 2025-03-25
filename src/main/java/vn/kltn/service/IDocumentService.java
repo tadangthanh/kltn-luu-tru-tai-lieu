@@ -5,7 +5,6 @@ import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentResponse;
-import vn.kltn.dto.response.FileDataResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Document;
 

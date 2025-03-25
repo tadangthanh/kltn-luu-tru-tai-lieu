@@ -19,7 +19,6 @@ import vn.kltn.entity.Folder;
 import vn.kltn.entity.Tag;
 import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
-import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.DocumentMapper;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
@@ -51,6 +50,7 @@ public class DocumentServiceImpl implements IDocumentService {
     private final FolderCommonService folderCommonService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
+    private final DocumentCommonService documentCommonService;
 
 
     @Override
@@ -86,14 +86,6 @@ public class DocumentServiceImpl implements IDocumentService {
         } catch (IOException e) {
             throw new InvalidDataException(e.getMessage());
         }
-    }
-
-    @Override
-    public Document getDocumentByIdOrThrow(Long documentId) {
-        return documentRepo.findById(documentId).orElseThrow(() -> {
-            log.warn("Document with id {} not found", documentId);
-            return new ResourceNotFoundException("Không tìm thấy document");
-        });
     }
 
     @Override
@@ -193,26 +185,17 @@ public class DocumentServiceImpl implements IDocumentService {
 
     @Override
     public void validateDocumentDeleted(Document document) {
-        if (document.getDeletedAt() == null) {
-            throw new InvalidDataException("Document chưa bị xóa");
-        }
+        documentCommonService.validateDocumentDeleted(document);
     }
 
     @Override
     public void validateCurrentUserIsOwnerDocument(Document document) {
-        log.info("validate current user is owner document");
-        User currentUser = authenticationService.getCurrentUser();
-        if (!document.getOwner().getId().equals(currentUser.getId())) {
-            log.warn("Current user is not owner folder: {}", document.getId());
-            throw new InvalidDataException("Bạn không phải chủ sở hữu");
-        }
+        documentCommonService.validateCurrentUserIsOwnerDocument(document);
     }
 
     @Override
     public void validateDocumentNotDeleted(Document document) {
-        if (document.getDeletedAt() != null) {
-            throw new InvalidDataException("Document đã bị xóa");
-        }
+        documentCommonService.validateDocumentNotDeleted(document);
     }
 
     @Override
@@ -246,6 +229,11 @@ public class DocumentServiceImpl implements IDocumentService {
         Document document = getDocumentByIdOrThrow(documentId);
         Document copied = copyDocument(document);
         return mapToDocumentResponse(copied);
+    }
+
+    @Override
+    public Document getDocumentByIdOrThrow(Long documentId) {
+        return documentCommonService.getDocumentByIdOrThrow(documentId);
     }
 
     private Document copyDocument(Document document) {

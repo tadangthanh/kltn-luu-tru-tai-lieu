@@ -31,8 +31,7 @@ public class DocumentRest {
     }
 
     @PostMapping("/folder/{folderId}")
-    public ResponseData<DocumentResponse> upload(@PathVariable Long folderId, @RequestPart("file") MultipartFile file,
-                                                 @Valid @RequestPart("data") DocumentRequest documentRequest) {
+    public ResponseData<DocumentResponse> upload(@PathVariable Long folderId, @RequestPart("file") MultipartFile file, @Valid @RequestPart("data") DocumentRequest documentRequest) {
         return new ResponseData<>(201, "Thành công", documentService.uploadDocumentWithFolder(folderId, documentRequest, file));
     }
 
@@ -81,8 +80,8 @@ public class DocumentRest {
     @GetMapping("/open")
     public ResponseEntity<InputStreamResource> openDoc(@RequestParam(value = "documentId") Long documentId) {
         DocumentDataResponse documentDataResponse = documentService.openDocumentById(documentId);
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + documentDataResponse.getName() + "\"")
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
+                "inline; filename=\"" + documentDataResponse.getName() + "\"")
                 .contentType(MediaType.parseMediaType(documentDataResponse.getType()))
                 .body(new InputStreamResource(new ByteArrayInputStream(documentDataResponse.getData())));
     }

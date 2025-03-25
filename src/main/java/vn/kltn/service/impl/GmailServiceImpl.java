@@ -36,6 +36,14 @@ public class GmailServiceImpl implements IMailService {
     private String openDocLink;
     @Value("${app.link.open-folder}")
     private String openFolderLink;
+    @Value("${app.link.accept-owner-document}")
+    private String acceptOwnerDocumentLink;
+    @Value("${app.link.accept-owner-folder}")
+    private String acceptOwnerFolderLink;
+    @Value("${app.link.decline-owner-document}")
+    private String declineOwnerDocumentLink;
+    @Value("${app.link.decline-owner-folder}")
+    private String declineOwnerFolderLink;
     @Value("${spring.mail.invitation-repo-url}")
     private String invitationRepoUrl;
     @Value("${spring.mail.reset-password-url}")
@@ -101,7 +109,7 @@ public class GmailServiceImpl implements IMailService {
 
     @Override
     @Async
-    public void sendEmailInviteDocumentAccess(String recipientEmail, DocumentAccess documentAccess,String message) {
+    public void sendEmailInviteDocumentAccess(String recipientEmail, DocumentAccess documentAccess, String message) {
         log.info("sending email invite to: {}", recipientEmail);
         Document document = documentAccess.getDocument();
         User owner = document.getOwner();
@@ -118,7 +126,7 @@ public class GmailServiceImpl implements IMailService {
 
     @Override
     @Async
-    public void sendEmailInviteFolderAccess(String recipientEmail, FolderAccess folderAccess,String message) {
+    public void sendEmailInviteFolderAccess(String recipientEmail, FolderAccess folderAccess, String message) {
         log.info("sending email invite to: {}", recipientEmail);
         Folder folder = folderAccess.getFolder();
         User owner = folder.getOwner();
@@ -130,6 +138,36 @@ public class GmailServiceImpl implements IMailService {
         context.setVariable("folderName", folder.getName());
         context.setVariable("message", message);
         context.setVariable("permission", folderAccess.getPermission().getDescription());
+        sendEmail(owner.getFullName(), recipientEmail, subject, template, context);
+    }
+
+    @Override
+    @Async
+    public void sendEmailTransferOwnershipDocument(String recipientEmail, Document document) {
+        log.info("sending email transfer ownership document to: {}", recipientEmail);
+        User owner = document.getOwner();
+        String subject = String.format("Lời mời sở hữu:\"%s \"", document.getName());
+        String template = "email-transfer-owner-document.html";
+        Context context = new Context();
+        context.setVariable("ownerName", owner.getFullName());
+        context.setVariable("documentName", document.getName());
+        context.setVariable("acceptLink", acceptOwnerDocumentLink + document.getId());
+        context.setVariable("declineLink", declineOwnerDocumentLink + document.getId());
+        sendEmail(owner.getFullName(), recipientEmail, subject, template, context);
+    }
+
+    @Override
+    @Async
+    public void sendEmailTransferOwnershipFolder(String recipientEmail, Folder folder) {
+        log.info("sending email transfer ownership folder to: {}", recipientEmail);
+        User owner = folder.getOwner();
+        String subject = String.format("Lời mời sở hữu:\"%s \"", folder.getName());
+        String template = "email-transfer-owner-folder.html";
+        Context context = new Context();
+        context.setVariable("ownerName", owner.getFullName());
+        context.setVariable("folderName", folder.getName());
+        context.setVariable("acceptLink", acceptOwnerFolderLink + folder.getId());
+        context.setVariable("declineLink", declineOwnerFolderLink + folder.getId());
         sendEmail(owner.getFullName(), recipientEmail, subject, template, context);
     }
 
