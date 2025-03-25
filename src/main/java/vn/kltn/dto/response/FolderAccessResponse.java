@@ -11,6 +11,6 @@ public class FolderAccessResponse extends BaseDto {
     private Permission permission;
     private String recipientName;
     private String recipientEmail;
-    private Long folderId;
+    private FolderResponse folder;
     private UserResponse owner;
 }

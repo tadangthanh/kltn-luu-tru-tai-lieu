@@ -11,6 +11,6 @@ public class DocumentAccessResponse extends BaseDto {
     private Permission permission;
     private String recipientName;
     private String recipientEmail;
-    private Long documentId;
+    private DocumentResponse document;
     private UserResponse owner;
 }
