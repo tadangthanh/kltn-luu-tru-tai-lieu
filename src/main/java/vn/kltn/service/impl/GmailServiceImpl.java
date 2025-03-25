@@ -151,7 +151,7 @@ public class GmailServiceImpl implements IMailService {
         Context context = new Context();
         context.setVariable("ownerName", owner.getFullName());
         context.setVariable("documentName", document.getName());
-        context.setVariable("acceptLink", acceptOwnerDocumentLink + document.getId());
+        context.setVariable("acceptLink", "http://localhost:8080/oauth2/authorization/google?redirectUrl=http://localhost:8080/api/v1/ownership-transfers/accept-owner/document?documentId=" + document.getId());
         context.setVariable("declineLink", declineOwnerDocumentLink + document.getId());
         sendEmail(owner.getFullName(), recipientEmail, subject, template, context);
     }

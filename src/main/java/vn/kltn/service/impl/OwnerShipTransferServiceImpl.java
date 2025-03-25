@@ -12,6 +12,7 @@ import vn.kltn.entity.Folder;
 import vn.kltn.entity.OwnerShipTransfer;
 import vn.kltn.entity.User;
 import vn.kltn.exception.ConflictResourceException;
+import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.OwnerShipTransferMapper;
 import vn.kltn.repository.OwnerShipTransferRepo;
 import vn.kltn.service.IMailService;
@@ -69,7 +70,7 @@ public class OwnerShipTransferServiceImpl implements IOwnerShipTransferService {
 
     private void setDocumentToOwnerShip(OwnerShipTransfer transfer, Long documentId) {
         Document document = documentCommonService.getDocumentByIdOrThrow(documentId);
-        validateConditionsDocumentToTransferOwner(document);
+        validateConditionsDocumentTransfer(document);
         transfer.setDocument(document);
     }
 
@@ -96,7 +97,7 @@ public class OwnerShipTransferServiceImpl implements IOwnerShipTransferService {
 
     // document chua bi xoa
     // nguoi thuc hien yeu cau phai la owner cua document
-    private void validateConditionsDocumentToTransferOwner(Document document) {
+    private void validateConditionsDocumentTransfer(Document document) {
         documentCommonService.validateDocumentNotDeleted(document);
         documentCommonService.validateCurrentUserIsOwnerDocument(document);
     }
@@ -112,6 +113,46 @@ public class OwnerShipTransferServiceImpl implements IOwnerShipTransferService {
         OwnerShipTransfer ownerShipTransfer = createOwnerShipTransferWithFolder(folderId, newOwnerId);
         sendEmailTransferOwnerShipFolder(ownerShipTransfer.getNewOwner(), ownerShipTransfer.getFolder());
         return mapToOwnerShipTransferResponse(ownerShipTransfer);
+    }
+
+    @Override
+    public OwnerShipTransferResponse acceptTransferByDocumentId(Long documentId) {
+        OwnerShipTransfer ownerShipTransfer = getTransferByDocumentIdAndStatus(documentId, TransferStatus.PENDING);
+        Document document = ownerShipTransfer.getDocument();
+        documentCommonService.validateDocumentNotDeleted(document);
+        transferOwnership(ownerShipTransfer);
+        return mapToOwnerShipTransferResponse(ownerShipTransfer);
+    }
+
+    private void transferOwnership(OwnerShipTransfer transfer) {
+        if (transfer.getDocument() != null) {
+            transfer.getDocument().setOwner(transfer.getNewOwner());
+        }
+        if (transfer.getFolder() != null) {
+            transfer.getFolder().setOwner(transfer.getNewOwner());
+        }
+        transfer.setStatus(TransferStatus.ACCEPTED);
+    }
+
+    private OwnerShipTransfer getTransferByDocumentIdAndStatus(Long documentId, TransferStatus status) {
+        User currentUser = userService.getUserByEmail(SecurityContextHolder.getContext().getAuthentication().getName());
+        return ownerShipTransferRepo.findByDocumentIdAndNewOwnerIdAndStatus(documentId, currentUser.getId(), status)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu chuyển quyền sở hữu với tài liệu này"));
+    }
+
+    @Override
+    public OwnerShipTransferResponse declineTransferByDocumentId(Long documentId) {
+        return null;
+    }
+
+    @Override
+    public OwnerShipTransferResponse acceptTransferByFolderId(Long folderId) {
+        return null;
+    }
+
+    @Override
+    public OwnerShipTransferResponse declineTransferByFolderId(Long folderId) {
+        return null;
     }
 
     private void validateOwnerShipNotExistDocumentByStatus(Long documentId, Long newOwnerId, TransferStatus status) {

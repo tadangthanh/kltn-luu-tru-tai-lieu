@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.Getter;
@@ -39,32 +40,50 @@ public class CustomizeRequestFilter extends OncePerRequestFilter {
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
         log.info("{} {}", request.getMethod(), request.getRequestURI());
+
+        String token = null;
+
+        // 1️⃣ Ưu tiên lấy token từ Header Authorization
         String authorizationHeader = request.getHeader("Authorization");
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            authorizationHeader = authorizationHeader.substring(7);
-            log.info("Authorization Header: {}", authorizationHeader.substring(0, 20));
-            String email = "";
+            token = authorizationHeader.substring(7);
+            log.info("🔹 Lấy token từ Authorization Header");
+        } else {
+            // 2️⃣ Nếu không có, lấy từ cookie
+            Cookie[] cookies = request.getCookies();
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    if ("accessToken".equals(cookie.getName())) {
+                        token = cookie.getValue();
+                        log.info("🔹 Lấy token từ Cookie");
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (token != null) {
+            log.info("Authorization Token: {}", token.substring(0, Math.min(token.length(), 20))); // Log 20 ký tự đầu
+
             try {
-                email = jwtService.extractEmail(authorizationHeader, ACCESS_TOKEN);
-                log.info("Email: {}", email);
+                String email = jwtService.extractEmail(token, ACCESS_TOKEN);
+                log.info("User Email: {}", email);
+                UserDetails userDetails = this.userService.loadUserByUsername(email);
+
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
             } catch (AccessDeniedException e) {
-                // neu token ko hop le thi khi extract email se bi nem ra ngoai le
                 log.error("Access denied: {}", e.getMessage());
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.setContentType("application/json");
                 response.setCharacterEncoding("UTF-8");
-                response.getWriter().write(errorResponse(request.getRequestURI(),e.getMessage()));
+                response.getWriter().write(errorResponse(request.getRequestURI(), e.getMessage()));
                 return;
             }
-            UserDetails userDetails = this.userService.loadUserByUsername(email);
-
-            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
-                    null, userDetails.getAuthorities());
-            authToken.setDetails((new WebAuthenticationDetailsSource()).buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authToken);
-            filterChain.doFilter(request, response);
-            return;
         }
+
         filterChain.doFilter(request, response);
     }
 

@@ -1,6 +1,7 @@
 package vn.kltn.security;
 
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,6 +38,7 @@ public class SecurityConfig implements WebMvcConfigurer {
     private final IUserService userDetailsService;
     private final CustomizeRequestFilter requestFilter;
     private final PasswordEncoder passwordEncoder;
+    private final CustomAuthorizationRequestRepository authorizationRequestRepository;
     private final String[] WHITE_LIST = {
             "/auth/**",
             "/api/auth/**",
@@ -81,6 +83,9 @@ public class SecurityConfig implements WebMvcConfigurer {
                 .authenticationProvider(provider()).addFilterBefore(requestFilter, UsernamePasswordAuthenticationFilter.class)
                 .oauth2Login(
                         oauth2Login -> oauth2Login
+                                .authorizationEndpoint(authEndpoint -> authEndpoint
+                                        .authorizationRequestRepository(authorizationRequestRepository)
+                                )
                                 .successHandler((request, response, authentication) -> {
                                     // Ép kiểu authentication.getPrincipal() thành OAuth2User
                                     OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
@@ -91,6 +96,18 @@ public class SecurityConfig implements WebMvcConfigurer {
                                     accessTokenCookie.setPath("/");
                                     accessTokenCookie.setMaxAge(900); // 900 giây = 15 phút
 
+                                    // Lấy redirect_uri từ cookie nếu có
+                                    String redirectUrl = null;
+                                    Cookie[] cookies = request.getCookies();
+                                    if (cookies != null) {
+                                        for (Cookie cookie : cookies) {
+                                            if ("redirectUrl".equals(cookie.getName())) {
+                                                redirectUrl = cookie.getValue();
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    System.out.println("---------------redirectUrl:" +redirectUrl);
                                     // Tạo cookie cho Refresh Token (dài hạn, ví dụ: 7 ngày)
                                     Cookie refreshTokenCookie = new Cookie("refreshToken", tokenResponse.getRefreshToken());
                                     refreshTokenCookie.setHttpOnly(true);
@@ -101,8 +118,8 @@ public class SecurityConfig implements WebMvcConfigurer {
                                     response.addCookie(accessTokenCookie);
                                     response.addCookie(refreshTokenCookie);
 
-                                    // Chuyển hướng về trang chủ của client
-                                    response.sendRedirect("http://localhost:3000");
+                                    // Chuyển hướng về URL gốc (hoặc trang chủ nếu không có URL gốc)
+                                    response.sendRedirect(redirectUrl != null ? redirectUrl : "http://localhost:3000");
 
                                 })
                 );
