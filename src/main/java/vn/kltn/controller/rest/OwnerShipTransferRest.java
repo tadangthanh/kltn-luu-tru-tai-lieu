@@ -19,4 +19,9 @@ public class OwnerShipTransferRest {
     public ResponseData<OwnerShipTransferResponse> transferDocumentOwner(@PathVariable Long documentId, @PathVariable Long newOwnerId) {
         return new ResponseData<>(200, "Thành công", ownerShipTransferService.createTransferDocumentOwner(documentId, newOwnerId));
     }
+
+    @PostMapping("/folder/{folderId}/owner/{newOwnerId}")
+    public ResponseData<OwnerShipTransferResponse> transferFolderOwner(@PathVariable Long folderId, @PathVariable Long newOwnerId) {
+        return new ResponseData<>(200, "Thành công", ownerShipTransferService.createTransferFolderOwner(folderId, newOwnerId));
+    }
 }
