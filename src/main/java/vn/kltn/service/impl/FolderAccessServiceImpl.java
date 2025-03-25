@@ -12,7 +12,6 @@ import vn.kltn.entity.User;
 import vn.kltn.map.FolderAccessMapper;
 import vn.kltn.repository.FolderAccessRepo;
 import vn.kltn.service.IFolderAccessService;
-import vn.kltn.service.IFolderService;
 import vn.kltn.service.IMailService;
 import vn.kltn.service.IUserService;
 
@@ -25,29 +24,39 @@ public class FolderAccessServiceImpl implements IFolderAccessService {
     private final FolderAccessMapper folderAccessMapper;
     private final IUserService userService;
     private final IMailService mailService;
-    private final IFolderService folderService;
+    private final FolderCommonService folderCommonService;
 
 
     @Override
     public FolderAccessResponse createFolderAccess(Long folderId, AccessRequest accessRequest) {
-        FolderAccess folderAccess = mapToFolderAccess(folderId, accessRequest);
-        folderAccess = folderAccessRepo.save(folderAccess);
-        mailService.sendEmailInviteFolderAccess(accessRequest.getRecipientEmail(), folderAccess,accessRequest.getMessage());
-        return mapToFolderAccessResponse(folderAccess);
+        Folder folderToAccess = folderCommonService.getFolderByIdOrThrow(folderId);
+        // folder chua bi xoa, nguoi chia se phai la chu so huu cua folder
+        validateFolderConditionsToAccess(folderToAccess);
+        FolderAccess folderAccessSaved = saveFolderAccess(folderToAccess, accessRequest);
+        sendEmailInviteFolderAccess(folderAccessSaved, accessRequest);
+        return mapToFolderAccessResponse(folderAccessSaved);
+    }
+
+    private void sendEmailInviteFolderAccess(FolderAccess folderAccess, AccessRequest accessRequest) {
+        mailService.sendEmailInviteFolderAccess(accessRequest.getRecipientEmail(), folderAccess, accessRequest.getMessage());
+    }
+
+    private void validateFolderConditionsToAccess(Folder folder) {
+        folderCommonService.validateFolderNotDeleted(folder);
+        folderCommonService.validateCurrentUserIsOwnerFolder(folder);
     }
 
     private FolderAccessResponse mapToFolderAccessResponse(FolderAccess folderAccess) {
         return folderAccessMapper.toFolderAccessResponse(folderAccess);
     }
 
-    private FolderAccess mapToFolderAccess(Long folderId, AccessRequest accessRequest) {
+    private FolderAccess saveFolderAccess(Folder folderToAccess, AccessRequest accessRequest) {
         FolderAccess folderAccess = new FolderAccess();
-        Folder folder = folderService.getFolderByIdOrThrow(folderId);
-        folderAccess.setFolder(folder);
+        folderAccess.setFolder(folderToAccess);
         folderAccess.setPermission(accessRequest.getPermission());
         User recipient = userService.getUserByEmail(accessRequest.getRecipientEmail());
         folderAccess.setRecipient(recipient);
-        return folderAccess;
+        return folderAccessRepo.save(folderAccess);
     }
 
     @Override

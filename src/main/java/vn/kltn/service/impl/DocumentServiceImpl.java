@@ -191,13 +191,25 @@ public class DocumentServiceImpl implements IDocumentService {
         return mapToDocumentResponse(document);
     }
 
-    private void validateDocumentDeleted(Document document) {
+    @Override
+    public void validateDocumentDeleted(Document document) {
         if (document.getDeletedAt() == null) {
             throw new InvalidDataException("Document chưa bị xóa");
         }
     }
 
-    private void validateDocumentNotDeleted(Document document) {
+    @Override
+    public void validateCurrentUserIsOwnerDocument(Document document) {
+        log.info("validate current user is owner document");
+        User currentUser = authenticationService.getCurrentUser();
+        if (!document.getOwner().getId().equals(currentUser.getId())) {
+            log.warn("Current user is not owner folder: {}", document.getId());
+            throw new InvalidDataException("Bạn không phải chủ sở hữu");
+        }
+    }
+
+    @Override
+    public void validateDocumentNotDeleted(Document document) {
         if (document.getDeletedAt() != null) {
             throw new InvalidDataException("Document đã bị xóa");
         }

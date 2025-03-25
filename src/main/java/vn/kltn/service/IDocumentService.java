@@ -14,6 +14,12 @@ import java.util.List;
 public interface IDocumentService {
     DocumentResponse uploadDocumentWithoutFolder(DocumentRequest documentRequest, MultipartFile file);
 
+    void validateDocumentNotDeleted(Document document);
+
+    void validateDocumentDeleted(Document document);
+
+    void validateCurrentUserIsOwnerDocument(Document document);
+
     DocumentResponse uploadDocumentWithFolder(Long folderId, DocumentRequest documentRequest, MultipartFile file);
 
     void softDeleteDocumentById(Long documentId); // xóa document nhưng chưa xóa vĩnh viễn

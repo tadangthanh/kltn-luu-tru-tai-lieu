@@ -29,24 +29,33 @@ public class DocumentAccessServiceImpl implements IDocumentAccessService {
 
     @Override
     public DocumentAccessResponse createDocumentAccess(Long documentId, AccessRequest accessRequest) {
-        DocumentAccess documentAccess = mapToDocumentAccess(documentId, accessRequest);
-        documentAccess = documentAccessRepo.save(documentAccess);
-        mailService.sendEmailInviteDocumentAccess(accessRequest.getRecipientEmail(), documentAccess,accessRequest.getMessage());
+        Document document = documentService.getDocumentByIdOrThrow(documentId);
+        validateConditionsDocumentToAccess(document);
+        DocumentAccess documentAccess = saveDocumentToAccess(document, accessRequest);
+        sendEmailInviteDocumentAccess(documentAccess, accessRequest);
         return mapToDocumentAccessResponse(documentAccess);
+    }
+
+    private void sendEmailInviteDocumentAccess(DocumentAccess documentAccess, AccessRequest accessRequest) {
+        mailService.sendEmailInviteDocumentAccess(accessRequest.getRecipientEmail(), documentAccess, accessRequest.getMessage());
+    }
+
+    private void validateConditionsDocumentToAccess(Document document) {
+        documentService.validateDocumentNotDeleted(document);
+        documentService.validateCurrentUserIsOwnerDocument(document);
     }
 
     private DocumentAccessResponse mapToDocumentAccessResponse(DocumentAccess documentAccess) {
         return documentAccessMapper.toDocumentAccessResponse(documentAccess);
     }
 
-    private DocumentAccess mapToDocumentAccess(Long documentId, AccessRequest accessRequest) {
+    private DocumentAccess saveDocumentToAccess(Document document, AccessRequest accessRequest) {
         DocumentAccess documentAccess = new DocumentAccess();
-        Document document = documentService.getDocumentByIdOrThrow(documentId);
         documentAccess.setDocument(document);
         documentAccess.setPermission(accessRequest.getPermission());
         User recipient = userService.getUserByEmail(accessRequest.getRecipientEmail());
         documentAccess.setRecipient(recipient);
-        return documentAccess;
+        return documentAccessRepo.save(documentAccess);
 
     }
 
