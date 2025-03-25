@@ -31,7 +31,7 @@ public class FolderAccessServiceImpl implements IFolderAccessService {
     public FolderAccessResponse createFolderAccess(Long folderId, AccessRequest accessRequest) {
         Folder folderToAccess = folderCommonService.getFolderByIdOrThrow(folderId);
         // folder chua bi xoa, nguoi chia se phai la chu so huu cua folder
-        validateFolderConditionsToAccess(folderToAccess);
+        validateFolderConditionsAccess(folderToAccess);
         FolderAccess folderAccessSaved = saveFolderAccess(folderToAccess, accessRequest);
         sendEmailInviteFolderAccess(folderAccessSaved, accessRequest);
         return mapToFolderAccessResponse(folderAccessSaved);
@@ -41,7 +41,7 @@ public class FolderAccessServiceImpl implements IFolderAccessService {
         mailService.sendEmailInviteFolderAccess(accessRequest.getRecipientEmail(), folderAccess, accessRequest.getMessage());
     }
 
-    private void validateFolderConditionsToAccess(Folder folder) {
+    private void validateFolderConditionsAccess(Folder folder) {
         folderCommonService.validateFolderNotDeleted(folder);
         folderCommonService.validateCurrentUserIsOwnerFolder(folder);
     }
@@ -61,6 +61,8 @@ public class FolderAccessServiceImpl implements IFolderAccessService {
 
     @Override
     public void deleteFolderAccess(Long folderId, Long recipientId) {
-
+        Folder folder = folderCommonService.getFolderByIdOrThrow(folderId);
+        validateFolderConditionsAccess(folder);
+        folderAccessRepo.deleteByFolderIdAndRecipientId(folderId, recipientId);
     }
 }

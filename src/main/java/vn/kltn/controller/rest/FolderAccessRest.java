@@ -20,4 +20,10 @@ public class FolderAccessRest {
     public ResponseData<FolderAccessResponse> copy(@PathVariable Long folderId, @Valid @RequestBody AccessRequest accessRequest) {
         return new ResponseData<>(201, "Thành công", folderAccessService.createFolderAccess(folderId, accessRequest));
     }
+
+    @DeleteMapping("/folder/{folderId}/recipient/{recipientId}")
+    public ResponseData<FolderAccessResponse> delete(@PathVariable Long folderId, @PathVariable Long recipientId) {
+        folderAccessService.deleteFolderAccess(folderId, recipientId);
+        return new ResponseData<>(204, "Thành công", null);
+    }
 }

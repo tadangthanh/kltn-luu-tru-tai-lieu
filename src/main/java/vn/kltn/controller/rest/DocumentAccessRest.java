@@ -20,4 +20,10 @@ public class DocumentAccessRest {
     public ResponseData<DocumentAccessResponse> copy(@PathVariable Long documentId, @Valid @RequestBody AccessRequest accessRequest) {
         return new ResponseData<>(201, "Thành công", documentAccessService.createDocumentAccess(documentId, accessRequest));
     }
+
+    @DeleteMapping("/document/{documentId}/recipient/{recipientId}")
+    public ResponseData<String> delete(@PathVariable Long documentId, @PathVariable Long recipientId) {
+        documentAccessService.deleteDocumentAccess(documentId, recipientId);
+        return new ResponseData<>(204, "Thành công", null);
+    }
 }

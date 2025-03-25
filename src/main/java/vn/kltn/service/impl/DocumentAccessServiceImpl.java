@@ -30,7 +30,7 @@ public class DocumentAccessServiceImpl implements IDocumentAccessService {
     @Override
     public DocumentAccessResponse createDocumentAccess(Long documentId, AccessRequest accessRequest) {
         Document document = documentService.getDocumentByIdOrThrow(documentId);
-        validateConditionsDocumentToAccess(document);
+        validateConditionsAccess(document);
         DocumentAccess documentAccess = saveDocumentToAccess(document, accessRequest);
         sendEmailInviteDocumentAccess(documentAccess, accessRequest);
         return mapToDocumentAccessResponse(documentAccess);
@@ -40,8 +40,10 @@ public class DocumentAccessServiceImpl implements IDocumentAccessService {
         mailService.sendEmailInviteDocumentAccess(accessRequest.getRecipientEmail(), documentAccess, accessRequest.getMessage());
     }
 
-    private void validateConditionsDocumentToAccess(Document document) {
+    private void validateConditionsAccess(Document document) {
+        // chưa bị xóa
         documentService.validateDocumentNotDeleted(document);
+        // là chủ sở hữu
         documentService.validateCurrentUserIsOwnerDocument(document);
     }
 
@@ -61,6 +63,8 @@ public class DocumentAccessServiceImpl implements IDocumentAccessService {
 
     @Override
     public void deleteDocumentAccess(Long documentId, Long recipientId) {
-
+        Document document = documentService.getDocumentByIdOrThrow(documentId);
+        validateConditionsAccess(document);
+        documentAccessRepo.deleteByDocumentIdAndRecipientId(documentId, recipientId);
     }
 }
