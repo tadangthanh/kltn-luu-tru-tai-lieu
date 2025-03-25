@@ -3,27 +3,21 @@
 <head>
     <meta charset="UTF-8" />
     <title>Lời mời truy cập tài liệu</title>
-    <!-- Một số email client cũ không hỗ trợ <style> trong <head> nên chúng ta inline CSS. -->
 </head>
 <body style="margin: 0; padding: 0; background-color: #f4f4f4;">
-<!-- Table "bao" toàn bộ nội dung, width=100% để phủ toàn màn hình email -->
 <table border="0" cellpadding="0" cellspacing="0" width="100%">
     <tr>
-        <!-- Cell này căn giữa nội dung -->
         <td align="center" style="padding: 20px;">
 
-            <!-- Table chính, width cố định (ví dụ 600px) để nội dung canh giữa -->
             <table border="0" cellpadding="0" cellspacing="0" width="600"
                    style="background-color: #ffffff; border-radius: 8px;">
                 <tr>
                     <td style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
 
-                        <!-- Phần header -->
                         <h2 style="font-size: 20px; color: #333; margin: 0 0 15px 0;">
                             Bạn đã được mời truy cập một tài liệu
                         </h2>
 
-                        <!-- Phần nội dung -->
                         <p style="color: #555; margin: 0 0 10px 0;">
                             <strong th:text="${ownerName}">Người A</strong> đã chia sẻ một tài liệu với bạn:
                         </p>
@@ -46,11 +40,20 @@
                             </tr>
                         </table>
 
+                        <!-- Lời nhắn (Chỉ hiển thị nếu message != null) -->
+                        <div th:if="${message != null}"
+                             style="background: #eef2ff; padding: 10px; border-radius: 5px;
+            font-size: 14px; color: #333; text-align: left;
+            margin: 10px 0; font-style: italic;">
+                            <p style="margin: 0;"><strong>Lời nhắn:</strong></p>
+                            <p style="margin: 5px 0 0 0;" th:text="${message}">Vui lòng kiểm tra sớm.</p>
+                        </div>
+
+
                         <p style="color: #555; margin: 0 0 10px 0;">
                             Nhấp vào nút bên dưới để xem tài liệu:
                         </p>
 
-                        <!-- Nút Mở tài liệu -->
                         <a th:href="${openDocLink}"
                            style="display: inline-block; background: #1a73e8; color: white;
                         padding: 10px 20px; text-decoration: none; border-radius: 4px;">
@@ -61,7 +64,6 @@
                             Nếu bạn không muốn nhận tài liệu này, hãy bỏ qua email này.
                         </p>
 
-                        <!-- Footer -->
                         <div style="font-size: 12px; color: #777; margin-top: 20px;
                           border-top: 1px solid #ddd; padding-top: 10px;">
                             <p style="margin: 0;">
@@ -76,7 +78,6 @@
                     </td>
                 </tr>
             </table>
-            <!-- Kết thúc table chính -->
 
         </td>
     </tr>

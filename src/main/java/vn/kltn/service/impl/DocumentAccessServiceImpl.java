@@ -31,7 +31,7 @@ public class DocumentAccessServiceImpl implements IDocumentAccessService {
     public DocumentAccessResponse createDocumentAccess(Long documentId, AccessRequest accessRequest) {
         DocumentAccess documentAccess = mapToDocumentAccess(documentId, accessRequest);
         documentAccess = documentAccessRepo.save(documentAccess);
-        mailService.sendEmailInviteDocumentAccess(accessRequest.getRecipientEmail(), documentAccess);
+        mailService.sendEmailInviteDocumentAccess(accessRequest.getRecipientEmail(), documentAccess,accessRequest.getMessage());
         return mapToDocumentAccessResponse(documentAccess);
     }
 

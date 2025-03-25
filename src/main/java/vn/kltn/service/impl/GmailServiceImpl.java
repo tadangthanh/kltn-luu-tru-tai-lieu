@@ -101,7 +101,7 @@ public class GmailServiceImpl implements IMailService {
 
     @Override
     @Async
-    public void sendEmailInviteDocumentAccess(String recipientEmail, DocumentAccess documentAccess) {
+    public void sendEmailInviteDocumentAccess(String recipientEmail, DocumentAccess documentAccess,String message) {
         log.info("sending email invite to: {}", recipientEmail);
         Document document = documentAccess.getDocument();
         User owner = document.getOwner();
@@ -112,12 +112,13 @@ public class GmailServiceImpl implements IMailService {
         context.setVariable("ownerName", owner.getFullName());
         context.setVariable("documentName", document.getName());
         context.setVariable("permission", documentAccess.getPermission().getDescription());
+        context.setVariable("message", message);
         sendEmail(owner.getFullName(), recipientEmail, subject, template, context);
     }
 
     @Override
     @Async
-    public void sendEmailInviteFolderAccess(String recipientEmail, FolderAccess folderAccess) {
+    public void sendEmailInviteFolderAccess(String recipientEmail, FolderAccess folderAccess,String message) {
         log.info("sending email invite to: {}", recipientEmail);
         Folder folder = folderAccess.getFolder();
         User owner = folder.getOwner();
@@ -127,6 +128,7 @@ public class GmailServiceImpl implements IMailService {
         context.setVariable("openFolderLink", openFolderLink + folder.getId());
         context.setVariable("ownerName", owner.getFullName());
         context.setVariable("folderName", folder.getName());
+        context.setVariable("message", message);
         context.setVariable("permission", folderAccess.getPermission().getDescription());
         sendEmail(owner.getFullName(), recipientEmail, subject, template, context);
     }

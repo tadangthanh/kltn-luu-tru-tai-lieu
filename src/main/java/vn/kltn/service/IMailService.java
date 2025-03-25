@@ -8,9 +8,9 @@ import vn.kltn.entity.Repo;
 public interface IMailService {
     String sendEmail(String recipients, String subject, String content, MultipartFile[] files);
 
-    void sendEmailInviteDocumentAccess(String recipientEmail, DocumentAccess documentAccess);
+    void sendEmailInviteDocumentAccess(String recipientEmail, DocumentAccess documentAccess,String message);
 
-    void sendEmailInviteFolderAccess(String recipientEmail, FolderAccess folderAccess);
+    void sendEmailInviteFolderAccess(String recipientEmail, FolderAccess folderAccess,String message);
 
     void sendConfirmLink(String email, Long id, String token);
 

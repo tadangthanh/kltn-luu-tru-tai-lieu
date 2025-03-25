@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8"/>
     <title>Lời mời truy cập thư mục</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f4f4f4;">
@@ -31,7 +31,7 @@
                                 <td width="50" style="padding: 10px;">
                                     <img src="https://www.gstatic.com/images/icons/material/system/2x/folder_black_24dp.png"
                                          alt="Folder"
-                                         style="width: 30px; vertical-align: middle;" />
+                                         style="width: 30px; vertical-align: middle;"/>
                                 </td>
                                 <td style="padding: 10px; text-align: left;">
                                     <p style="font-size: 16px; font-weight: bold; margin: 0;"
@@ -41,6 +41,14 @@
                                 </td>
                             </tr>
                         </table>
+                        <!-- Lời nhắn (Chỉ hiển thị nếu message != null) -->
+                        <div th:if="${message != null}"
+                             style="background: #eef2ff; padding: 10px; border-radius: 5px;
+            font-size: 14px; color: #333; text-align: left;
+            margin: 10px 0; font-style: italic;">
+                            <p style="margin: 0;"><strong>Lời nhắn:</strong></p>
+                            <p style="margin: 5px 0 0 0;" th:text="${message}">Vui lòng kiểm tra sớm.</p>
+                        </div>
 
                         <!-- Hướng dẫn truy cập -->
                         <p style="color: #555; margin: 0 0 10px 0;">

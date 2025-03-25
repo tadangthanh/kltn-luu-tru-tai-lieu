@@ -32,7 +32,7 @@ public class FolderAccessServiceImpl implements IFolderAccessService {
     public FolderAccessResponse createFolderAccess(Long folderId, AccessRequest accessRequest) {
         FolderAccess folderAccess = mapToFolderAccess(folderId, accessRequest);
         folderAccess = folderAccessRepo.save(folderAccess);
-        mailService.sendEmailInviteFolderAccess(accessRequest.getRecipientEmail(), folderAccess);
+        mailService.sendEmailInviteFolderAccess(accessRequest.getRecipientEmail(), folderAccess,accessRequest.getMessage());
         return mapToFolderAccessResponse(folderAccess);
     }
 
