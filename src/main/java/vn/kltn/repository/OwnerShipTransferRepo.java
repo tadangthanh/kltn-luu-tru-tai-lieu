@@ -10,8 +10,8 @@ import java.util.Optional;
 
 @Repository
 public interface OwnerShipTransferRepo extends JpaRepository<OwnerShipTransfer, Long> {
-    @Query("SELECT o FROM OwnerShipTransfer o WHERE o.document.id = :documentId AND o.newOwner.id = :newOwnerId AND o.status = :status")
-    Optional<OwnerShipTransfer> findByDocumentIdAndNewOwnerIdAndStatus(Long documentId, Long newOwnerId, TransferStatus status);
+    @Query("SELECT o FROM OwnerShipTransfer o WHERE o.document.id = :documentId AND o.newOwner.id = :newOwnerId")
+    Optional<OwnerShipTransfer> findByDocumentIdAndNewOwnerId(Long documentId, Long newOwnerId);
     @Query("SELECT o FROM OwnerShipTransfer o WHERE o.folder.id = :folderId AND o.newOwner.id = :newOwnerId AND o.status = :status")
     Optional<OwnerShipTransfer> findByFolderIdAndNewOwnerIdAndStatus(Long folderId, Long newOwnerId, TransferStatus status);
     @Query("SELECT CASE WHEN COUNT(o) > 0 THEN TRUE ELSE FALSE END FROM OwnerShipTransfer o WHERE o.document.id = :documentId AND o.newOwner.id = :newOwnerId AND o.status = :status")

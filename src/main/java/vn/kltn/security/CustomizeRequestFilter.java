@@ -43,19 +43,19 @@ public class CustomizeRequestFilter extends OncePerRequestFilter {
 
         String token = null;
 
-        // 1️⃣ Ưu tiên lấy token từ Header Authorization
+        // Ưu tiên lấy token từ Header Authorization
         String authorizationHeader = request.getHeader("Authorization");
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             token = authorizationHeader.substring(7);
-            log.info("🔹 Lấy token từ Authorization Header");
+            log.info("Lấy token từ Authorization Header");
         } else {
-            // 2️⃣ Nếu không có, lấy từ cookie
+            //  Nếu không có, lấy từ cookie
             Cookie[] cookies = request.getCookies();
             if (cookies != null) {
                 for (Cookie cookie : cookies) {
                     if ("accessToken".equals(cookie.getName())) {
                         token = cookie.getValue();
-                        log.info("🔹 Lấy token từ Cookie");
+                        log.info(" Lấy token từ Cookie");
                         break;
                     }
                 }

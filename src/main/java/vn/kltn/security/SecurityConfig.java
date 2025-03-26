@@ -1,6 +1,7 @@
 package vn.kltn.security;
 
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -91,32 +92,15 @@ public class SecurityConfig implements WebMvcConfigurer {
                                     OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
                                     TokenResponse tokenResponse = userDetailsService.loginWithGoogle(oAuth2User);
                                     // Tạo cookie cho Access Token (ngắn hạn, ví dụ: 15 phút)
-                                    Cookie accessTokenCookie = new Cookie("accessToken", tokenResponse.getAccessToken());
-                                    accessTokenCookie.setHttpOnly(true);
-                                    accessTokenCookie.setPath("/");
-                                    accessTokenCookie.setMaxAge(900); // 900 giây = 15 phút
-
-                                    // Lấy redirect_uri từ cookie nếu có
-                                    String redirectUrl = null;
-                                    Cookie[] cookies = request.getCookies();
-                                    if (cookies != null) {
-                                        for (Cookie cookie : cookies) {
-                                            if ("redirectUrl".equals(cookie.getName())) {
-                                                redirectUrl = cookie.getValue();
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    System.out.println("---------------redirectUrl:" +redirectUrl);
+                                    Cookie accessTokenCookie = createCookie("accessToken", tokenResponse.getAccessToken(), 900); // 900 giây = 15 phút
                                     // Tạo cookie cho Refresh Token (dài hạn, ví dụ: 7 ngày)
-                                    Cookie refreshTokenCookie = new Cookie("refreshToken", tokenResponse.getRefreshToken());
-                                    refreshTokenCookie.setHttpOnly(true);
-                                    refreshTokenCookie.setPath("/");
-                                    refreshTokenCookie.setMaxAge(604800); // 604800 giây = 7 ngày
-
+                                    Cookie refreshTokenCookie = createCookie("refreshToken", tokenResponse.getRefreshToken(), 604800); // 604800 giây = 7 ngày
                                     // Thêm cookie vào response
                                     response.addCookie(accessTokenCookie);
                                     response.addCookie(refreshTokenCookie);
+
+                                    // Lấy redirectUrl từ cookie để chuyển tiếp nếu login thành công
+                                    String redirectUrl = getDirectUrl(request);
 
                                     // Chuyển hướng về URL gốc (hoặc trang chủ nếu không có URL gốc)
                                     response.sendRedirect(redirectUrl != null ? redirectUrl : "http://localhost:3000");
@@ -139,5 +123,27 @@ public class SecurityConfig implements WebMvcConfigurer {
         return provider;
     }
 
+    private String getDirectUrl(HttpServletRequest request) {
+        // Lấy redirect_uri từ cookie nếu có
+        String redirectUrl = null;
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("redirectUrl".equals(cookie.getName())) {
+                    redirectUrl = cookie.getValue();
+                    break;
+                }
+            }
+        }
+        return redirectUrl;
+    }
+
+    private Cookie createCookie(String name, String value, int maxAgeSeconds) {
+        Cookie cookie = new Cookie(name, value);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(maxAgeSeconds);
+        return cookie;
+    }
 
 }

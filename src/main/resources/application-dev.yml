@@ -12,12 +12,14 @@ app:
   delete:
     document-retention-days: 30 #số ngày giữ lại tài liệu đã xóa
   link:
-    open-document: ${BASE_URL:http://localhost:8080}/api/v1/documents/open?documentId=
-    open-folder: ${BASE_URL:http://localhost:8080}/api/v1/folders/open?folderId=
-    accept-owner-document: ${BASE_URL:http://localhost:8080}/api/v1/ownership-transfers/accept-owner?documentId=
-    accept-owner-folder: ${BASE_URL:http://localhost:8080}/api/v1/folders/accept-owner?folderId=
-    decline-owner-document: ${BASE_URL:http://localhost:8080}/api/v1/folders/decline-owner?folderId=
-    decline-owner-folder: ${BASE_URL:http://localhost:8080}/api/v1/folders/decline-owner?folderId=
+    oauth2:
+      google: ${BASE_URL:http://localhost:8080/oauth2/authorization/google}
+    open-document: ${BASE_URL:http://localhost:8080/api/v1/documents/open?documentId=}
+    open-folder: ${BASE_URL:http://localhost:8080/api/v1/folders/open?folderId=}
+    accept-owner-document: ${BASE_URL:http://localhost:8080/api/v1/ownership-transfers/accept-owner/document?documentId=}
+    accept-owner-folder: ${BASE_URL:http://localhost:8080/api/v1/ownership-transfers/accept-owner/folder?folderId=}
+    decline-owner-document: ${BASE_URL:http://localhost:8080/api/v1/ownership-transfers/decline-owner/document?folderId=}
+    decline-owner-folder: ${BASE_URL:http://localhost:8080/api/v1/ownership-transfers/decline-owner/folder?folderId=}
 spring:
   config:
     activate:

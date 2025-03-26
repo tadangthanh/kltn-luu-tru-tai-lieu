@@ -26,8 +26,7 @@ public class CustomAuthorizationRequestRepository implements AuthorizationReques
             // Lưu URL gốc vào session
             String redirectUrl = request.getParameter("redirectUrl");
             if (redirectUrl != null) {
-                System.out.println("a 0----------------------- redỉrectUrl: " + redirectUrl);
-                // Lưu redirect_uri vào cookie
+                // Lưu redirectUrl vào cookie
                 Cookie redirectCookie = new Cookie(REDIRECT_URI_SESSION_ATTRIBUTE, redirectUrl);
                 redirectCookie.setHttpOnly(true);
                 redirectCookie.setPath("/");

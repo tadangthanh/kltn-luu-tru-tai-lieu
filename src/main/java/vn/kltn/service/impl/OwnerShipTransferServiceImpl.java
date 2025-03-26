@@ -117,11 +117,21 @@ public class OwnerShipTransferServiceImpl implements IOwnerShipTransferService {
 
     @Override
     public OwnerShipTransferResponse acceptTransferByDocumentId(Long documentId) {
-        OwnerShipTransfer ownerShipTransfer = getTransferByDocumentIdAndStatus(documentId, TransferStatus.PENDING);
+        OwnerShipTransfer ownerShipTransfer = getTransferByDocumentIdAndCurrentUser(documentId);
+        validateTransferStatusIsPending(ownerShipTransfer);
         Document document = ownerShipTransfer.getDocument();
         documentCommonService.validateDocumentNotDeleted(document);
         transferOwnership(ownerShipTransfer);
         return mapToOwnerShipTransferResponse(ownerShipTransfer);
+    }
+
+    private void validateTransferStatusIsPending(OwnerShipTransfer transfer) {
+        if (transfer.getStatus() == TransferStatus.ACCEPTED) {
+            throw new ConflictResourceException("Yêu cầu đã được chấp nhận");
+        }
+        if (transfer.getStatus() == TransferStatus.DECLINED) {
+            throw new ConflictResourceException("Yêu cầu đã được từ chối");
+        }
     }
 
     private void transferOwnership(OwnerShipTransfer transfer) {
@@ -134,10 +144,12 @@ public class OwnerShipTransferServiceImpl implements IOwnerShipTransferService {
         transfer.setStatus(TransferStatus.ACCEPTED);
     }
 
-    private OwnerShipTransfer getTransferByDocumentIdAndStatus(Long documentId, TransferStatus status) {
+    private OwnerShipTransfer getTransferByDocumentIdAndCurrentUser(Long documentId) {
         User currentUser = userService.getUserByEmail(SecurityContextHolder.getContext().getAuthentication().getName());
-        return ownerShipTransferRepo.findByDocumentIdAndNewOwnerIdAndStatus(documentId, currentUser.getId(), status)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu chuyển quyền sở hữu với tài liệu này"));
+        return ownerShipTransferRepo.findByDocumentIdAndNewOwnerId(documentId, currentUser.getId()).orElseThrow(() -> {
+            log.warn("Không tìm thấy yêu cầu chuyển quyền sở hữu với tài liệu này: {}", documentId);
+            return new ResourceNotFoundException("Không tìm thấy yêu cầu chuyển quyền sở hữu với tài liệu này");
+        });
     }
 
     @Override

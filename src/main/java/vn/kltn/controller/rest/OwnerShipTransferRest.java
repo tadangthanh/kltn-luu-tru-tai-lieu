@@ -24,7 +24,10 @@ public class OwnerShipTransferRest {
 
     @GetMapping("/accept-owner/document")
     public ResponseData<OwnerShipTransferResponse> acceptTransferByDocumentId(@RequestParam Long documentId) {
-        System.out.println("document id = " + documentId);
         return new ResponseData<>(200, "Thành công", ownerShipTransferService.acceptTransferByDocumentId(documentId));
+    }
+    @GetMapping("/accept-owner/folder")
+    public ResponseData<OwnerShipTransferResponse> acceptTransferByFolderId(@RequestParam Long folderId) {
+        return new ResponseData<>(200, "Thành công", ownerShipTransferService.acceptTransferByFolderId(folderId));
     }
 }

@@ -44,12 +44,15 @@ public class GmailServiceImpl implements IMailService {
     private String declineOwnerDocumentLink;
     @Value("${app.link.decline-owner-folder}")
     private String declineOwnerFolderLink;
+    @Value("${app.link.oauth2.google}")
+    private String oauth2GoogleLink;
     @Value("${spring.mail.invitation-repo-url}")
     private String invitationRepoUrl;
     @Value("${spring.mail.reset-password-url}")
     private String resetPasswordUrl;
     @Value("${jwt.expirationDayInvitation}")
     private long expiryDayInvitation;
+
     private final IJwtService jwtService;
 
     @Override
@@ -151,8 +154,8 @@ public class GmailServiceImpl implements IMailService {
         Context context = new Context();
         context.setVariable("ownerName", owner.getFullName());
         context.setVariable("documentName", document.getName());
-        context.setVariable("acceptLink", "http://localhost:8080/oauth2/authorization/google?redirectUrl=http://localhost:8080/api/v1/ownership-transfers/accept-owner/document?documentId=" + document.getId());
-        context.setVariable("declineLink", declineOwnerDocumentLink + document.getId());
+        context.setVariable("acceptLink", oauth2GoogleLink + "?redirectUrl=" + acceptOwnerDocumentLink + document.getId());
+        context.setVariable("declineLink", oauth2GoogleLink + "?redirectUrl=" + declineOwnerDocumentLink + document.getId());
         sendEmail(owner.getFullName(), recipientEmail, subject, template, context);
     }
 
@@ -166,8 +169,8 @@ public class GmailServiceImpl implements IMailService {
         Context context = new Context();
         context.setVariable("ownerName", owner.getFullName());
         context.setVariable("folderName", folder.getName());
-        context.setVariable("acceptLink", acceptOwnerFolderLink + folder.getId());
-        context.setVariable("declineLink", declineOwnerFolderLink + folder.getId());
+        context.setVariable("acceptLink", oauth2GoogleLink + "?redirectUrl=" + acceptOwnerFolderLink + folder.getId());
+        context.setVariable("declineLink", oauth2GoogleLink + "?redirectUrl=" + declineOwnerFolderLink + folder.getId());
         sendEmail(owner.getFullName(), recipientEmail, subject, template, context);
     }
 
