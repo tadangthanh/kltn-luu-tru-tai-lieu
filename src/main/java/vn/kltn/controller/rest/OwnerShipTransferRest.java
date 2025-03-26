@@ -26,8 +26,19 @@ public class OwnerShipTransferRest {
     public ResponseData<OwnerShipTransferResponse> acceptTransferByDocumentId(@RequestParam Long documentId) {
         return new ResponseData<>(200, "Thành công", ownerShipTransferService.acceptTransferByDocumentId(documentId));
     }
+
+    @GetMapping("/decline-owner/document")
+    public ResponseData<OwnerShipTransferResponse> declineTransferByDocumentId(@RequestParam Long documentId) {
+        return new ResponseData<>(200, "Thành công", ownerShipTransferService.declineTransferByDocumentId(documentId));
+    }
+
     @GetMapping("/accept-owner/folder")
     public ResponseData<OwnerShipTransferResponse> acceptTransferByFolderId(@RequestParam Long folderId) {
         return new ResponseData<>(200, "Thành công", ownerShipTransferService.acceptTransferByFolderId(folderId));
+    }
+
+    @GetMapping("/decline-owner/folder")
+    public ResponseData<OwnerShipTransferResponse> declineTransferByFolderId(@RequestParam Long folderId) {
+        return new ResponseData<>(200, "Thành công", ownerShipTransferService.declineTransferByFolderId(folderId));
     }
 }

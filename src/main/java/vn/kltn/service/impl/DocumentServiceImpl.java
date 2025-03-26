@@ -47,11 +47,9 @@ public class DocumentServiceImpl implements IDocumentService {
     private final IAzureStorageService azureStorageService;
     private final IDocumentHasTagService documentHasTagService;
     private final IAuthenticationService authenticationService;
-    private final FolderCommonService folderCommonService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
-    private final DocumentCommonService documentCommonService;
-
+    private final ResourceCommonService resourceCommonService;
 
     @Override
     public DocumentResponse uploadDocumentWithoutFolder(DocumentRequest documentRequest, MultipartFile file) {
@@ -62,7 +60,7 @@ public class DocumentServiceImpl implements IDocumentService {
     @Override
     public DocumentResponse uploadDocumentWithFolder(Long folderId, DocumentRequest documentRequest, MultipartFile file) {
         Document document = processValidDocument(documentRequest, file);
-        Folder folder = folderCommonService.getFolderByIdOrThrow(folderId);
+        Folder folder = resourceCommonService.getFolderByIdOrThrow(folderId);
         document.setFolder(folder);
         return mapToDocumentResponse(document);
     }
@@ -172,30 +170,30 @@ public class DocumentServiceImpl implements IDocumentService {
     @Override
     public DocumentResponse moveDocumentToFolder(Long documentId, Long folderId) {
         Document document = getDocumentByIdOrThrow(documentId);
-        Folder folder = folderCommonService.getFolderByIdOrThrow(folderId);
+        Folder folder = resourceCommonService.getFolderByIdOrThrow(folderId);
         // xac nhan folder la cua user hien tai
-        folderCommonService.validateCurrentUserIsOwnerFolder(folder);
+        resourceCommonService.validateCurrentUserIsOwnerResource(folder);
         // xac nhan folder chua bi xoa
-        folderCommonService.validateFolderNotDeleted(folder);
+        resourceCommonService.validateResourceNotDeleted(folder);
         // xac nhan document chua bi xoa
-        validateDocumentNotDeleted(document);
+        resourceCommonService.validateResourceNotDeleted(document);
         document.setFolder(folder);
         return mapToDocumentResponse(document);
     }
 
     @Override
     public void validateDocumentDeleted(Document document) {
-        documentCommonService.validateDocumentDeleted(document);
+        resourceCommonService.validateResourceNotDeleted(document);
     }
 
     @Override
     public void validateCurrentUserIsOwnerDocument(Document document) {
-        documentCommonService.validateCurrentUserIsOwnerDocument(document);
+        resourceCommonService.validateCurrentUserIsOwnerResource(document);
     }
 
     @Override
     public void validateDocumentNotDeleted(Document document) {
-        documentCommonService.validateDocumentNotDeleted(document);
+        resourceCommonService.validateResourceNotDeleted(document);
     }
 
     @Override
@@ -212,12 +210,7 @@ public class DocumentServiceImpl implements IDocumentService {
     private DocumentDataResponse mapDocToDocDataResponse(Document document) {
         String blobName = document.getBlobName();
         try (InputStream inputStream = azureStorageService.downloadBlobInputStream(blobName)) {
-            return DocumentDataResponse.builder()
-                    .data(inputStream.readAllBytes())
-                    .name(document.getName() + document.getBlobName().substring(document.getBlobName().lastIndexOf('.')))
-                    .type(document.getType())
-                    .documentId(document.getId())
-                    .build();
+            return DocumentDataResponse.builder().data(inputStream.readAllBytes()).name(document.getName() + document.getBlobName().substring(document.getBlobName().lastIndexOf('.'))).type(document.getType()).documentId(document.getId()).build();
         } catch (IOException e) {
             log.error("Error reading file from Azure Storage: {}", e.getMessage());
             throw new InvalidDataException("Lỗi đọc dữ liệu từ file");
@@ -233,7 +226,7 @@ public class DocumentServiceImpl implements IDocumentService {
 
     @Override
     public Document getDocumentByIdOrThrow(Long documentId) {
-        return documentCommonService.getDocumentByIdOrThrow(documentId);
+        return resourceCommonService.getDocumentByIdOrThrow(documentId);
     }
 
     private Document copyDocument(Document document) {

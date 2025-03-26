@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "document")
-public class Document extends BaseEntity {
+public class Document extends BaseEntity implements Resource{
     private String name;
     private String type;
     private String blobName;

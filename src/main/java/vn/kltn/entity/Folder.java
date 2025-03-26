@@ -11,7 +11,7 @@ import java.util.Set;
 @Setter
 @Entity
 @Table(name = "folder")
-public class Folder extends BaseEntity {
+public class Folder extends BaseEntity implements Resource{
     private String name;
     private String description;
     private LocalDateTime deletedAt;

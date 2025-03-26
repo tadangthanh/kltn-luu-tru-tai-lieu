@@ -36,7 +36,7 @@ public class FolderServiceImpl implements IFolderService {
     private final FolderRepo folderRepo;
     private final IAuthenticationService authenticationService;
     private final IDocumentService documentService;
-    private final FolderCommonService folderCommonService;
+    private final ResourceCommonService resourceCommonService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
 
@@ -83,7 +83,7 @@ public class FolderServiceImpl implements IFolderService {
     @Override
     public void softDeleteFolderById(Long folderId) {
         Folder folder = getFolderByIdOrThrow(folderId);
-        folderCommonService.validateFolderNotDeleted(folder);
+        resourceCommonService.validateResourceNotDeleted(folder);
         // lay danh sach id cac folder va cac folder con can xoa
         List<Long> folderIdsDelete = folderRepo.findCurrentAndChildFolderIdsByFolderId(folderId);
         // update deletedAt cho cac folder va cac folder con
@@ -94,7 +94,7 @@ public class FolderServiceImpl implements IFolderService {
 
     @Override
     public Folder getFolderByIdOrThrow(Long folderId) {
-        return folderCommonService.getFolderByIdOrThrow(folderId);
+        return resourceCommonService.getFolderByIdOrThrow(folderId);
     }
 
     @Override
@@ -167,9 +167,9 @@ public class FolderServiceImpl implements IFolderService {
     public FolderResponse moveFolderToFolder(Long folderId, Long folderParentId) {
         Folder folderToMove = getFolderByIdOrThrow(folderId);
         // folder cha va folder can di chuyen chua bi xoa
-        folderCommonService.validateFolderNotDeleted(folderToMove);
+        resourceCommonService.validateResourceNotDeleted(folderToMove);
         Folder folderDestination = getFolderByIdOrThrow(folderParentId);
-        folderCommonService.validateFolderNotDeleted(folderDestination);
+        resourceCommonService.validateResourceNotDeleted(folderDestination);
         folderToMove.setParent(folderDestination);
         return mapToFolderResponse(folderRepo.save(folderToMove));
     }

@@ -24,12 +24,11 @@ public class FolderAccessServiceImpl implements IFolderAccessService {
     private final FolderAccessMapper folderAccessMapper;
     private final IUserService userService;
     private final IMailService mailService;
-    private final FolderCommonService folderCommonService;
-
+    private final ResourceCommonService resourceCommonService;
 
     @Override
     public FolderAccessResponse createFolderAccess(Long folderId, AccessRequest accessRequest) {
-        Folder folderToAccess = folderCommonService.getFolderByIdOrThrow(folderId);
+        Folder folderToAccess = resourceCommonService.getFolderByIdOrThrow(folderId);
         // folder chua bi xoa, nguoi chia se phai la chu so huu cua folder
         validateFolderConditionsAccess(folderToAccess);
         FolderAccess folderAccessSaved = saveFolderAccess(folderToAccess, accessRequest);
@@ -42,8 +41,8 @@ public class FolderAccessServiceImpl implements IFolderAccessService {
     }
 
     private void validateFolderConditionsAccess(Folder folder) {
-        folderCommonService.validateFolderNotDeleted(folder);
-        folderCommonService.validateCurrentUserIsOwnerFolder(folder);
+        resourceCommonService.validateResourceNotDeleted(folder);
+        resourceCommonService.validateCurrentUserIsOwnerResource(folder);
     }
 
     private FolderAccessResponse mapToFolderAccessResponse(FolderAccess folderAccess) {
@@ -61,7 +60,7 @@ public class FolderAccessServiceImpl implements IFolderAccessService {
 
     @Override
     public void deleteFolderAccess(Long folderId, Long recipientId) {
-        Folder folder = folderCommonService.getFolderByIdOrThrow(folderId);
+        Folder folder = resourceCommonService.getFolderByIdOrThrow(folderId);
         validateFolderConditionsAccess(folder);
         folderAccessRepo.deleteByFolderIdAndRecipientId(folderId, recipientId);
     }
