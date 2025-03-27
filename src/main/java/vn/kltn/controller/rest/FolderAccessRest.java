@@ -4,9 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vn.kltn.dto.request.AccessRequest;
+import vn.kltn.dto.response.AccessResourceResponse;
 import vn.kltn.dto.response.FolderAccessResponse;
 import vn.kltn.dto.response.ResponseData;
-import vn.kltn.service.IAccessService;
+import vn.kltn.service.IFolderAccessService;
 import vn.kltn.validation.Create;
 import vn.kltn.validation.Update;
 
@@ -15,21 +16,21 @@ import vn.kltn.validation.Update;
 @RequiredArgsConstructor
 @Validated
 public class FolderAccessRest {
-    private final IAccessService<FolderAccessResponse> folderAccessService;
+    private final IFolderAccessService folderAccessService;
 
     @PostMapping("/folder/{folderId}")
-    public ResponseData<FolderAccessResponse> copy(@PathVariable Long folderId, @Validated(Create.class) @RequestBody AccessRequest accessRequest) {
+    public ResponseData<AccessResourceResponse> copy(@PathVariable Long folderId, @Validated(Create.class) @RequestBody AccessRequest accessRequest) {
         return new ResponseData<>(201, "Thành công", folderAccessService.createAccess(folderId, accessRequest));
     }
 
     @DeleteMapping("/{accessId}")
-    public ResponseData<FolderAccessResponse> delete(@PathVariable Long accessId) {
+    public ResponseData<AccessResourceResponse> delete(@PathVariable Long accessId) {
         folderAccessService.deleteAccess(accessId);
         return new ResponseData<>(204, "Thành công");
     }
 
     @PutMapping("/{accessId}")
-    public ResponseData<FolderAccessResponse> update(@PathVariable Long accessId, @Validated(Update.class) @RequestBody AccessRequest accessRequest) {
+    public ResponseData<AccessResourceResponse> update(@PathVariable Long accessId, @Validated(Update.class) @RequestBody AccessRequest accessRequest) {
         return new ResponseData<>(200, "Thành công", folderAccessService.updateAccess(accessId, accessRequest.getPermission()));
     }
 }

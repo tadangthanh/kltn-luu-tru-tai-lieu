@@ -8,13 +8,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.AccessRequest;
-import vn.kltn.dto.response.DocumentAccessResponse;
+import vn.kltn.dto.response.AccessResourceResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.DocumentAccess;
 import vn.kltn.entity.User;
 import vn.kltn.exception.ResourceNotFoundException;
-import vn.kltn.map.DocumentAccessMapper;
+import vn.kltn.map.AccessResourceMapper;
 import vn.kltn.repository.DocumentAccessRepo;
+import vn.kltn.service.IDocumentAccessService;
 import vn.kltn.service.IDocumentService;
 import vn.kltn.service.IMailService;
 import vn.kltn.service.IUserService;
@@ -23,9 +24,9 @@ import vn.kltn.service.IUserService;
 @Transactional
 @Slf4j(topic = "DOCUMENT_ACCESS_SERVICE")
 @RequiredArgsConstructor
-public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAccess, DocumentAccessResponse> {
+public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAccess, AccessResourceResponse> implements IDocumentAccessService {
     private final DocumentAccessRepo documentAccessRepo;
-    private final DocumentAccessMapper documentAccessMapper;
+    private final AccessResourceMapper accessResourceMapper;
     private final IDocumentService documentService;
     private final IUserService userService;
     private final IMailService mailService;
@@ -50,8 +51,8 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
     }
 
     @Override
-    protected DocumentAccessResponse mapToR(DocumentAccess access) {
-        return documentAccessMapper.toDocumentAccessResponse(access);
+    protected AccessResourceResponse mapToR(DocumentAccess access) {
+        return accessResourceMapper.toAccessResourceResponse(access);
     }
 
     @Override

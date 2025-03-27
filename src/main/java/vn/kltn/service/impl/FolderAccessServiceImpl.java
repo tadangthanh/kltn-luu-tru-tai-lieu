@@ -8,13 +8,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.AccessRequest;
-import vn.kltn.dto.response.FolderAccessResponse;
+import vn.kltn.dto.response.AccessResourceResponse;
 import vn.kltn.entity.Folder;
 import vn.kltn.entity.FolderAccess;
 import vn.kltn.entity.User;
 import vn.kltn.exception.ResourceNotFoundException;
-import vn.kltn.map.FolderAccessMapper;
+import vn.kltn.map.AccessResourceMapper;
 import vn.kltn.repository.FolderAccessRepo;
+import vn.kltn.service.IFolderAccessService;
 import vn.kltn.service.IMailService;
 import vn.kltn.service.IUserService;
 
@@ -22,9 +23,9 @@ import vn.kltn.service.IUserService;
 @Transactional
 @RequiredArgsConstructor
 @Slf4j(topic = "FOLDER_ACCESS_SERVICE")
-public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess, FolderAccessResponse> {
+public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess, AccessResourceResponse> implements IFolderAccessService {
     private final FolderAccessRepo folderAccessRepo;
-    private final FolderAccessMapper folderAccessMapper;
+    private final AccessResourceMapper accessResourceMapper;
     private final IUserService userService;
     private final IMailService mailService;
     private final ResourceCommonService resourceCommonService;
@@ -46,8 +47,8 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
     }
 
     @Override
-    protected FolderAccessResponse mapToR(FolderAccess access) {
-        return folderAccessMapper.toFolderAccessResponse(access);
+    protected AccessResourceResponse mapToR(FolderAccess access) {
+        return accessResourceMapper.toAccessResourceResponse(access);
     }
 
     @Override
