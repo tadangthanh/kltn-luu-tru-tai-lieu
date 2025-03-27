@@ -57,10 +57,6 @@ public abstract class AbstractAccessService<T extends AccessResource, R extends 
                 }
             }
             Specification<T> spec = builder.build();
-            // nó trả trả về 1 spec mới
-//            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
-//            String email = SecurityContextHolder.getContext().getAuthentication().getName();
-//            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdBy").get(), email));
             Page<T> pageAccessByResource = getPageAccessByResourceBySpec(spec, pageable);
             return PaginationUtils.convertToPageResponse(pageAccessByResource, pageable, this::mapToR);
         }
