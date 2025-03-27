@@ -3,6 +3,9 @@ package vn.kltn.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.AccessRequest;
 import vn.kltn.dto.response.DocumentAccessResponse;
@@ -34,6 +37,16 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
         resourceCommonService.validateResourceNotDeleted(document);
         // là chủ sở hữu
         resourceCommonService.validateCurrentUserIsOwnerResource(document);
+    }
+
+    @Override
+    protected Page<DocumentAccess> getPageAccessByResource(Pageable pageable) {
+        return documentAccessRepo.findAll(pageable);
+    }
+
+    @Override
+    protected Page<DocumentAccess> getPageAccessByResourceBySpec(Specification<DocumentAccess> spec, Pageable pageable) {
+        return documentAccessRepo.findAll(spec, pageable);
     }
 
     @Override

@@ -1,14 +1,18 @@
 package vn.kltn.controller.rest;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vn.kltn.dto.request.AccessRequest;
 import vn.kltn.dto.response.DocumentAccessResponse;
+import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
 import vn.kltn.service.IAccessService;
 import vn.kltn.validation.Create;
 import vn.kltn.validation.Update;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,5 +35,10 @@ public class DocumentAccessRest {
     @PutMapping("/{accessId}")
     public ResponseData<DocumentAccessResponse> update(@PathVariable Long accessId, @Validated(Update.class) @RequestBody AccessRequest accessRequest) {
         return new ResponseData<>(200, "Thành công", documentAccessService.updateAccess(accessId, accessRequest.getPermission()));
+    }
+
+    @GetMapping
+    public ResponseData<PageResponse<List<DocumentAccessResponse>>> getAccessByResource(Pageable pageable, @RequestParam(required = false) String[] resources) {
+        return new ResponseData<>(200, "Thành công", documentAccessService.getAccessByResource(pageable, resources));
     }
 }

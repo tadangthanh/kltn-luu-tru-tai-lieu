@@ -3,11 +3,15 @@ package vn.kltn.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.AccessRequest;
-import vn.kltn.dto.response.DocumentAccessResponse;
 import vn.kltn.dto.response.FolderAccessResponse;
-import vn.kltn.entity.*;
+import vn.kltn.entity.Folder;
+import vn.kltn.entity.FolderAccess;
+import vn.kltn.entity.User;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.FolderAccessMapper;
 import vn.kltn.repository.FolderAccessRepo;
@@ -29,6 +33,16 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
     private void validateFolderConditionsAccess(Folder folder) {
         resourceCommonService.validateResourceNotDeleted(folder);
         resourceCommonService.validateCurrentUserIsOwnerResource(folder);
+    }
+
+    @Override
+    protected Page<FolderAccess> getPageAccessByResource(Pageable pageable) {
+        return folderAccessRepo.findAll(pageable);
+    }
+
+    @Override
+    protected Page<FolderAccess> getPageAccessByResourceBySpec(Specification<FolderAccess> spec, Pageable pageable) {
+        return folderAccessRepo.findAll(spec, pageable);
     }
 
     @Override
