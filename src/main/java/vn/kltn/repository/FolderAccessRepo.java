@@ -11,6 +11,6 @@ import vn.kltn.entity.FolderAccess;
 public interface FolderAccessRepo extends JpaRepository<FolderAccess, Long> {
     @Modifying
     @Transactional
-    @Query("delete from FolderAccess fa where fa.folder.id = :folderId and fa.recipient.id = :recipientId")
+    @Query("delete from FolderAccess fa where fa.resource.id = :folderId and fa.recipient.id = :recipientId")
     void deleteByFolderIdAndRecipientId(Long folderId, Long recipientId);
 }

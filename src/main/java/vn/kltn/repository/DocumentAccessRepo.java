@@ -12,6 +12,6 @@ public interface DocumentAccessRepo extends JpaRepository<DocumentAccess, Long> 
 
     @Modifying
     @Transactional
-    @Query("delete from DocumentAccess da where da.document.id = :documentId and da.recipient.id = :recipientId")
+    @Query("delete from DocumentAccess da where da.resource.id = :documentId and da.recipient.id = :recipientId")
     void deleteByDocumentIdAndRecipientId(Long documentId, Long recipientId);
 }

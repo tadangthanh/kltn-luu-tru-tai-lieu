@@ -114,7 +114,7 @@ public class GmailServiceImpl implements IMailService {
     @Async
     public void sendEmailInviteDocumentAccess(String recipientEmail, DocumentAccess documentAccess, String message) {
         log.info("sending email invite to: {}", recipientEmail);
-        Document document = documentAccess.getDocument();
+        Document document = documentAccess.getResource();
         User owner = document.getOwner();
         String subject = String.format("%s đã chia sẻ một tài liệu với bạn", owner.getFullName());
         String template = "email-invite-document.html";
@@ -131,7 +131,7 @@ public class GmailServiceImpl implements IMailService {
     @Async
     public void sendEmailInviteFolderAccess(String recipientEmail, FolderAccess folderAccess, String message) {
         log.info("sending email invite to: {}", recipientEmail);
-        Folder folder = folderAccess.getFolder();
+        Folder folder = folderAccess.getResource();
         User owner = folder.getOwner();
         String subject = String.format("%s đã chia sẻ một tài liệu với bạn", owner.getFullName());
         String template = "email-invite-folder.html";

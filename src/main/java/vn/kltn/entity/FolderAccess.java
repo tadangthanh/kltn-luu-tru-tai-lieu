@@ -9,10 +9,10 @@ import vn.kltn.common.Permission;
 @Setter
 @Entity
 @Table(name = "folder_access")
-public class FolderAccess extends BaseEntity {
+public class FolderAccess extends BaseEntity implements AccessResource  {
     @ManyToOne
-    @JoinColumn(name = "folder_id")
-    private Folder folder;
+    @JoinColumn(name = "resource_id")
+    private Folder resource;
     @ManyToOne
     @JoinColumn(name = "recipient_id")
     private User recipient;

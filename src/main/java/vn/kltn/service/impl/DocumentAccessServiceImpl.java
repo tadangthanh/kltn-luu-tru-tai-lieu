@@ -9,9 +9,9 @@ import vn.kltn.dto.response.DocumentAccessResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.DocumentAccess;
 import vn.kltn.entity.User;
+import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.DocumentAccessMapper;
 import vn.kltn.repository.DocumentAccessRepo;
-import vn.kltn.service.IDocumentAccessService;
 import vn.kltn.service.IDocumentService;
 import vn.kltn.service.IMailService;
 import vn.kltn.service.IUserService;
@@ -20,51 +20,64 @@ import vn.kltn.service.IUserService;
 @Transactional
 @Slf4j(topic = "DOCUMENT_ACCESS_SERVICE")
 @RequiredArgsConstructor
-public class DocumentAccessServiceImpl implements IDocumentAccessService {
+public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAccess, DocumentAccessResponse> {
     private final DocumentAccessRepo documentAccessRepo;
     private final DocumentAccessMapper documentAccessMapper;
     private final IDocumentService documentService;
     private final IUserService userService;
     private final IMailService mailService;
+    private final ResourceCommonService resourceCommonService;
 
-    @Override
-    public DocumentAccessResponse createDocumentAccess(Long documentId, AccessRequest accessRequest) {
-        Document document = documentService.getDocumentByIdOrThrow(documentId);
-        validateConditionsAccess(document);
-        DocumentAccess documentAccess = saveDocumentToAccess(document, accessRequest);
-        sendEmailInviteDocumentAccess(documentAccess, accessRequest);
-        return mapToDocumentAccessResponse(documentAccess);
-    }
-
-    private void sendEmailInviteDocumentAccess(DocumentAccess documentAccess, AccessRequest accessRequest) {
-        mailService.sendEmailInviteDocumentAccess(accessRequest.getRecipientEmail(), documentAccess, accessRequest.getMessage());
-    }
 
     private void validateConditionsAccess(Document document) {
         // chưa bị xóa
-        documentService.validateDocumentNotDeleted(document);
+        resourceCommonService.validateResourceNotDeleted(document);
         // là chủ sở hữu
-        documentService.validateCurrentUserIsOwnerDocument(document);
-    }
-
-    private DocumentAccessResponse mapToDocumentAccessResponse(DocumentAccess documentAccess) {
-        return documentAccessMapper.toDocumentAccessResponse(documentAccess);
-    }
-
-    private DocumentAccess saveDocumentToAccess(Document document, AccessRequest accessRequest) {
-        DocumentAccess documentAccess = new DocumentAccess();
-        documentAccess.setDocument(document);
-        documentAccess.setPermission(accessRequest.getPermission());
-        User recipient = userService.getUserByEmail(accessRequest.getRecipientEmail());
-        documentAccess.setRecipient(recipient);
-        return documentAccessRepo.save(documentAccess);
-
+        resourceCommonService.validateCurrentUserIsOwnerResource(document);
     }
 
     @Override
-    public void deleteDocumentAccess(Long documentId, Long recipientId) {
-        Document document = documentService.getDocumentByIdOrThrow(documentId);
+    protected DocumentAccessResponse mapToR(DocumentAccess access) {
+        return documentAccessMapper.toDocumentAccessResponse(access);
+    }
+
+    @Override
+    protected void sendEmailInviteAccess(DocumentAccess access, AccessRequest accessRequest) {
+        mailService.sendEmailInviteDocumentAccess(accessRequest.getRecipientEmail(), access, accessRequest.getMessage());
+    }
+
+    @Override
+    protected DocumentAccess createEmptyAccess() {
+        return new DocumentAccess();
+    }
+
+    @Override
+    protected void setResource(DocumentAccess access, Long resourceId) {
+        Document document = documentService.getDocumentByIdOrThrow(resourceId);
         validateConditionsAccess(document);
-        documentAccessRepo.deleteByDocumentIdAndRecipientId(documentId, recipientId);
+        access.setResource(document);
+    }
+
+    @Override
+    protected DocumentAccess findAccessById(Long accessId) {
+        return documentAccessRepo.findById(accessId).orElseThrow(() -> {
+            log.warn("Document access not found by id: {}", accessId);
+            return new ResourceNotFoundException("Document access not found");
+        });
+    }
+
+    @Override
+    protected DocumentAccess saveAccess(DocumentAccess access) {
+        return documentAccessRepo.save(access);
+    }
+
+    @Override
+    protected void deleteAccessEntity(DocumentAccess access) {
+        documentAccessRepo.delete(access);
+    }
+
+    @Override
+    protected User getUserByEmail(String email) {
+        return userService.getUserByEmail(email);
     }
 }

@@ -51,7 +51,7 @@ public class FolderAccessServiceImpl implements IFolderAccessService {
 
     private FolderAccess saveFolderAccess(Folder folderToAccess, AccessRequest accessRequest) {
         FolderAccess folderAccess = new FolderAccess();
-        folderAccess.setFolder(folderToAccess);
+        folderAccess.setResource(folderToAccess);
         folderAccess.setPermission(accessRequest.getPermission());
         User recipient = userService.getUserByEmail(accessRequest.getRecipientEmail());
         folderAccess.setRecipient(recipient);

@@ -11,7 +11,7 @@ import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 public interface DocumentAccessMapper {
     @Mapping(target = "recipientName", source = "recipient.fullName")
     @Mapping(target = "recipientEmail", source = "recipient.email")
-    @Mapping(target = "owner", source = "document.owner")
+    @Mapping(target = "owner", source = "resource.owner")
     DocumentAccessResponse toDocumentAccessResponse(DocumentAccess documentAccess);
 
 }
