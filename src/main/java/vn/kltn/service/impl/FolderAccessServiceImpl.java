@@ -5,13 +5,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.AccessRequest;
+import vn.kltn.dto.response.DocumentAccessResponse;
 import vn.kltn.dto.response.FolderAccessResponse;
-import vn.kltn.entity.Folder;
-import vn.kltn.entity.FolderAccess;
-import vn.kltn.entity.User;
+import vn.kltn.entity.*;
+import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.FolderAccessMapper;
 import vn.kltn.repository.FolderAccessRepo;
-import vn.kltn.service.IFolderAccessService;
 import vn.kltn.service.IMailService;
 import vn.kltn.service.IUserService;
 
@@ -19,49 +18,61 @@ import vn.kltn.service.IUserService;
 @Transactional
 @RequiredArgsConstructor
 @Slf4j(topic = "FOLDER_ACCESS_SERVICE")
-public class FolderAccessServiceImpl implements IFolderAccessService {
+public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess, FolderAccessResponse> {
     private final FolderAccessRepo folderAccessRepo;
     private final FolderAccessMapper folderAccessMapper;
     private final IUserService userService;
     private final IMailService mailService;
     private final ResourceCommonService resourceCommonService;
 
-    @Override
-    public FolderAccessResponse createFolderAccess(Long folderId, AccessRequest accessRequest) {
-        Folder folderToAccess = resourceCommonService.getFolderByIdOrThrow(folderId);
-        // folder chua bi xoa, nguoi chia se phai la chu so huu cua folder
-        validateFolderConditionsAccess(folderToAccess);
-        FolderAccess folderAccessSaved = saveFolderAccess(folderToAccess, accessRequest);
-        sendEmailInviteFolderAccess(folderAccessSaved, accessRequest);
-        return mapToFolderAccessResponse(folderAccessSaved);
-    }
-
-    private void sendEmailInviteFolderAccess(FolderAccess folderAccess, AccessRequest accessRequest) {
-        mailService.sendEmailInviteFolderAccess(accessRequest.getRecipientEmail(), folderAccess, accessRequest.getMessage());
-    }
 
     private void validateFolderConditionsAccess(Folder folder) {
         resourceCommonService.validateResourceNotDeleted(folder);
         resourceCommonService.validateCurrentUserIsOwnerResource(folder);
     }
 
-    private FolderAccessResponse mapToFolderAccessResponse(FolderAccess folderAccess) {
-        return folderAccessMapper.toFolderAccessResponse(folderAccess);
-    }
-
-    private FolderAccess saveFolderAccess(Folder folderToAccess, AccessRequest accessRequest) {
-        FolderAccess folderAccess = new FolderAccess();
-        folderAccess.setResource(folderToAccess);
-        folderAccess.setPermission(accessRequest.getPermission());
-        User recipient = userService.getUserByEmail(accessRequest.getRecipientEmail());
-        folderAccess.setRecipient(recipient);
-        return folderAccessRepo.save(folderAccess);
+    @Override
+    protected FolderAccessResponse mapToR(FolderAccess access) {
+        return folderAccessMapper.toFolderAccessResponse(access);
     }
 
     @Override
-    public void deleteFolderAccess(Long folderId, Long recipientId) {
-        Folder folder = resourceCommonService.getFolderByIdOrThrow(folderId);
+    protected void sendEmailInviteAccess(FolderAccess access, AccessRequest accessRequest) {
+        mailService.sendEmailInviteFolderAccess(accessRequest.getRecipientEmail(), access, accessRequest.getMessage());
+    }
+
+    @Override
+    protected FolderAccess createEmptyAccess() {
+        return new FolderAccess();
+    }
+
+    @Override
+    protected void setResource(FolderAccess access, Long resourceId) {
+        Folder folder = resourceCommonService.getFolderByIdOrThrow(resourceId);
         validateFolderConditionsAccess(folder);
-        folderAccessRepo.deleteByFolderIdAndRecipientId(folderId, recipientId);
+        access.setResource(folder);
+    }
+
+    @Override
+    protected FolderAccess findAccessById(Long accessId) {
+        return folderAccessRepo.findById(accessId).orElseThrow(() -> {
+            log.warn("Folder access not found by id: {}", accessId);
+            return new ResourceNotFoundException("Folder access not found");
+        });
+    }
+
+    @Override
+    protected FolderAccess saveAccess(FolderAccess access) {
+        return folderAccessRepo.save(access);
+    }
+
+    @Override
+    protected void deleteAccessEntity(FolderAccess access) {
+        folderAccessRepo.delete(access);
+    }
+
+    @Override
+    protected User getUserByEmail(String email) {
+        return userService.getUserByEmail(email);
     }
 }
