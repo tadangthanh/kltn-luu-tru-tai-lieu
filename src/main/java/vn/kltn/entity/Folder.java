@@ -11,9 +11,11 @@ import java.util.Set;
 @Setter
 @Entity
 @Table(name = "folder")
-public class Folder extends BaseEntity implements Resource{
+public class Folder extends BaseEntity implements Resource {
     private String name;
     private String description;
+    @Column(name = "size", nullable = false)
+    private Long size = 0L;
     private LocalDateTime deletedAt;
     @Column(name = "permanent_delete_at")
     private LocalDateTime permanentDeleteAt; // thoi gian xoa vinh vien
@@ -24,10 +26,17 @@ public class Folder extends BaseEntity implements Resource{
     @OneToMany(mappedBy = "parent", cascade = CascadeType.REMOVE)
     private Set<Folder> children; // thư mục con
 
-    @OneToMany(mappedBy = "folder", cascade = CascadeType.REMOVE)
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.REMOVE)
     private Set<Document> documents; // danh sách tài liệu
 
     @ManyToOne
     @JoinColumn(name = "owner_id")
     private User owner; // chủ sở hữu
+
+    @Override
+    public void setParent(Resource parent) {
+        if (parent instanceof Folder) {
+            this.parent = (Folder) parent;
+        }
+    }
 }

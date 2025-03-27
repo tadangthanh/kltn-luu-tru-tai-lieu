@@ -74,7 +74,7 @@ public class FolderServiceImpl implements IFolderService {
     private FolderResponse mapToFolderResponse(Folder folder) {
         FolderResponse folderResponse = folderMapper.toFolderResponse(folder);
         if (folder.getParent() != null) {
-            folderResponse.setFolderParentId(folder.getParent().getId());
+            folderResponse.setParentId(folder.getParent().getId());
         }
         return folderResponse;
     }

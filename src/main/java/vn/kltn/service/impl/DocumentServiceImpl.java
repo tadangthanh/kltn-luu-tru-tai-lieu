@@ -19,6 +19,7 @@ import vn.kltn.entity.Folder;
 import vn.kltn.entity.Tag;
 import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
+import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.DocumentMapper;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
@@ -41,7 +42,7 @@ import java.util.regex.Pattern;
 @Transactional
 @RequiredArgsConstructor
 @Slf4j(topic = "DOCUMENT_SERVICE")
-public class DocumentServiceImpl implements IDocumentService {
+public class DocumentServiceImpl extends AbstractResourceService<Document, DocumentResponse> implements IDocumentService {
     private final DocumentRepo documentRepo;
     private final DocumentMapper documentMapper;
     private final IAzureStorageService azureStorageService;
@@ -52,7 +53,7 @@ public class DocumentServiceImpl implements IDocumentService {
     private final ResourceCommonService resourceCommonService;
 
     @Override
-    public DocumentResponse uploadDocumentWithoutFolder(DocumentRequest documentRequest, MultipartFile file) {
+    public DocumentResponse uploadDocumentWithoutParent(DocumentRequest documentRequest, MultipartFile file) {
         Document document = processValidDocument(documentRequest, file);
         return mapToDocumentResponse(document);
     }
@@ -61,9 +62,10 @@ public class DocumentServiceImpl implements IDocumentService {
     public DocumentResponse uploadDocumentWithFolder(Long folderId, DocumentRequest documentRequest, MultipartFile file) {
         Document document = processValidDocument(documentRequest, file);
         Folder folder = resourceCommonService.getFolderByIdOrThrow(folderId);
-        document.setFolder(folder);
+        document.setParent(folder);
         return mapToDocumentResponse(document);
     }
+
 
     private Document processValidDocument(DocumentRequest documentRequest, MultipartFile file) {
         Document document = mapToDocument(documentRequest, file);
@@ -110,10 +112,51 @@ public class DocumentServiceImpl implements IDocumentService {
     }
 
     @Override
-    public DocumentResponse getDocumentById(Long documentId) {
-        Document document = getDocumentByIdOrThrow(documentId);
-        return mapToDocumentResponse(document);
+    protected void deleteResource(Document resource) {
+        azureStorageService.deleteBlob(resource.getBlobName());
+        documentHasTagService.deleteAllByDocumentId(resource.getId());
+        documentRepo.delete(resource);
     }
+
+    @Override
+    protected Page<Document> getPageResource(Pageable pageable) {
+        return documentRepo.findAll(pageable);
+    }
+
+    @Override
+    protected Page<Document> getPageResourceBySpec(Specification<Document> spec, Pageable pageable) {
+        return documentRepo.findAll(spec, pageable);
+    }
+
+    @Override
+    protected DocumentResponse mapToR(Document resource) {
+        return documentMapper.toDocumentResponse(resource);
+    }
+
+    @Override
+    protected User getCurrentUser() {
+        return authenticationService.getCurrentUser();
+    }
+
+    @Override
+    public Document getResourceByIdOrThrow(Long resourceId) {
+        return documentRepo.findById(resourceId).orElseThrow(() -> {
+            log.warn("Resource not found with id {}", resourceId);
+            return new ResourceNotFoundException("Resource not found with id " + resourceId);
+        });
+    }
+
+    @Override
+    public DocumentResponse moveResourceToFolder(Long resourceId, Long folderId) {
+        Document resource = getResourceByIdOrThrow(resourceId);
+        Folder resourceDestination = resourceCommonService.getFolderByIdOrThrow(folderId);
+        validateCurrentUserIsOwnerResource(resource);
+        validateResourceNotDeleted(resource);
+        validateResourceNotDeleted(resourceDestination);
+        resource.setParent(resourceDestination);
+        return mapToR(resource);
+    }
+
 
     private Document mapToDocument(DocumentRequest documentRequest, MultipartFile file) {
         Document document = documentMapper.toDocument(documentRequest);
@@ -128,14 +171,6 @@ public class DocumentServiceImpl implements IDocumentService {
     }
 
     @Override
-    public void softDeleteDocumentById(Long documentId) {
-        Document document = getDocumentByIdOrThrow(documentId);
-        validateDocumentNotDeleted(document);
-        document.setDeletedAt(LocalDateTime.now());
-        documentRepo.save(document);
-    }
-
-    @Override
     public void softDeleteDocumentsByFolderIds(List<Long> folderIds) {
         documentRepo.setDeleteDocument(folderIds, LocalDateTime.now(), LocalDateTime.now().plusDays(documentRetentionDays));
     }
@@ -144,56 +179,10 @@ public class DocumentServiceImpl implements IDocumentService {
     public void hardDeleteDocumentByFolderIds(List<Long> folderIds) {
         // xóa blob trên azure trước
         // sau đó xóa document
-        List<String> documentBlobsToDelete = documentRepo.getBlobNameDocumentsByFolderIds(folderIds);
+        List<String> documentBlobsToDelete = documentRepo.getBlobNameDocumentsByParentIds(folderIds);
         azureStorageService.deleteBLobs(documentBlobsToDelete);
         documentHasTagService.deleteAllByFolderIds(folderIds);
-        documentRepo.deleteDocumentByListFolderId(folderIds);
-    }
-
-    @Override
-    public void hardDeleteDocumentById(Long documentId) {
-        Document document = getDocumentByIdOrThrow(documentId);
-        validateDocumentDeleted(document);
-        azureStorageService.deleteBlob(document.getBlobName());
-        documentHasTagService.deleteAllByDocumentId(documentId);
-        documentRepo.delete(document);
-    }
-
-    @Override
-    public DocumentResponse restoreDocumentById(Long documentId) {
-        Document document = getDocumentByIdOrThrow(documentId);
-        validateDocumentDeleted(document);
-        document.setDeletedAt(null);
-        return mapToDocumentResponse(document);
-    }
-
-    @Override
-    public DocumentResponse moveDocumentToFolder(Long documentId, Long folderId) {
-        Document document = getDocumentByIdOrThrow(documentId);
-        Folder folder = resourceCommonService.getFolderByIdOrThrow(folderId);
-        // xac nhan folder la cua user hien tai
-        resourceCommonService.validateCurrentUserIsOwnerResource(folder);
-        // xac nhan folder chua bi xoa
-        resourceCommonService.validateResourceNotDeleted(folder);
-        // xac nhan document chua bi xoa
-        resourceCommonService.validateResourceNotDeleted(document);
-        document.setFolder(folder);
-        return mapToDocumentResponse(document);
-    }
-
-    @Override
-    public void validateDocumentDeleted(Document document) {
-        resourceCommonService.validateResourceNotDeleted(document);
-    }
-
-    @Override
-    public void validateCurrentUserIsOwnerDocument(Document document) {
-        resourceCommonService.validateCurrentUserIsOwnerResource(document);
-    }
-
-    @Override
-    public void validateDocumentNotDeleted(Document document) {
-        resourceCommonService.validateResourceNotDeleted(document);
+        documentRepo.deleteDocumentByListParentId(folderIds);
     }
 
     @Override
@@ -203,7 +192,7 @@ public class DocumentServiceImpl implements IDocumentService {
 
     @Override
     public DocumentDataResponse openDocumentById(Long documentId) {
-        Document document = getDocumentByIdOrThrow(documentId);
+        Document document = getResourceByIdOrThrow(documentId);
         return mapDocToDocDataResponse(document);
     }
 
@@ -219,15 +208,11 @@ public class DocumentServiceImpl implements IDocumentService {
 
     @Override
     public DocumentResponse copyDocumentById(Long documentId) {
-        Document document = getDocumentByIdOrThrow(documentId);
+        Document document = getResourceByIdOrThrow(documentId);
         Document copied = copyDocument(document);
         return mapToDocumentResponse(copied);
     }
 
-    @Override
-    public Document getDocumentByIdOrThrow(Long documentId) {
-        return resourceCommonService.getDocumentByIdOrThrow(documentId);
-    }
 
     private Document copyDocument(Document document) {
         Document copied = documentMapper.copyDocument(document);

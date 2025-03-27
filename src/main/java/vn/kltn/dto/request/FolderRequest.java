@@ -7,9 +7,8 @@ import vn.kltn.validation.Create;
 
 @Getter
 @Setter
-public class FolderRequest {
+public class FolderRequest extends ResourceRequest {
     @NotBlank(message = "Tên thư mục không được để trống", groups = {Create.class})
     private String name;
-    private String description;
     private Long folderParentId;
 }

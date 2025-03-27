@@ -27,7 +27,7 @@ public class DocumentRest {
 
     @PostMapping
     public ResponseData<DocumentResponse> upload(@RequestPart("file") MultipartFile file, @Valid @RequestPart("data") DocumentRequest documentRequest) {
-        return new ResponseData<>(201, "Thành công", documentService.uploadDocumentWithoutFolder(documentRequest, file));
+        return new ResponseData<>(201, "Thành công", documentService.uploadDocumentWithoutParent(documentRequest, file));
     }
 
     @PostMapping("/folder/{folderId}")
@@ -37,13 +37,13 @@ public class DocumentRest {
 
     @DeleteMapping("/{documentId}/soft")
     public ResponseData<Void> softDelete(@PathVariable Long documentId) {
-        documentService.softDeleteDocumentById(documentId);
+        documentService.softDeleteResourceById(documentId);
         return new ResponseData<>(204, "Xóa thành công", null);
     }
 
     @DeleteMapping("/{documentId}/hard")
     public ResponseData<Void> hardDelete(@PathVariable Long documentId) {
-        documentService.hardDeleteDocumentById(documentId);
+        documentService.hardDeleteResourceById(documentId);
         return new ResponseData<>(204, "Xóa thành công", null);
     }
 
@@ -54,7 +54,7 @@ public class DocumentRest {
 
     @PostMapping("/{documentId}/restore")
     public ResponseData<DocumentResponse> restore(@PathVariable Long documentId) {
-        return new ResponseData<>(200, "Thành công", documentService.restoreDocumentById(documentId));
+        return new ResponseData<>(200, "Thành công", documentService.restoreResourceById(documentId));
     }
 
     @PutMapping("/{documentId}")
@@ -64,7 +64,7 @@ public class DocumentRest {
 
     @PutMapping("/{documentId}/move/{folderId}")
     public ResponseData<DocumentResponse> moveDocumentToFolder(@PathVariable Long documentId, @PathVariable Long folderId) {
-        return new ResponseData<>(200, "Thành công", documentService.moveDocumentToFolder(documentId, folderId));
+        return new ResponseData<>(200, "Thành công", documentService.moveResourceToFolder(documentId, folderId));
     }
 
     @GetMapping
@@ -74,14 +74,14 @@ public class DocumentRest {
 
     @GetMapping("/{documentId}")
     public ResponseData<DocumentResponse> getDocumentById(@PathVariable Long documentId) {
-        return new ResponseData<>(200, "Thành công", documentService.getDocumentById(documentId));
+        return new ResponseData<>(200, "Thành công", documentService.getResourceById(documentId));
     }
 
     @GetMapping("/open")
     public ResponseEntity<InputStreamResource> openDoc(@RequestParam(value = "documentId") Long documentId) {
         DocumentDataResponse documentDataResponse = documentService.openDocumentById(documentId);
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
-                "inline; filename=\"" + documentDataResponse.getName() + "\"")
+                        "inline; filename=\"" + documentDataResponse.getName() + "\"")
                 .contentType(MediaType.parseMediaType(documentDataResponse.getType()))
                 .body(new InputStreamResource(new ByteArrayInputStream(documentDataResponse.getData())));
     }

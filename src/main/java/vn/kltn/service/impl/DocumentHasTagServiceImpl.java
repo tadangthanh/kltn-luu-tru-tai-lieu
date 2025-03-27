@@ -49,7 +49,7 @@ public class DocumentHasTagServiceImpl implements IDocumentHasTagService {
 
     @Override
     public void deleteAllByFolderIds(List<Long> folderIds) {
-        documentHasTagRepo.deleteTagDocumentByListFolderId(folderIds);
+        documentHasTagRepo.deleteTagDocumentByListParentId(folderIds);
     }
 
     private void saveDocumentTag(Document document, Tag tag) {

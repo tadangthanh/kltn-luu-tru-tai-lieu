@@ -67,7 +67,7 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
 
     @Override
     protected void setResource(DocumentAccess access, Long resourceId) {
-        Document document = documentService.getDocumentByIdOrThrow(resourceId);
+        Document document = documentService.getResourceByIdOrThrow(resourceId);
         validateConditionsAccess(document);
         access.setResource(document);
     }

@@ -5,6 +5,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class DocumentRequest extends ResourceRequest {
-    private TagRequest[] tags;
+public abstract class ResourceRequest {
+    private String description;
 }

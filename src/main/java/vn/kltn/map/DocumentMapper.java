@@ -14,7 +14,7 @@ public interface DocumentMapper {
 
     @Mapping(target = "ownerName",source = "owner.fullName")
     @Mapping(target = "ownerEmail",source = "owner.email")
-    @Mapping(target = "folderId",source = "folder.id")
+    @Mapping(target = "parentId",source = "parent.id")
     DocumentResponse toDocumentResponse(Document document);
 
     @Mapping(target = "id", ignore = true)

@@ -5,16 +5,11 @@ import lombok.Getter;
 import lombok.Setter;
 import vn.kltn.dto.BaseDto;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
-public class FolderResponse extends BaseDto {
-    private String name;
+public class FolderResponse extends ResourceResponse {
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private String description;
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private String ownerEmail;
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private String ownerName;
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private Long folderParentId;
+    private Long parentId;
 }

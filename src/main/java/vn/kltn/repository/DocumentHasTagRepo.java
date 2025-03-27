@@ -24,7 +24,7 @@ public interface DocumentHasTagRepo extends JpaRepository<DocumentHasTag, Long> 
 
     @Modifying
     @Transactional
-    @Query("delete from DocumentHasTag dht where dht.document.folder.id in ?1 ")
-    void deleteTagDocumentByListFolderId(List<Long> folderIds);
+    @Query("delete from DocumentHasTag dht where dht.document.parent.id in ?1 ")
+    void deleteTagDocumentByListParentId(List<Long> parentIds);
 
 }

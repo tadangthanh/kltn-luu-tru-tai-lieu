@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "document")
-public class Document extends BaseEntity implements Resource{
+public class Document extends BaseEntity implements Resource {
     private String name;
     private String type;
     private String blobName;
@@ -25,7 +25,13 @@ public class Document extends BaseEntity implements Resource{
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
     @ManyToOne
-    @JoinColumn(name = "folder_id")
-    private Folder folder;
+    @JoinColumn(name = "parent_id")
+    private Folder parent;
 
+    @Override
+    public void setParent(Resource parent) {
+        if (parent instanceof Folder) {
+            this.parent = (Folder) parent;
+        }
+    }
 }
