@@ -48,7 +48,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
     private final IResourceCommonService<Folder> folderCommonService;
-    private final IFolderAccessService folderAccessService;
     private final IDocumentAccessService documentAccessService;
 
     @Override

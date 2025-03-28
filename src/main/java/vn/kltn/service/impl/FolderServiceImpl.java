@@ -18,6 +18,7 @@ import vn.kltn.map.FolderMapper;
 import vn.kltn.repository.FolderRepo;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IDocumentService;
+import vn.kltn.service.IFolderAccessService;
 import vn.kltn.service.IFolderService;
 
 import java.time.LocalDateTime;
@@ -33,6 +34,7 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
     private final IAuthenticationService authenticationService;
     private final IDocumentService documentService;
     private final ResourceCommonService resourceCommonService;
+    private final IFolderAccessService folderAccessService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
 
@@ -45,15 +47,19 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
         }
         log.info("Creating folder with parentId {}", folderRequest.getFolderParentId());
         Folder folderSaved = saveFolderWithParent(folderRequest);
+        // folder con sẽ kế thừa quyền truy cập từ folder cha
+        folderAccessService.inheritAccess(folderSaved);
         return mapToFolderResponse(folderSaved);
     }
 
+    // tạo thư mục không có thư mục cha
     private Folder saveFolderWithoutParent(FolderRequest folderRequest) {
         Folder folder = mapToFolder(folderRequest);
         folder.setOwner(authenticationService.getCurrentUser());
         return folderRepo.save(folder);
     }
 
+    // tạo thư mục có thư mục cha
     private Folder saveFolderWithParent(FolderRequest folderRequest) {
         Folder folderParent = getFolderByIdOrThrow(folderRequest.getFolderParentId());
         Folder folder = mapToFolder(folderRequest);

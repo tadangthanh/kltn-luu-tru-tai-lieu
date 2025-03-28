@@ -97,4 +97,19 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
     public Set<FolderAccess> getAllByResourceId(Long resourceId) {
         return folderAccessRepo.findAllByResourceId(resourceId);
     }
+
+    @Override
+    public void inheritAccess(Folder newFolder) {
+        Folder parent = newFolder.getParent();
+        if (parent != null) {
+            Set<FolderAccess> folderAccesses = getAllByResourceId(parent.getId());
+            folderAccesses.forEach(folderAccess -> {
+                FolderAccess folderNewAccess = createEmptyAccess();
+                folderNewAccess.setRecipient(folderAccess.getRecipient());
+                folderNewAccess.setPermission(folderAccess.getPermission());
+                folderNewAccess.setResource(newFolder);
+                folderAccessRepo.save(folderNewAccess);
+            });
+        }
+    }
 }

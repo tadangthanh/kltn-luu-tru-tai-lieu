@@ -15,7 +15,6 @@ import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAccessService;
 
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -63,6 +62,7 @@ public abstract class AbstractAccessService<T extends AccessResource, R extends 
         }
         return PaginationUtils.convertToPageResponse(getPageAccessByResource(pageable), pageable, this::mapToR);
     }
+
 
     protected abstract Page<T> getPageAccessByResource(Pageable pageable);
 
