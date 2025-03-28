@@ -1,7 +1,6 @@
 package vn.kltn.service.impl;
 
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -16,7 +15,6 @@ import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IResourceService;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,8 +22,6 @@ import java.util.regex.Pattern;
 @Service
 @Transactional
 public abstract class AbstractResourceService<T extends Resource, R extends ResourceResponse> implements IResourceService<T, R> {
-    @Value("${app.delete.document-retention-days}")
-    private int documentRetentionDays;
 
     @Override
     public void validateResourceNotDeleted(Resource resource) {
@@ -39,25 +35,6 @@ public abstract class AbstractResourceService<T extends Resource, R extends Reso
         if (resource.getDeletedAt() == null) {
             throw new InvalidDataException("Resource chưa bị xóa");
         }
-    }
-
-//    @Override
-//    public R restoreResourceById(Long resourceId) {
-//        T resource = getResourceByIdOrThrow(resourceId);
-//        validateCurrentUserIsOwnerResource(resource);
-//        validateResourceDeleted(resource);
-//        resource.setDeletedAt(null);
-//        resource.setPermanentDeleteAt(null);
-//        return mapToR(resource);
-//    }
-
-    @Override
-    public void softDeleteResourceById(Long resourceId) {
-        T resource = getResourceByIdOrThrow(resourceId);
-        validateCurrentUserIsOwnerResource(resource);
-        validateResourceNotDeleted(resource);
-        resource.setDeletedAt(LocalDateTime.now());
-        resource.setPermanentDeleteAt(LocalDateTime.now().plusDays(documentRetentionDays));
     }
 
     @Override

@@ -154,6 +154,15 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     }
 
     @Override
+    public void softDeleteResourceById(Long resourceId) {
+        Document resource = getResourceByIdOrThrow(resourceId);
+        validateCurrentUserIsOwnerResource(resource);
+        validateResourceNotDeleted(resource);
+        resource.setDeletedAt(LocalDateTime.now());
+        resource.setPermanentDeleteAt(LocalDateTime.now().plusDays(documentRetentionDays));
+    }
+
+    @Override
     public DocumentResponse moveResourceToFolder(Long resourceId, Long folderId) {
         Document resource = getResourceByIdOrThrow(resourceId);
         Folder resourceDestination = folderCommonService.getResourceById(folderId);

@@ -75,19 +75,6 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
         return folderResponse;
     }
 
-
-    @Override
-    public void softDeleteFolderById(Long folderId) {
-        Folder folder = getFolderByIdOrThrow(folderId);
-        resourceCommonService.validateResourceNotDeleted(folder);
-        // lay danh sach id cac folder va cac folder con can xoa
-        List<Long> folderIdsDelete = folderRepo.findCurrentAndChildFolderIdsByFolderId(folderId);
-        // update deletedAt cho cac folder va cac folder con
-        folderRepo.setDeleteForFolders(folderIdsDelete, LocalDateTime.now(), LocalDateTime.now().plusDays(documentRetentionDays));
-        // xoa document cua cac folder va cac folder con
-        documentService.softDeleteDocumentsByFolderIds(folderIdsDelete);
-    }
-
     @Override
     public Folder getFolderByIdOrThrow(Long folderId) {
         return resourceCommonService.getFolderByIdOrThrow(folderId);
@@ -118,6 +105,18 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
             log.warn("Folder with id {} is not found", resourceId);
             return new ResourceNotFoundException("Không tìm thấy thư mục");
         });
+    }
+
+    @Override
+    public void softDeleteResourceById(Long resourceId) {
+        Folder folder = getFolderByIdOrThrow(resourceId);
+        resourceCommonService.validateResourceNotDeleted(folder);
+        // lay danh sach id cac folder va cac folder con can xoa
+        List<Long> folderIdsDelete = folderRepo.findCurrentAndChildFolderIdsByFolderId(resourceId);
+        // update deletedAt cho cac folder va cac folder con
+        folderRepo.setDeleteForFolders(folderIdsDelete, LocalDateTime.now(), LocalDateTime.now().plusDays(documentRetentionDays));
+        // xoa document cua cac folder va cac folder con
+        documentService.softDeleteDocumentsByFolderIds(folderIdsDelete);
     }
 
     @Override

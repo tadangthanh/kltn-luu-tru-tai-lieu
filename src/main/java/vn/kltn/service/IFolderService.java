@@ -4,10 +4,8 @@ import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.dto.response.FolderResponse;
 import vn.kltn.entity.Folder;
 
-public interface IFolderService  extends IResourceService<Folder,FolderResponse>{
+public interface IFolderService extends IResourceService<Folder, FolderResponse> {
     FolderResponse createFolder(FolderRequest folderRequest);
-
-    void softDeleteFolderById(Long folderId);
 
     Folder getFolderByIdOrThrow(Long folderId);
 
