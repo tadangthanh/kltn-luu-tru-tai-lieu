@@ -33,13 +33,13 @@ public class FolderRest {
 
     @DeleteMapping("/{folderId}/hard")
     public ResponseData<Void> hardDeleteFolder(@PathVariable Long folderId) {
-        folderService.hardDeleteFolderById(folderId);
+        folderService.hardDeleteResourceById(folderId);
         return new ResponseData<>(204, "Xóa thành công", null);
     }
 
     @PostMapping("/{folderId}/restore")
     public ResponseData<FolderResponse> restoreFolder(@PathVariable Long folderId) {
-        return new ResponseData<>(200, "Thành công", folderService.restoreFolderById(folderId));
+        return new ResponseData<>(200, "Thành công", folderService.restoreResourceById(folderId));
     }
 
     @PutMapping("/{folderId}")
@@ -49,7 +49,7 @@ public class FolderRest {
 
     @PutMapping("/{folderId}/move/{folderParentId}")
     public ResponseData<FolderResponse> moveFolder(@PathVariable Long folderId, @PathVariable Long folderParentId) {
-        return new ResponseData<>(200, "Thành công", folderService.moveFolderToFolder(folderId, folderParentId));
+        return new ResponseData<>(200, "Thành công", folderService.moveResourceToFolder(folderId, folderParentId));
     }
 
     @GetMapping
@@ -59,6 +59,6 @@ public class FolderRest {
 
     @GetMapping("/{folderId}")
     public ResponseData<FolderResponse> getFolder(@PathVariable Long folderId) {
-        return new ResponseData<>(200, "Thành công", folderService.getFolderById(folderId));
+        return new ResponseData<>(200, "Thành công", folderService.getResourceById(folderId));
     }
 }

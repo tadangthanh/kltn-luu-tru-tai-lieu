@@ -136,6 +136,16 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     }
 
     @Override
+    public DocumentResponse restoreResourceById(Long resourceId) {
+        Document resource = getResourceByIdOrThrow(resourceId);
+        validateCurrentUserIsOwnerResource(resource);
+        validateResourceDeleted(resource);
+        resource.setDeletedAt(null);
+        resource.setPermanentDeleteAt(null);
+        return mapToR(resource);
+    }
+
+    @Override
     public Document getResourceByIdOrThrow(Long resourceId) {
         return documentRepo.findById(resourceId).orElseThrow(() -> {
             log.warn("Resource not found with id {}", resourceId);

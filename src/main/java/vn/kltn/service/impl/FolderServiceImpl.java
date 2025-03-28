@@ -7,31 +7,27 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.dto.response.FolderResponse;
-import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Folder;
+import vn.kltn.entity.User;
 import vn.kltn.exception.ConflictResourceException;
+import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.FolderMapper;
 import vn.kltn.repository.FolderRepo;
-import vn.kltn.repository.specification.EntitySpecificationsBuilder;
-import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IDocumentService;
 import vn.kltn.service.IFolderService;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 @Slf4j(topic = "FOLDER_SERVICE")
-public class FolderServiceImpl implements IFolderService {
+public class FolderServiceImpl extends AbstractResourceService<Folder, FolderResponse> implements IFolderService {
     private final FolderMapper folderMapper;
     private final FolderRepo folderRepo;
     private final IAuthenticationService authenticationService;
@@ -97,33 +93,6 @@ public class FolderServiceImpl implements IFolderService {
         return resourceCommonService.getFolderByIdOrThrow(folderId);
     }
 
-    @Override
-    public FolderResponse getFolderById(Long folderId) {
-        Folder folder = getFolderByIdOrThrow(folderId);
-
-        return mapToFolderResponse(folder);
-    }
-
-    @Override
-    public void hardDeleteFolderById(Long folderId) {
-        Folder folder = getFolderByIdOrThrow(folderId);
-        validateFolderDeleted(folder);
-        List<Long> folderIdsDelete = folderRepo.findCurrentAndChildFolderIdsByFolderId(folderId);
-        documentService.hardDeleteDocumentByFolderIds(folderIdsDelete);
-        folderRepo.delete(folder);
-    }
-
-    @Override
-    public FolderResponse restoreFolderById(Long folderId) {
-        Folder folder = getFolderByIdOrThrow(folderId);
-        validateFolderDeleted(folder);
-        List<Long> folderIdsRestore = folderRepo.findCurrentAndChildFolderIdsByFolderId(folderId);
-        folderRepo.setDeleteForFolders(folderIdsRestore, null, null);
-        List<Long> folderIds = folderRepo.findCurrentAndChildFolderIdsByFolderId(folderId);
-        documentService.restoreDocumentsByFolderIds(folderIds);
-        return mapToFolderResponse(folder);
-    }
-
     private void validateFolderDeleted(Folder folder) {
         if (folder.getDeletedAt() == null) {
             log.warn("Folder with id {} is not deleted", folder.getId());
@@ -133,44 +102,77 @@ public class FolderServiceImpl implements IFolderService {
 
 
     @Override
-    public PageResponse<List<FolderResponse>> searchByCurrentUser(Pageable pageable, String[] folders) {
-        log.info("search folder by current user");
-        if (folders != null && folders.length > 0) {
-            EntitySpecificationsBuilder<Folder> builder = new EntitySpecificationsBuilder<>();
-            Pattern pattern = Pattern.compile("([a-zA-Z0-9_.]+?)([<:>~!])(.*)(\\p{Punct}?)(\\p{Punct}?)");
-            for (String s : folders) {
-                Matcher matcher = pattern.matcher(s);
-                if (matcher.find()) {
-                    builder.with(matcher.group(1), matcher.group(2), matcher.group(3), matcher.group(4), matcher.group(5));
-                }
-            }
-            Specification<Folder> spec = builder.build();
-            // nó trả trả về 1 spec mới
-            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
-            String email = SecurityContextHolder.getContext().getAuthentication().getName();
-            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdBy"), email));
-            Page<Folder> docPage = folderRepo.findAll(spec, pageable);
-            return PaginationUtils.convertToPageResponse(docPage, pageable, this::mapToFolderResponse);
+    public FolderResponse restoreResourceById(Long resourceId) {
+        Folder folder = getFolderByIdOrThrow(resourceId);
+        validateFolderDeleted(folder);
+        List<Long> folderIdsRestore = folderRepo.findCurrentAndChildFolderIdsByFolderId(resourceId);
+        folderRepo.setDeleteForFolders(folderIdsRestore, null, null);
+        List<Long> folderIds = folderRepo.findCurrentAndChildFolderIdsByFolderId(resourceId);
+        documentService.restoreDocumentsByFolderIds(folderIds);
+        return mapToFolderResponse(folder);
+    }
+
+    @Override
+    public Folder getResourceByIdOrThrow(Long resourceId) {
+        return folderRepo.findById(resourceId).orElseThrow(() -> {
+            log.warn("Folder with id {} is not found", resourceId);
+            return new ResourceNotFoundException("Không tìm thấy thư mục");
+        });
+    }
+
+    @Override
+    public FolderResponse moveResourceToFolder(Long resourceId, Long folderId) {
+        Folder folderToMove = getFolderByIdOrThrow(folderId);
+        // folder cha va folder can di chuyen chua bi xoa
+        resourceCommonService.validateResourceNotDeleted(folderToMove);
+        Folder folderDestination = getFolderByIdOrThrow(folderId);
+        resourceCommonService.validateResourceNotDeleted(folderDestination);
+        folderToMove.setParent(folderDestination);
+        return mapToFolderResponse(folderRepo.save(folderToMove));
+    }
+
+    @Override
+    protected void deleteResource(Folder resource) {
+        // kiem tra xem folder da bi xoa chua
+        validateFolderDeleted(resource);
+        // lay danh sach id folder hien tai va cac folder con can xoa
+        List<Long> folderIdsDelete = folderRepo.findCurrentAndChildFolderIdsByFolderId(resource.getId());
+        // xoa cac document thuoc cac folder truoc do
+        documentService.hardDeleteDocumentByFolderIds(folderIdsDelete);
+        folderRepo.delete(resource);
+    }
+
+    @Override
+    protected Page<Folder> getPageResource(Pageable pageable) {
+        return folderRepo.findAll(pageable);
+    }
+
+    @Override
+    protected Page<Folder> getPageResourceBySpec(Specification<Folder> spec, Pageable pageable) {
+        return folderRepo.findAll(spec, pageable);
+    }
+
+    @Override
+    protected FolderResponse mapToR(Folder resource) {
+        FolderResponse folderResponse = folderMapper.toFolderResponse(resource);
+        if (resource.getParent() != null) {
+            folderResponse.setParentId(resource.getParent().getId());
         }
-        return PaginationUtils.convertToPageResponse(folderRepo.findAll(pageable), pageable, this::mapToFolderResponse);
+        return folderResponse;
+    }
+
+    @Override
+    protected User getCurrentUser() {
+        return authenticationService.getCurrentUser();
     }
 
 
     @Override
     public FolderResponse updateFolderById(Long folderId, FolderRequest folderRequest) {
         Folder folder = getFolderByIdOrThrow(folderId);
+        validateCurrentUserIsOwnerResource(folder);
+        validateResourceNotDeleted(folder);
         folderMapper.updateFolderFromRequest(folderRequest, folder);
         return mapToFolderResponse(folderRepo.save(folder));
-    }
-
-    @Override
-    public FolderResponse moveFolderToFolder(Long folderId, Long folderParentId) {
-        Folder folderToMove = getFolderByIdOrThrow(folderId);
-        // folder cha va folder can di chuyen chua bi xoa
-        resourceCommonService.validateResourceNotDeleted(folderToMove);
-        Folder folderDestination = getFolderByIdOrThrow(folderParentId);
-        resourceCommonService.validateResourceNotDeleted(folderDestination);
-        folderToMove.setParent(folderDestination);
-        return mapToFolderResponse(folderRepo.save(folderToMove));
     }
 }

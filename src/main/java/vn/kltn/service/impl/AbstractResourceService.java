@@ -41,15 +41,15 @@ public abstract class AbstractResourceService<T extends Resource, R extends Reso
         }
     }
 
-    @Override
-    public R restoreResourceById(Long resourceId) {
-        T resource = getResourceByIdOrThrow(resourceId);
-        validateCurrentUserIsOwnerResource(resource);
-        validateResourceDeleted(resource);
-        resource.setDeletedAt(null);
-        resource.setPermanentDeleteAt(null);
-        return mapToR(resource);
-    }
+//    @Override
+//    public R restoreResourceById(Long resourceId) {
+//        T resource = getResourceByIdOrThrow(resourceId);
+//        validateCurrentUserIsOwnerResource(resource);
+//        validateResourceDeleted(resource);
+//        resource.setDeletedAt(null);
+//        resource.setPermanentDeleteAt(null);
+//        return mapToR(resource);
+//    }
 
     @Override
     public void softDeleteResourceById(Long resourceId) {
