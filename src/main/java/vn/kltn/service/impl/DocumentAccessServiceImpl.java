@@ -13,10 +13,7 @@ import vn.kltn.entity.*;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.AccessResourceMapper;
 import vn.kltn.repository.DocumentAccessRepo;
-import vn.kltn.service.IDocumentAccessService;
-import vn.kltn.service.IFolderAccessService;
-import vn.kltn.service.IMailService;
-import vn.kltn.service.IUserService;
+import vn.kltn.service.*;
 
 import java.util.Set;
 
@@ -31,14 +28,23 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
     private final IMailService mailService;
     private final DocumentCommonService documentCommonService;
     private final ResourceCommonService resourceCommonService;
+    private final IAuthenticationService authenticationService;
     private final IFolderAccessService folderAccessService;
 
 
-    private void validateConditionsAccess(Document document) {
+    private void validateConditionsToAccess(Document document) {
         // chưa bị xóa
         resourceCommonService.validateResourceNotDeleted(document);
         // là chủ sở hữu
         resourceCommonService.validateCurrentUserIsOwnerResource(document);
+    }
+
+    @Override
+    protected DocumentAccess getAccessByResourceAndRecipient(Long resourceId, Long recipientId) {
+        return documentAccessRepo.findByResourceIdAndRecipientId(resourceId, recipientId).orElseThrow(() -> {
+            log.warn("Document access not found by resource id: {} and recipient id: {}", resourceId, recipientId);
+            return new ResourceNotFoundException("Bạn không có quyền thực hiện hành động này!");
+        });
     }
 
     @Override
@@ -69,7 +75,7 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
     @Override
     protected void setResource(DocumentAccess access, Long resourceId) {
         Document document = documentCommonService.getResourceByIdOrThrow(resourceId);
-        validateConditionsAccess(document);
+        validateConditionsToAccess(document);
         access.setResource(document);
     }
 
@@ -94,6 +100,16 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
     @Override
     protected User getUserByEmail(String email) {
         return userService.getUserByEmail(email);
+    }
+
+    @Override
+    protected User getCurrentUser() {
+        return authenticationService.getCurrentUser();
+    }
+
+    @Override
+    protected void deleteAccessByResourceIdAndRecipient(Long resourceId, Long recipientId) {
+        documentAccessRepo.deleteByResourceAndRecipientId(resourceId, recipientId);
     }
 
     @Override

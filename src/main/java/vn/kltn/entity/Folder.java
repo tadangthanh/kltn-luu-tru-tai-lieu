@@ -37,6 +37,8 @@ public class Folder extends BaseEntity implements Resource {
     public void setParent(Resource parent) {
         if (parent instanceof Folder) {
             this.parent = (Folder) parent;
+        } else if (parent == null) {
+            this.parent = null;
         }
     }
 }

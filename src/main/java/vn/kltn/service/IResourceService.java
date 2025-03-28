@@ -15,13 +15,13 @@ public interface IResourceService<T extends Resource, R extends ResourceResponse
 
     void validateCurrentUserIsOwnerResource(T resource);
 
+    void deleteResourceById(Long resourceId);
+
     R restoreResourceById(Long resourceId);
 
     R getResourceById(Long resourceId);
 
     T getResourceByIdOrThrow(Long resourceId);
-
-    void softDeleteResourceById(Long resourceId);
 
     void hardDeleteResourceById(Long resourceId);
 

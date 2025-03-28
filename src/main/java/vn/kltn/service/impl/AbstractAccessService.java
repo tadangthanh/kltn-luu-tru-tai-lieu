@@ -63,6 +63,20 @@ public abstract class AbstractAccessService<T extends AccessResource, R extends 
         return PaginationUtils.convertToPageResponse(getPageAccessByResource(pageable), pageable, this::mapToR);
     }
 
+    @Override
+    public void deleteAccessByResourceIdRecipient(Long resourceId, Long recipientId) {
+        deleteAccessByResourceIdAndRecipient(resourceId, recipientId);
+    }
+
+    @Override
+    public void validateUserIsEditor(Long resourceId, Long userId) {
+        T access = getAccessByResourceAndRecipient(resourceId, userId);
+        if (access.getPermission() != Permission.EDITOR) {
+            throw new RuntimeException("Bạn không có quyền thực hiện hành động này!");
+        }
+    }
+
+    protected abstract T getAccessByResourceAndRecipient(Long resourceId, Long recipientId);
 
     protected abstract Page<T> getPageAccessByResource(Pageable pageable);
 
@@ -83,5 +97,9 @@ public abstract class AbstractAccessService<T extends AccessResource, R extends 
     protected abstract void deleteAccessEntity(T access);
 
     protected abstract User getUserByEmail(String email);
+
+    protected abstract User getCurrentUser();
+
+    protected abstract void deleteAccessByResourceIdAndRecipient(Long resourceId, Long recipientId);
 
 }

@@ -35,9 +35,9 @@ public class DocumentRest {
         return new ResponseData<>(201, "Thành công", documentService.uploadDocumentWithParent(folderId, documentRequest, file));
     }
 
-    @DeleteMapping("/{documentId}/soft")
+    @DeleteMapping("/{documentId}")
     public ResponseData<Void> softDelete(@PathVariable Long documentId) {
-        documentService.softDeleteResourceById(documentId);
+        documentService.deleteResourceById(documentId);
         return new ResponseData<>(204, "Xóa thành công", null);
     }
 

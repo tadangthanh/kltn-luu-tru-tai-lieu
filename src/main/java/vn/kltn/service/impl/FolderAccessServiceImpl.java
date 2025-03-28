@@ -15,6 +15,7 @@ import vn.kltn.entity.User;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.AccessResourceMapper;
 import vn.kltn.repository.FolderAccessRepo;
+import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IFolderAccessService;
 import vn.kltn.service.IMailService;
 import vn.kltn.service.IUserService;
@@ -31,11 +32,21 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
     private final IUserService userService;
     private final IMailService mailService;
     private final FolderCommonService folderCommonService;
+    private final IAuthenticationService authenticationService;
 
 
     private void validateFolderConditionsAccess(Folder folder) {
         folderCommonService.validateResourceNotDeleted(folder);
         folderCommonService.validateCurrentUserIsOwnerResource(folder);
+    }
+
+    @Override
+    protected FolderAccess getAccessByResourceAndRecipient(Long resourceId, Long recipientId) {
+        return folderAccessRepo.findByResourceAndRecipientId(resourceId, recipientId).orElseThrow(() -> {
+            ;
+            log.warn("Folder access not found by resource id: {} and recipient id: {}", resourceId, recipientId);
+            return new ResourceNotFoundException("Bạn không có quyền thực hiện hành động này!");
+        });
     }
 
     @Override
@@ -91,6 +102,16 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
     @Override
     protected User getUserByEmail(String email) {
         return userService.getUserByEmail(email);
+    }
+
+    @Override
+    protected User getCurrentUser() {
+        return authenticationService.getCurrentUser();
+    }
+
+    @Override
+    protected void deleteAccessByResourceIdAndRecipient(Long resourceId, Long recipientId) {
+        folderAccessRepo.deleteByResourceAndRecipientId(resourceId, recipientId);
     }
 
     @Override

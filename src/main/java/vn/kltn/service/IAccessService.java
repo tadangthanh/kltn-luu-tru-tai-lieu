@@ -21,5 +21,9 @@ public interface IAccessService<T extends AccessResource, R extends BaseDto> {
 
     void deleteAccess(Long accessId);
 
+    void validateUserIsEditor(Long resourceId, Long userId);
+
+    void deleteAccessByResourceIdRecipient(Long resourceId, Long recipientId);
+
     void deleteAccessByResource(Long resourceId);
 }

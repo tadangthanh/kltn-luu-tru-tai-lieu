@@ -1,6 +1,7 @@
 package vn.kltn.service.impl;
 
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -21,6 +22,7 @@ import java.util.regex.Pattern;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public abstract class AbstractResourceService<T extends Resource, R extends ResourceResponse> implements IResourceService<T, R> {
 
     @Override
@@ -78,6 +80,31 @@ public abstract class AbstractResourceService<T extends Resource, R extends Reso
             throw new InvalidDataException("Bạn không có quyền thực hiện thao tác này");
         }
     }
+
+    @Override
+    public void deleteResourceById(Long resourceId) {
+        T resource = getResourceByIdOrThrow(resourceId);
+        // resource chua bi xoa
+        validateResourceNotDeleted(resource);
+        User currentUser = getCurrentUser();
+        // nguoi thuc hien co quyen editor
+        User owner = resource.getOwner();
+        if (currentUser.getId().equals(owner.getId())) {
+            // neu la chu so huu thi chuyen vao thung rac
+            softDeleteResource(resource);
+        } else {
+            validateAccessEditor(resourceId, currentUser.getId());
+            //xoa access
+            deleteAccessByResourceAndRecipientId(resourceId, currentUser.getId());
+            resource.setParent(null);
+        }
+    }
+
+    protected abstract void deleteAccessByResourceAndRecipientId(Long resourceId, Long recipientId);
+
+    protected abstract void validateAccessEditor(Long resourceId, Long userId);
+
+    protected abstract void softDeleteResource(T resource);
 
     protected abstract void deleteAccessResourceById(Long id);
 

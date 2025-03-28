@@ -8,9 +8,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import vn.kltn.common.Permission;
 import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.dto.response.FolderResponse;
 import vn.kltn.entity.Folder;
+import vn.kltn.entity.FolderAccess;
 import vn.kltn.entity.User;
 import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.ResourceNotFoundException;
@@ -93,6 +95,26 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
         }
     }
 
+    @Override
+    protected void deleteAccessByResourceAndRecipientId(Long resourceId, Long recipientId) {
+        folderAccessService.deleteAccessByResourceIdRecipient(resourceId, recipientId);
+    }
+
+    @Override
+    protected void validateAccessEditor(Long resourceId, Long userId) {
+        folderAccessService.validateUserIsEditor(resourceId, userId);
+    }
+
+    @Override
+    protected void softDeleteResource(Folder folder) {
+        resourceCommonService.validateResourceNotDeleted(folder);
+        // lay danh sach id cac folder va cac folder con can xoa
+        List<Long> folderIdsDelete = folderRepo.findCurrentAndChildFolderIdsByFolderId(folder.getId());
+        // update deletedAt cho cac folder va cac folder con
+        folderRepo.setDeleteForFolders(folderIdsDelete, LocalDateTime.now(), LocalDateTime.now().plusDays(documentRetentionDays));
+        // xoa document cua cac folder va cac folder con
+        documentService.softDeleteDocumentsByFolderIds(folderIdsDelete);
+    }
 
     @Override
     public FolderResponse restoreResourceById(Long resourceId) {
@@ -113,17 +135,6 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
         });
     }
 
-    @Override
-    public void softDeleteResourceById(Long resourceId) {
-        Folder folder = getFolderByIdOrThrow(resourceId);
-        resourceCommonService.validateResourceNotDeleted(folder);
-        // lay danh sach id cac folder va cac folder con can xoa
-        List<Long> folderIdsDelete = folderRepo.findCurrentAndChildFolderIdsByFolderId(resourceId);
-        // update deletedAt cho cac folder va cac folder con
-        folderRepo.setDeleteForFolders(folderIdsDelete, LocalDateTime.now(), LocalDateTime.now().plusDays(documentRetentionDays));
-        // xoa document cua cac folder va cac folder con
-        documentService.softDeleteDocumentsByFolderIds(folderIdsDelete);
-    }
 
     @Override
     public FolderResponse moveResourceToFolder(Long resourceId, Long folderId) {
@@ -135,6 +146,7 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
         folderToMove.setParent(folderDestination);
         return mapToFolderResponse(folderRepo.save(folderToMove));
     }
+
 
     @Override
     protected void deleteAccessResourceById(Long id) {

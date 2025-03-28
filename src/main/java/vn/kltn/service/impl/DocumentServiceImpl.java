@@ -111,6 +111,16 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     }
 
     @Override
+    protected void deleteAccessByResourceAndRecipientId(Long resourceId, Long recipientId) {
+        documentAccessService.deleteAccessByResourceIdRecipient(resourceId, recipientId);
+    }
+
+    @Override
+    protected void validateAccessEditor(Long resourceId, Long userId) {
+        documentAccessService.validateUserIsEditor(resourceId, userId);
+    }
+
+    @Override
     protected void deleteAccessResourceById(Long id) {
         documentAccessService.deleteAccessByResource(id);
     }
@@ -143,6 +153,14 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     }
 
     @Override
+    protected void softDeleteResource(Document document) {
+        validateResourceNotDeleted(document);
+        validateCurrentUserIsOwnerResource(document);
+        document.setDeletedAt(LocalDateTime.now());
+        document.setPermanentDeleteAt(LocalDateTime.now().plusDays(documentRetentionDays));
+    }
+
+    @Override
     public DocumentResponse restoreResourceById(Long resourceId) {
         Document resource = getResourceByIdOrThrow(resourceId);
         validateCurrentUserIsOwnerResource(resource);
@@ -160,14 +178,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         });
     }
 
-    @Override
-    public void softDeleteResourceById(Long resourceId) {
-        Document resource = getResourceByIdOrThrow(resourceId);
-        validateCurrentUserIsOwnerResource(resource);
-        validateResourceNotDeleted(resource);
-        resource.setDeletedAt(LocalDateTime.now());
-        resource.setPermanentDeleteAt(LocalDateTime.now().plusDays(documentRetentionDays));
-    }
 
     @Override
     public DocumentResponse moveResourceToFolder(Long resourceId, Long folderId) {
