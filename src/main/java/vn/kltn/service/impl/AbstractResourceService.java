@@ -62,7 +62,8 @@ public abstract class AbstractResourceService<T extends Resource, R extends Reso
     public void hardDeleteResourceById(Long resourceId) {
         T resource = getResourceByIdOrThrow(resourceId);
         validateResourceDeleted(resource);
-        deleteResource(resource);
+        deleteAccessResourceById(resource.getId());
+        hardDeleteResource(resource);
     }
 
     @Override
@@ -78,8 +79,9 @@ public abstract class AbstractResourceService<T extends Resource, R extends Reso
         }
     }
 
+    protected abstract void deleteAccessResourceById(Long id);
 
-    protected abstract void deleteResource(T resource);
+    protected abstract void hardDeleteResource(T resource);
 
     protected abstract Page<T> getPageResource(Pageable pageable);
 

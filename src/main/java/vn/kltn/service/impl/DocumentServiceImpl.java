@@ -111,7 +111,12 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     }
 
     @Override
-    protected void deleteResource(Document resource) {
+    protected void deleteAccessResourceById(Long id) {
+        documentAccessService.deleteAccessByResource(id);
+    }
+
+    @Override
+    protected void hardDeleteResource(Document resource) {
         azureStorageService.deleteBlob(resource.getBlobName());
         documentHasTagService.deleteAllByDocumentId(resource.getId());
         documentRepo.delete(resource);

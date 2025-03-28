@@ -1,7 +1,9 @@
 package vn.kltn.repository;
 
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import vn.kltn.entity.DocumentAccess;
@@ -13,4 +15,9 @@ public interface DocumentAccessRepo extends JpaRepository<DocumentAccess, Long>,
 
     @Query("SELECT da FROM DocumentAccess da WHERE da.resource.id = :resourceId")
     Set<DocumentAccess> findAllByResourceId(Long resourceId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM DocumentAccess da WHERE da.resource.id = :resourceId")
+    void deleteAllByResourceId(Long resourceId);
 }

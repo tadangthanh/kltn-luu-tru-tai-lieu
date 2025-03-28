@@ -137,7 +137,12 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
     }
 
     @Override
-    protected void deleteResource(Folder resource) {
+    protected void deleteAccessResourceById(Long id) {
+        folderAccessService.deleteAccessByResource(id);
+    }
+
+    @Override
+    protected void hardDeleteResource(Folder resource) {
         // kiem tra xem folder da bi xoa chua
         validateFolderDeleted(resource);
         // lay danh sach id folder hien tai va cac folder con can xoa

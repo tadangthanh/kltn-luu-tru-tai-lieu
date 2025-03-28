@@ -21,4 +21,5 @@ public interface IAccessService<T extends AccessResource, R extends BaseDto> {
 
     void deleteAccess(Long accessId);
 
+    void deleteAccessByResource(Long resourceId);
 }

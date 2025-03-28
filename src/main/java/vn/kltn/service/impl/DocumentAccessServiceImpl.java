@@ -115,4 +115,9 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
     public Set<DocumentAccess> getAllByResourceId(Long resourceId) {
         return documentAccessRepo.findAllByResourceId(resourceId);
     }
+
+    @Override
+    public void deleteAccessByResource(Long resourceId) {
+        documentAccessRepo.deleteAllByResourceId(resourceId);
+    }
 }

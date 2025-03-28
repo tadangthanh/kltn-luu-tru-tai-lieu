@@ -99,6 +99,11 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
     }
 
     @Override
+    public void deleteAccessByResource(Long resourceId) {
+        folderAccessRepo.deleteAllByResourceId(resourceId);
+    }
+
+    @Override
     public void inheritAccess(Folder newFolder) {
         Folder parent = newFolder.getParent();
         if (parent != null) {
