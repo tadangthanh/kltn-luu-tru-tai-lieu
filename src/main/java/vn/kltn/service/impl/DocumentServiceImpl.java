@@ -24,10 +24,7 @@ import vn.kltn.map.DocumentMapper;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.util.PaginationUtils;
-import vn.kltn.service.IAuthenticationService;
-import vn.kltn.service.IAzureStorageService;
-import vn.kltn.service.IDocumentHasTagService;
-import vn.kltn.service.IDocumentService;
+import vn.kltn.service.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,7 +47,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     private final IAuthenticationService authenticationService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
-    private final ResourceCommonService resourceCommonService;
+    private final IResourceCommonService<Folder> folderCommonService;
 
     @Override
     public DocumentResponse uploadDocumentWithoutParent(DocumentRequest documentRequest, MultipartFile file) {
@@ -61,7 +58,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     @Override
     public DocumentResponse uploadDocumentWithFolder(Long folderId, DocumentRequest documentRequest, MultipartFile file) {
         Document document = processValidDocument(documentRequest, file);
-        Folder folder = resourceCommonService.getFolderByIdOrThrow(folderId);
+        Folder folder = folderCommonService.getResourceById(folderId);
         document.setParent(folder);
         return mapToDocumentResponse(document);
     }
@@ -149,7 +146,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     @Override
     public DocumentResponse moveResourceToFolder(Long resourceId, Long folderId) {
         Document resource = getResourceByIdOrThrow(resourceId);
-        Folder resourceDestination = resourceCommonService.getFolderByIdOrThrow(folderId);
+        Folder resourceDestination = folderCommonService.getResourceById(folderId);
         validateCurrentUserIsOwnerResource(resource);
         validateResourceNotDeleted(resource);
         validateResourceNotDeleted(resourceDestination);

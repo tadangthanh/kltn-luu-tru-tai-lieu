@@ -25,7 +25,6 @@ public interface IResourceService<T extends Resource, R extends ResourceResponse
 
     void hardDeleteResourceById(Long resourceId);
 
-
     R moveResourceToFolder(Long resourceId, Long folderId);
 
     PageResponse<List<R>> searchByCurrentUser(Pageable pageable, String[] resources);
