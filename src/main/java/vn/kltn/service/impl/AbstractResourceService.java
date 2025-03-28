@@ -94,8 +94,10 @@ public abstract class AbstractResourceService<T extends Resource, R extends Reso
         } else {
             // nguoi thuc hien co quyen editor
             validateAccessEditor(resourceId, currentUser.getId());
-            //xoa access
-            deleteAccessByResourceAndRecipientId(resourceId, currentUser.getId());
+            if (resource.getParent() != null) {
+                //xoa access
+                deleteAccessByResourceAndRecipientId(resourceId, currentUser.getId());
+            }
             resource.setParent(null);
         }
     }
