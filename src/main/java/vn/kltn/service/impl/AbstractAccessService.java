@@ -10,6 +10,7 @@ import vn.kltn.dto.request.AccessRequest;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.AccessResource;
 import vn.kltn.entity.User;
+import vn.kltn.exception.InvalidDataException;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAccessService;
@@ -72,7 +73,7 @@ public abstract class AbstractAccessService<T extends AccessResource, R extends 
     public void validateUserIsEditor(Long resourceId, Long userId) {
         T access = getAccessByResourceAndRecipient(resourceId, userId);
         if (access.getPermission() != Permission.EDITOR) {
-            throw new RuntimeException("Bạn không có quyền thực hiện hành động này!");
+            throw new InvalidDataException("Bạn không có quyền thực hiện hành động này!");
         }
     }
 

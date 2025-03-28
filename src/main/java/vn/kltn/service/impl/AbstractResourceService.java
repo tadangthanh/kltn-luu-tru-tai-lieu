@@ -87,12 +87,12 @@ public abstract class AbstractResourceService<T extends Resource, R extends Reso
         // resource chua bi xoa
         validateResourceNotDeleted(resource);
         User currentUser = getCurrentUser();
-        // nguoi thuc hien co quyen editor
         User owner = resource.getOwner();
         if (currentUser.getId().equals(owner.getId())) {
             // neu la chu so huu thi chuyen vao thung rac
             softDeleteResource(resource);
         } else {
+            // nguoi thuc hien co quyen editor
             validateAccessEditor(resourceId, currentUser.getId());
             //xoa access
             deleteAccessByResourceAndRecipientId(resourceId, currentUser.getId());
