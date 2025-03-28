@@ -12,4 +12,6 @@ public interface AccessResource {
     void setPermission(vn.kltn.common.Permission permission);
 
     Resource getResource();
+
+    <T extends Resource> void setResource(T resource);
 }

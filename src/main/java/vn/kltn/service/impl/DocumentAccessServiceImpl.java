@@ -9,16 +9,16 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.AccessRequest;
 import vn.kltn.dto.response.AccessResourceResponse;
-import vn.kltn.entity.Document;
-import vn.kltn.entity.DocumentAccess;
-import vn.kltn.entity.User;
+import vn.kltn.entity.*;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.AccessResourceMapper;
 import vn.kltn.repository.DocumentAccessRepo;
 import vn.kltn.service.IDocumentAccessService;
-import vn.kltn.service.IDocumentService;
+import vn.kltn.service.IFolderAccessService;
 import vn.kltn.service.IMailService;
 import vn.kltn.service.IUserService;
+
+import java.util.Set;
 
 @Service
 @Transactional
@@ -27,10 +27,11 @@ import vn.kltn.service.IUserService;
 public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAccess, AccessResourceResponse> implements IDocumentAccessService {
     private final DocumentAccessRepo documentAccessRepo;
     private final AccessResourceMapper accessResourceMapper;
-    private final IDocumentService documentService;
     private final IUserService userService;
     private final IMailService mailService;
+    private final DocumentCommonService documentCommonService;
     private final ResourceCommonService resourceCommonService;
+    private final IFolderAccessService folderAccessService;
 
 
     private void validateConditionsAccess(Document document) {
@@ -67,7 +68,7 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
 
     @Override
     protected void setResource(DocumentAccess access, Long resourceId) {
-        Document document = documentService.getResourceByIdOrThrow(resourceId);
+        Document document = documentCommonService.getResourceByIdOrThrow(resourceId);
         validateConditionsAccess(document);
         access.setResource(document);
     }
@@ -93,5 +94,25 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
     @Override
     protected User getUserByEmail(String email) {
         return userService.getUserByEmail(email);
+    }
+
+    @Override
+    public void inheritAccess(Document document) {
+        Folder folder = document.getParent();
+        if (folder != null) {
+            Set<FolderAccess> folderAccesses = folderAccessService.getAllByResourceId(folder.getId());
+            folderAccesses.forEach(folderAccess -> {
+                DocumentAccess documentAccess = createEmptyAccess();
+                documentAccess.setRecipient(folderAccess.getRecipient());
+                documentAccess.setPermission(folderAccess.getPermission());
+                documentAccess.setResource(document);
+                documentAccessRepo.save(documentAccess);
+            });
+        }
+    }
+
+    @Override
+    public Set<DocumentAccess> getAllByResourceId(Long resourceId) {
+        return documentAccessRepo.findAllByResourceId(resourceId);
     }
 }

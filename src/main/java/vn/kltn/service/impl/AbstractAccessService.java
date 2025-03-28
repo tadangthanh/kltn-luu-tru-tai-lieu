@@ -15,11 +15,12 @@ import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAccessService;
 
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
-public abstract class AbstractAccessService<T extends AccessResource, R extends BaseDto> implements IAccessService<R> {
+public abstract class AbstractAccessService<T extends AccessResource, R extends BaseDto> implements IAccessService<T, R> {
 
     // Phương thức tạo mới access - dùng chung cho DocumentAccess và FolderAccess
     @Override

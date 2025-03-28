@@ -11,7 +11,7 @@ import java.util.List;
 public interface IDocumentService extends IResourceService<Document, DocumentResponse> {
     DocumentResponse uploadDocumentWithoutParent(DocumentRequest documentRequest, MultipartFile file);
 
-    DocumentResponse uploadDocumentWithFolder(Long folderId, DocumentRequest documentRequest, MultipartFile file);
+    DocumentResponse uploadDocumentWithParent(Long folderId, DocumentRequest documentRequest, MultipartFile file);
 
     void softDeleteDocumentsByFolderIds(List<Long> folderIds); // xóa document theo danh sach folder id nhưng chưa xóa vĩnh viễn
 

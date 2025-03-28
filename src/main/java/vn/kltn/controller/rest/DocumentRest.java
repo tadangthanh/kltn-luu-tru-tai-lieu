@@ -32,7 +32,7 @@ public class DocumentRest {
 
     @PostMapping("/folder/{folderId}")
     public ResponseData<DocumentResponse> upload(@PathVariable Long folderId, @RequestPart("file") MultipartFile file, @Valid @RequestPart("data") DocumentRequest documentRequest) {
-        return new ResponseData<>(201, "Thành công", documentService.uploadDocumentWithFolder(folderId, documentRequest, file));
+        return new ResponseData<>(201, "Thành công", documentService.uploadDocumentWithParent(folderId, documentRequest, file));
     }
 
     @DeleteMapping("/{documentId}/soft")

@@ -19,6 +19,8 @@ import vn.kltn.service.IFolderAccessService;
 import vn.kltn.service.IMailService;
 import vn.kltn.service.IUserService;
 
+import java.util.Set;
+
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -28,12 +30,12 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
     private final AccessResourceMapper accessResourceMapper;
     private final IUserService userService;
     private final IMailService mailService;
-    private final ResourceCommonService resourceCommonService;
+    private final FolderCommonService folderCommonService;
 
 
     private void validateFolderConditionsAccess(Folder folder) {
-        resourceCommonService.validateResourceNotDeleted(folder);
-        resourceCommonService.validateCurrentUserIsOwnerResource(folder);
+        folderCommonService.validateResourceNotDeleted(folder);
+        folderCommonService.validateCurrentUserIsOwnerResource(folder);
     }
 
     @Override
@@ -63,7 +65,7 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
 
     @Override
     protected void setResource(FolderAccess access, Long resourceId) {
-        Folder folder = resourceCommonService.getFolderByIdOrThrow(resourceId);
+        Folder folder = folderCommonService.getResourceById(resourceId);
         validateFolderConditionsAccess(folder);
         access.setResource(folder);
     }
@@ -89,5 +91,10 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
     @Override
     protected User getUserByEmail(String email) {
         return userService.getUserByEmail(email);
+    }
+
+    @Override
+    public Set<FolderAccess> getAllByResourceId(Long resourceId) {
+        return folderAccessRepo.findAllByResourceId(resourceId);
     }
 }

@@ -20,4 +20,8 @@ public class DocumentAccess extends BaseEntity implements AccessResource {
     @Column(name = "permission", nullable = false)
     private Permission permission;
 
+    @Override
+    public <T extends Resource> void setResource(T resource) {
+        this.resource = (Document) resource;
+    }
 }

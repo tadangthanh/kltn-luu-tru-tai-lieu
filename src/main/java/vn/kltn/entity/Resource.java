@@ -5,6 +5,10 @@ import java.time.LocalDateTime;
 public interface Resource {
     User getOwner();
 
+    Long getId();
+
+    Resource getParent();
+
     void setParent(Resource parent);
 
     void setOwner(User owner);

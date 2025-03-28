@@ -9,7 +9,7 @@ import vn.kltn.common.Permission;
 @Setter
 @Entity
 @Table(name = "folder_access")
-public class FolderAccess extends BaseEntity implements AccessResource  {
+public class FolderAccess extends BaseEntity implements AccessResource {
     @ManyToOne
     @JoinColumn(name = "resource_id")
     private Folder resource;
@@ -19,4 +19,9 @@ public class FolderAccess extends BaseEntity implements AccessResource  {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, name = "permission")
     private Permission permission;
+
+    @Override
+    public <T extends Resource> void setResource(T resource) {
+        this.resource = (Folder) resource;
+    }
 }
