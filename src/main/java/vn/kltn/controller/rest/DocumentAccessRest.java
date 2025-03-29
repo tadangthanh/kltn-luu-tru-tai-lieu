@@ -43,8 +43,8 @@ public class DocumentAccessRest {
         return new ResponseData<>(200, "Thành công", documentAccessService.getAccessByResource(pageable, resources));
     }
 
-    @GetMapping("/document")
-    public ResponseData<PageResponse<List<DocumentResponse>>> getDocumentSharedByCurrentUser(Pageable pageable) {
-        return new ResponseData<>(200, "Thành công", documentAccessService.getPageDocumentSharedByCurrentUser(pageable));
+    @GetMapping("/document-shared")
+    public ResponseData<PageResponse<List<DocumentResponse>>> getDocumentSharedByCurrentUser(Pageable pageable, @RequestParam(required = false) String[] documents) {
+        return new ResponseData<>(200, "Thành công", documentAccessService.getPageDocumentSharedByCurrentUser(pageable, documents));
     }
 }

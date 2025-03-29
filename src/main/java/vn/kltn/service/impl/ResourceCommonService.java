@@ -59,7 +59,7 @@ public class ResourceCommonService {
         return documentRepo.findAll(pageable);
     }
 
-    public Page<Document> pagePageDocumentBySpec(Specification<Document> spec, Pageable pageable) {
+    public Page<Document> getPagePageDocumentBySpec(Specification<Document> spec, Pageable pageable) {
         return documentRepo.findAll(spec, pageable);
     }
 
