@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import vn.kltn.common.Permission;
 import vn.kltn.dto.request.AccessRequest;
 import vn.kltn.dto.response.AccessResourceResponse;
 import vn.kltn.dto.response.FolderResponse;
@@ -40,6 +41,8 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
     private final IMailService mailService;
     private final ResourceCommonService resourceCommonService;
     private final IAuthenticationService authenticationService;
+    private final FolderCommonService folderCommonService;
+    private final DocumentCommonService documentCommonService;
 
 
     private void validateFolderConditionsAccess(Folder folder) {
@@ -50,7 +53,6 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
     @Override
     protected FolderAccess getAccessByResourceAndRecipient(Long resourceId, Long recipientId) {
         return folderAccessRepo.findByResourceAndRecipientId(resourceId, recipientId).orElseThrow(() -> {
-            ;
             log.warn("Folder access not found by resource id: {} and recipient id: {}", resourceId, recipientId);
             return new ResourceNotFoundException("Bạn không có quyền thực hiện hành động này!");
         });
@@ -72,6 +74,15 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
     }
 
     @Override
+    public AccessResourceResponse updateAccess(Long accessId, Permission newPermission) {
+        FolderAccess access = findAccessById(accessId);
+        validateConditionsToUpdateAccess(access);
+        access.setPermission(newPermission);
+
+        return mapToR(saveAccess(access));
+    }
+
+    @Override
     protected void sendEmailInviteAccess(FolderAccess access, AccessRequest accessRequest) {
         mailService.sendEmailInviteFolderAccess(accessRequest.getRecipientEmail(), access, accessRequest.getMessage());
     }
@@ -83,7 +94,7 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
 
     @Override
     protected void setResource(FolderAccess access, Long resourceId) {
-        Folder folder = resourceCommonService.getFolderByIdOrThrow(resourceId);
+        Folder folder = folderCommonService.getFolderByIdOrThrow(resourceId);
         validateFolderConditionsAccess(folder);
         access.setResource(folder);
     }
@@ -156,11 +167,11 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
             // nó trả trả về 1 spec mới
             spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
             spec = spec.and(FolderSpecification.hasAccessByRecipient(currentUser.getId()));
-            Page<Folder> folderPage = resourceCommonService.getPageFolderBySpec(spec, pageable);
-            return PaginationUtils.convertToPageResponse(folderPage, pageable, resourceCommonService::mapToFolderResponse);
+            Page<Folder> folderPage = folderCommonService.getPageFolderBySpec(spec, pageable);
+            return PaginationUtils.convertToPageResponse(folderPage, pageable, folderCommonService::mapToFolderResponse);
         }
         Specification<Folder> spec = FolderSpecification.hasAccessByRecipient(currentUser.getId());
-        return PaginationUtils.convertToPageResponse(resourceCommonService.getPageFolderBySpec(spec, pageable),
-                pageable, resourceCommonService::mapToFolderResponse);
+        return PaginationUtils.convertToPageResponse(folderCommonService.getPageFolderBySpec(spec, pageable),
+                pageable, folderCommonService::mapToFolderResponse);
     }
 }

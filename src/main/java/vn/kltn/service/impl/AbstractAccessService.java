@@ -3,12 +3,14 @@ package vn.kltn.service.impl;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.Permission;
 import vn.kltn.dto.BaseDto;
 import vn.kltn.dto.request.AccessRequest;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.AccessResource;
+import vn.kltn.entity.Resource;
 import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
@@ -33,8 +35,10 @@ public abstract class AbstractAccessService<T extends AccessResource, R extends 
     }
 
     @Override
+    //la editor va owner moi dc phep cap nhat
     public R updateAccess(Long accessId, Permission newPermission) {
         T access = findAccessById(accessId);
+        validateConditionsToUpdateAccess(access);
         access.setPermission(newPermission);
         return mapToR(saveAccess(access));
     }
@@ -69,6 +73,33 @@ public abstract class AbstractAccessService<T extends AccessResource, R extends 
         }
     }
 
+    protected void validateConditionsToUpdateAccess(T access) {
+        // khi update quyen truy cap cho 1 folder/document nao do thi can phai kiem tra nguoi do
+        // co quyen editor voi folder/document can update hay khong
+        User currentUser = getCurrentUser();
+        // Nếu user là chủ sở hữu của document, cho phép cập nhật
+        if (currentUserIsOwnerResource(access.getResource(), currentUser)) {
+            return;
+        }
+        if (access.getRecipient() == null) {
+            throw new AccessDeniedException("Bạn không có quyền thực hiện hành động này!");
+        }
+        // Kiểm tra xem user có quyền EDITOR trên document không
+        if (isExistsByResourceAndRecipientAndPermission(access.getResource().getId(), currentUser.getId(), Permission.EDITOR)) {
+            return;
+        }
+        // Nếu không phải chủ sở hữu hoặc editor, chặn quyền cập nhật
+        throw new AccessDeniedException("Bạn không có quyền thực hiện hành động này!");
+    }
+
+    protected boolean currentUserIsOwnerResource(Resource resource, User currentUser) {
+        return resource.getOwner() != null && resource.getOwner().getId().equals(currentUser.getId());
+    }
+
+    protected boolean isExistsByResourceAndRecipientAndPermission(Long resourceId, Long recipientId, Permission permission) {
+        AccessResource access = getAccessByResourceAndRecipient(resourceId, recipientId);
+        return access != null && access.getPermission().equals(permission);
+    }
 
     protected abstract T getAccessByResourceAndRecipient(Long resourceId, Long recipientId);
 

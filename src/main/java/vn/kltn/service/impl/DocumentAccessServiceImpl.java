@@ -19,7 +19,10 @@ import vn.kltn.repository.specification.DocumentSpecification;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.specification.SpecificationUtil;
 import vn.kltn.repository.util.PaginationUtils;
-import vn.kltn.service.*;
+import vn.kltn.service.IAuthenticationService;
+import vn.kltn.service.IDocumentAccessService;
+import vn.kltn.service.IMailService;
+import vn.kltn.service.IUserService;
 
 import java.util.List;
 import java.util.Set;
@@ -35,8 +38,8 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
     private final IMailService mailService;
     private final ResourceCommonService resourceCommonService;
     private final IAuthenticationService authenticationService;
-    private final IFolderAccessService folderAccessService;
-
+    private final FolderAccessCommonService folderAccessCommonService;
+    private final DocumentCommonService documentCommonService;
 
     private void validateConditionsToAccess(Document document) {
         // chưa bị xóa
@@ -44,7 +47,6 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
         // là chủ sở hữu
         resourceCommonService.validateCurrentUserIsOwnerResource(document);
     }
-
 
     @Override
     protected DocumentAccess getAccessByResourceAndRecipient(Long resourceId, Long recipientId) {
@@ -81,7 +83,7 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
 
     @Override
     protected void setResource(DocumentAccess access, Long resourceId) {
-        Document document = resourceCommonService.getDocumentByIdOrThrow(resourceId);
+        Document document = documentCommonService.getDocumentByIdOrThrow(resourceId);
         validateConditionsToAccess(document);
         access.setResource(document);
     }
@@ -123,8 +125,7 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
     public void inheritAccess(Document document) {
         Folder folder = document.getParent();
         if (folder != null) {
-            // fix lỗi chỗ này
-            Set<FolderAccess> folderAccesses = folderAccessService.getAllByResourceId(folder.getId());
+            Set<FolderAccess> folderAccesses = folderAccessCommonService.getFolderAccessByResourceId(folder.getId());
             folderAccesses.forEach(folderAccess -> {
                 DocumentAccess documentAccess = createEmptyAccess();
                 documentAccess.setRecipient(folderAccess.getRecipient());
@@ -145,12 +146,11 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
             // nó trả trả về 1 spec mới
             spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
             spec = spec.and(DocumentSpecification.hasAccessByRecipient(currentUser.getId()));
-            Page<Document> documentPage = resourceCommonService.getPageDocumentBySpec(spec, pageable);
-            return PaginationUtils.convertToPageResponse(documentPage, pageable, resourceCommonService::mapToDocumentResponse);
+            Page<Document> documentPage = documentCommonService.getPageDocumentBySpec(spec, pageable);
+            return PaginationUtils.convertToPageResponse(documentPage, pageable, documentCommonService::mapToDocumentResponse);
         }
         Specification<Document> spec = DocumentSpecification.hasAccessByRecipient(currentUser.getId());
-        return PaginationUtils.convertToPageResponse(resourceCommonService.getPageDocumentBySpec(spec, pageable),
-                pageable, resourceCommonService::mapToDocumentResponse);
+        return PaginationUtils.convertToPageResponse(documentCommonService.getPageDocumentBySpec(spec, pageable), pageable, documentCommonService::mapToDocumentResponse);
     }
 
     @Override
@@ -162,4 +162,5 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
     public void deleteAccessByResourceId(Long resourceId) {
         documentAccessRepo.deleteAllByResourceId(resourceId);
     }
+
 }

@@ -27,6 +27,8 @@ public class OwnerShipTransferServiceImpl implements IOwnerShipTransferService {
     private final OwnerShipTransferMapper ownerShipTransferMapper;
     private final ResourceCommonService resourceCommonService;
     private final IAuthenticationService authenticationService;
+    private final FolderCommonService folderCommonService;
+    private final DocumentCommonService documentCommonService;
 
     // Tạo yêu cầu chuyển quyền sở hữu
     @Override
@@ -77,8 +79,8 @@ public class OwnerShipTransferServiceImpl implements IOwnerShipTransferService {
             ownerShipTransfer.setStatus(TransferStatus.PENDING);
         } else {
             resource = isDocument
-                    ? resourceCommonService.getDocumentByIdOrThrow(resourceId)
-                    : resourceCommonService.getFolderByIdOrThrow(resourceId);
+                    ? documentCommonService.getDocumentByIdOrThrow(resourceId)
+                    : folderCommonService.getFolderByIdOrThrow(resourceId);
             validateConditionsResourceTransfer(resource);
             ownerShipTransfer = new OwnerShipTransfer();
             if (isDocument) {

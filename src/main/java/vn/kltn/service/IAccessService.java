@@ -13,6 +13,7 @@ import java.util.Set;
 public interface IAccessService<T extends AccessResource, R extends BaseDto> {
     R createAccess(Long resourceId, AccessRequest accessRequest);
 
+    // update folder access cho 1 người cụ thể thì các folder,document trong nó cũng sẽ bị cập nhật theo
     R updateAccess(Long accessId, Permission newPermission);
 
     PageResponse<List<R>> getAccessByResource(Pageable pageable, String[] resources);

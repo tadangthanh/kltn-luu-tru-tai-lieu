@@ -35,6 +35,7 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
     private final IDocumentService documentService;
     private final ResourceCommonService resourceCommonService;
     private final IFolderAccessService folderAccessService;
+    private final FolderCommonService folderCommonService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
 
@@ -83,7 +84,7 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
 
     @Override
     public Folder getFolderByIdOrThrow(Long folderId) {
-        return resourceCommonService.getFolderByIdOrThrow(folderId);
+        return folderCommonService.getFolderByIdOrThrow(folderId);
     }
 
     private void validateFolderDeleted(Folder folder) {
