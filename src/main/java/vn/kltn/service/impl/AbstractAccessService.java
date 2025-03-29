@@ -103,4 +103,5 @@ public abstract class AbstractAccessService<T extends AccessResource, R extends 
 
     protected abstract void deleteAccessByResourceIdAndRecipient(Long resourceId, Long recipientId);
 
+
 }

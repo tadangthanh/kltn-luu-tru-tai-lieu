@@ -9,13 +9,20 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.AccessRequest;
 import vn.kltn.dto.response.AccessResourceResponse;
+import vn.kltn.dto.response.DocumentResponse;
+import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.*;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.AccessResourceMapper;
 import vn.kltn.repository.DocumentAccessRepo;
+import vn.kltn.repository.specification.EntitySpecificationsBuilder;
+import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
 
+import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @Transactional
@@ -26,7 +33,6 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
     private final AccessResourceMapper accessResourceMapper;
     private final IUserService userService;
     private final IMailService mailService;
-    private final DocumentCommonService documentCommonService;
     private final ResourceCommonService resourceCommonService;
     private final IAuthenticationService authenticationService;
     private final IFolderAccessService folderAccessService;
@@ -38,6 +44,7 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
         // là chủ sở hữu
         resourceCommonService.validateCurrentUserIsOwnerResource(document);
     }
+
 
     @Override
     protected DocumentAccess getAccessByResourceAndRecipient(Long resourceId, Long recipientId) {
@@ -74,7 +81,7 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
 
     @Override
     protected void setResource(DocumentAccess access, Long resourceId) {
-        Document document = documentCommonService.getResourceByIdOrThrow(resourceId);
+        Document document = resourceCommonService.getDocumentByIdOrThrow(resourceId);
         validateConditionsToAccess(document);
         access.setResource(document);
     }
@@ -125,6 +132,24 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
                 documentAccessRepo.save(documentAccess);
             });
         }
+    }
+
+    @Override
+    public PageResponse<List<DocumentResponse>> getPageDocumentSharedByCurrentUser(Pageable pageable, String[] documents) {
+        if (documents != null && documents.length > 0) {
+            EntitySpecificationsBuilder<Document> builder = new EntitySpecificationsBuilder<>();
+            Pattern pattern = Pattern.compile("([a-zA-Z0-9_.]+?)([<:>~!])(.*)(\\p{Punct}?)(\\p{Punct}?)");
+            for (String s : documents) {
+                Matcher matcher = pattern.matcher(s);
+                if (matcher.find()) {
+                    builder.with(matcher.group(1), matcher.group(2), matcher.group(3), matcher.group(4), matcher.group(5));
+                }
+            }
+            Specification<Document> spec = builder.build();
+            Page<Document> pageResource = resourceCommonService.pagePageDocumentBySpec(spec, pageable);
+            return PaginationUtils.convertToPageResponse(pageResource, pageable, resourceCommonService::mapToDocumentResponse);
+        }
+        return PaginationUtils.convertToPageResponse(resourceCommonService.getPageDocument(pageable), pageable, resourceCommonService::mapToDocumentResponse);
     }
 
     @Override

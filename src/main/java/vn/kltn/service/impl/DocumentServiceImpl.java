@@ -47,7 +47,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     private final IAuthenticationService authenticationService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
-    private final IResourceCommonService<Folder> folderCommonService;
+    private final ResourceCommonService resourceCommonService;
     private final IDocumentAccessService documentAccessService;
 
     @Override
@@ -59,7 +59,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     @Override
     public DocumentResponse uploadDocumentWithParent(Long parentId, DocumentRequest documentRequest, MultipartFile file) {
         Document document = processValidDocument(documentRequest, file);
-        Folder folder = folderCommonService.getResourceById(parentId);
+        Folder folder = resourceCommonService.getFolderByIdOrThrow(parentId);
         document.setParent(folder);
         documentAccessService.inheritAccess(document);
         return mapToDocumentResponse(document);
@@ -182,7 +182,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     @Override
     public DocumentResponse moveResourceToFolder(Long resourceId, Long folderId) {
         Document resource = getResourceByIdOrThrow(resourceId);
-        Folder resourceDestination = folderCommonService.getResourceById(folderId);
+        Folder resourceDestination = resourceCommonService.getFolderByIdOrThrow(folderId);
         validateCurrentUserIsOwnerResource(resource);
         validateResourceNotDeleted(resource);
         validateResourceNotDeleted(resourceDestination);

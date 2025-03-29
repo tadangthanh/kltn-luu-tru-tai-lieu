@@ -31,13 +31,13 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
     private final AccessResourceMapper accessResourceMapper;
     private final IUserService userService;
     private final IMailService mailService;
-    private final FolderCommonService folderCommonService;
+    private final ResourceCommonService resourceCommonService;
     private final IAuthenticationService authenticationService;
 
 
     private void validateFolderConditionsAccess(Folder folder) {
-        folderCommonService.validateResourceNotDeleted(folder);
-        folderCommonService.validateCurrentUserIsOwnerResource(folder);
+        resourceCommonService.validateResourceNotDeleted(folder);
+        resourceCommonService.validateCurrentUserIsOwnerResource(folder);
     }
 
     @Override
@@ -76,7 +76,7 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
 
     @Override
     protected void setResource(FolderAccess access, Long resourceId) {
-        Folder folder = folderCommonService.getResourceById(resourceId);
+        Folder folder = resourceCommonService.getFolderByIdOrThrow(resourceId);
         validateFolderConditionsAccess(folder);
         access.setResource(folder);
     }
