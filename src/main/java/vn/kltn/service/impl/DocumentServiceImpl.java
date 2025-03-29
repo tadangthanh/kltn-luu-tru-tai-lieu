@@ -23,6 +23,7 @@ import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.DocumentMapper;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
+import vn.kltn.repository.specification.SpecificationUtil;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
 
@@ -92,14 +93,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         log.info("search document by current user");
         if (documents != null && documents.length > 0) {
             EntitySpecificationsBuilder<Document> builder = new EntitySpecificationsBuilder<>();
-            Pattern pattern = Pattern.compile("([a-zA-Z0-9_.]+?)([<:>~!])(.*)(\\p{Punct}?)(\\p{Punct}?)");
-            for (String s : documents) {
-                Matcher matcher = pattern.matcher(s);
-                if (matcher.find()) {
-                    builder.with(matcher.group(1), matcher.group(2), matcher.group(3), matcher.group(4), matcher.group(5));
-                }
-            }
-            Specification<Document> spec = builder.build();
+            Specification<Document> spec = SpecificationUtil.buildSpecificationFromFilters(documents, builder);
             // nó trả trả về 1 spec mới
             spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
             String email = SecurityContextHolder.getContext().getAuthentication().getName();

@@ -17,14 +17,12 @@ import vn.kltn.map.AccessResourceMapper;
 import vn.kltn.repository.DocumentAccessRepo;
 import vn.kltn.repository.specification.DocumentSpecification;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
-import vn.kltn.repository.specification.SearchRepo;
+import vn.kltn.repository.specification.SpecificationUtil;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
 
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 @Transactional
@@ -38,7 +36,6 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
     private final ResourceCommonService resourceCommonService;
     private final IAuthenticationService authenticationService;
     private final IFolderAccessService folderAccessService;
-    private final SearchRepo searchRepo;
 
 
     private void validateConditionsToAccess(Document document) {
@@ -143,14 +140,7 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
         User currentUser = authenticationService.getCurrentUser();
         if (documents != null && documents.length > 0) {
             EntitySpecificationsBuilder<Document> builder = new EntitySpecificationsBuilder<>();
-            Pattern pattern = Pattern.compile("([a-zA-Z0-9_.]+?)([<:>~!])(.*)(\\p{Punct}?)(\\p{Punct}?)");
-            for (String s : documents) {
-                Matcher matcher = pattern.matcher(s);
-                if (matcher.find()) {
-                    builder.with(matcher.group(1), matcher.group(2), matcher.group(3), matcher.group(4), matcher.group(5));
-                }
-            }
-            Specification<Document> spec = builder.build();
+            Specification<Document> spec = SpecificationUtil.buildSpecificationFromFilters(documents, builder);
             // nó trả trả về 1 spec mới
             spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
             spec = spec.and(DocumentSpecification.hasAccessByRecipient(currentUser.getId()));

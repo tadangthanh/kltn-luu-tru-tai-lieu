@@ -13,12 +13,11 @@ import vn.kltn.entity.Resource;
 import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
+import vn.kltn.repository.specification.SpecificationUtil;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IResourceService;
 
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 @Transactional
@@ -43,14 +42,7 @@ public abstract class AbstractResourceService<T extends Resource, R extends Reso
     public PageResponse<List<R>> searchByCurrentUser(Pageable pageable, String[] resources) {
         if (resources != null && resources.length > 0) {
             EntitySpecificationsBuilder<T> builder = new EntitySpecificationsBuilder<>();
-            Pattern pattern = Pattern.compile("([a-zA-Z0-9_.]+?)([<:>~!])(.*)(\\p{Punct}?)(\\p{Punct}?)");
-            for (String s : resources) {
-                Matcher matcher = pattern.matcher(s);
-                if (matcher.find()) {
-                    builder.with(matcher.group(1), matcher.group(2), matcher.group(3), matcher.group(4), matcher.group(5));
-                }
-            }
-            Specification<T> spec = builder.build();
+            Specification<T> spec = SpecificationUtil.buildSpecificationFromFilters(resources, builder);
             spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
             String email = SecurityContextHolder.getContext().getAuthentication().getName();
             spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdBy"), email));
