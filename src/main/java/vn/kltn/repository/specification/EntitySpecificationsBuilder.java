@@ -44,10 +44,10 @@ public class EntitySpecificationsBuilder<T> {
     // hàm này trả về một đối tượng Specification<SubTopic> dựa trên các tiêu chí tìm kiếm đã được xây dựng từ method with
     public Specification<T> build() {
         if (params.isEmpty()) return null;
-        Specification<T> result = new EntitySpecification<T>(params.get(0));
+        Specification<T> result = new EntitySpecification<>(params.get(0));
         for (int i = 1; i < params.size(); i++) {
             // các tiêu chí tìm kiếm được xây dựng từ method with sẽ được kết hợp với nhau theo kiểu "và" hoặc "hoặc"
-            result = params.get(i).isOrPredicate() ? Specification.where(result).or(new EntitySpecification<T>(params.get(i))) : Specification.where(result).and(new EntitySpecification<T>(params.get(i)));
+            result = params.get(i).isOrPredicate() ? Specification.where(result).or(new EntitySpecification<>(params.get(i))) : Specification.where(result).and(new EntitySpecification<>(params.get(i)));
         }
         return result;
     }

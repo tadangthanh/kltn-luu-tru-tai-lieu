@@ -12,5 +12,5 @@ import java.util.List;
 public interface IDocumentAccessService extends IAccessService<DocumentAccess, AccessResourceResponse> {
     void inheritAccess(Document document);
 
-    PageResponse<List<DocumentResponse>> getPageDocumentSharedByCurrentUser(Pageable pageable, String[] documents);
+    PageResponse<List<DocumentResponse>> getPageDocumentSharedByCurrentUser(Pageable pageable);
 }

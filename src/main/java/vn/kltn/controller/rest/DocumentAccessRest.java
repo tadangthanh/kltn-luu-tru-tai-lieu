@@ -6,9 +6,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vn.kltn.dto.request.AccessRequest;
 import vn.kltn.dto.response.AccessResourceResponse;
+import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
-import vn.kltn.service.IAccessService;
 import vn.kltn.service.IDocumentAccessService;
 import vn.kltn.validation.Create;
 import vn.kltn.validation.Update;
@@ -41,5 +41,10 @@ public class DocumentAccessRest {
     @GetMapping
     public ResponseData<PageResponse<List<AccessResourceResponse>>> getAccessByResource(Pageable pageable, @RequestParam(required = false) String[] resources) {
         return new ResponseData<>(200, "Thành công", documentAccessService.getAccessByResource(pageable, resources));
+    }
+
+    @GetMapping("/document")
+    public ResponseData<PageResponse<List<DocumentResponse>>> getDocumentSharedByCurrentUser(Pageable pageable) {
+        return new ResponseData<>(200, "Thành công", documentAccessService.getPageDocumentSharedByCurrentUser(pageable));
     }
 }

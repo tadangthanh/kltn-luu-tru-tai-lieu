@@ -15,14 +15,13 @@ import vn.kltn.entity.*;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.AccessResourceMapper;
 import vn.kltn.repository.DocumentAccessRepo;
-import vn.kltn.repository.specification.EntitySpecificationsBuilder;
+import vn.kltn.repository.specification.DocumentSpecification;
+import vn.kltn.repository.specification.SearchRepo;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
 
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 @Transactional
@@ -36,6 +35,7 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
     private final ResourceCommonService resourceCommonService;
     private final IAuthenticationService authenticationService;
     private final IFolderAccessService folderAccessService;
+    private final SearchRepo searchRepo;
 
 
     private void validateConditionsToAccess(Document document) {
@@ -135,21 +135,12 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
     }
 
     @Override
-    public PageResponse<List<DocumentResponse>> getPageDocumentSharedByCurrentUser(Pageable pageable, String[] documents) {
-        if (documents != null && documents.length > 0) {
-            EntitySpecificationsBuilder<Document> builder = new EntitySpecificationsBuilder<>();
-            Pattern pattern = Pattern.compile("([a-zA-Z0-9_.]+?)([<:>~!])(.*)(\\p{Punct}?)(\\p{Punct}?)");
-            for (String s : documents) {
-                Matcher matcher = pattern.matcher(s);
-                if (matcher.find()) {
-                    builder.with(matcher.group(1), matcher.group(2), matcher.group(3), matcher.group(4), matcher.group(5));
-                }
-            }
-            Specification<Document> spec = builder.build();
-            Page<Document> pageResource = resourceCommonService.pagePageDocumentBySpec(spec, pageable);
-            return PaginationUtils.convertToPageResponse(pageResource, pageable, resourceCommonService::mapToDocumentResponse);
-        }
-        return PaginationUtils.convertToPageResponse(resourceCommonService.getPageDocument(pageable), pageable, resourceCommonService::mapToDocumentResponse);
+    public PageResponse<List<DocumentResponse>> getPageDocumentSharedByCurrentUser(Pageable pageable) {
+        log.info("get page document shared by current user");
+        User currentUser = authenticationService.getCurrentUser();
+        Specification<Document> spec = DocumentSpecification.hasAccessByRecipient(currentUser.getId());
+        Page<Document> documentPage = resourceCommonService.pagePageDocumentBySpec(spec, pageable);
+        return PaginationUtils.convertToPageResponse(documentPage, pageable, resourceCommonService::mapToDocumentResponse);
     }
 
     @Override

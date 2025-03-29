@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -27,6 +28,8 @@ public class Document extends BaseEntity implements Resource {
     @ManyToOne
     @JoinColumn(name = "parent_id")
     private Folder parent;
+    @OneToMany(mappedBy = "resource")
+    private List<DocumentAccess> documentAccessList;
 
     @Override
     public void setParent(Resource parent) {
