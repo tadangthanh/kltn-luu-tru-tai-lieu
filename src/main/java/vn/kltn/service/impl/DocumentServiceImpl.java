@@ -104,7 +104,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
     @Override
     protected void deleteAccessByResourceAndRecipientId(Long resourceId, Long recipientId) {
-        documentAccessService.deleteAccessByResourceIdRecipient(resourceId, recipientId);
+        documentAccessService.deleteAccessByResourceRecipientId(resourceId, recipientId);
     }
 
     @Override
@@ -114,7 +114,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
     @Override
     protected void deleteAccessResourceById(Long id) {
-        documentAccessService.deleteAccessByResource(id);
+        documentAccessService.deleteAccessByResourceId(id);
     }
 
     @Override

@@ -90,7 +90,7 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
     protected DocumentAccess findAccessById(Long accessId) {
         return documentAccessRepo.findById(accessId).orElseThrow(() -> {
             log.warn("Document access not found by id: {}", accessId);
-            return new ResourceNotFoundException("Document access not found");
+            return new ResourceNotFoundException("Không tìm thấy quyền truy cập tài liệu");
         });
     }
 
@@ -123,6 +123,7 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
     public void inheritAccess(Document document) {
         Folder folder = document.getParent();
         if (folder != null) {
+            // fix lỗi chỗ này
             Set<FolderAccess> folderAccesses = folderAccessService.getAllByResourceId(folder.getId());
             folderAccesses.forEach(folderAccess -> {
                 DocumentAccess documentAccess = createEmptyAccess();
@@ -158,7 +159,7 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
     }
 
     @Override
-    public void deleteAccessByResource(Long resourceId) {
+    public void deleteAccessByResourceId(Long resourceId) {
         documentAccessRepo.deleteAllByResourceId(resourceId);
     }
 }

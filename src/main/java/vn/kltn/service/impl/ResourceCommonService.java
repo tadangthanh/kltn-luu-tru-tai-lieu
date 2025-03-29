@@ -33,12 +33,12 @@ public class ResourceCommonService {
 
     // T extends Resource là khai báo tham số T thuôc kiểu Resource
     public <T extends Resource> void validateResourceNotDeleted(T resource) {
-        log.info("validateResourceNotDeleted");
+        log.info("validate resource not deleted");
         ResourceValidator.validateResourceNotDeleted(resource);
     }
 
     public <T extends Resource> void validateCurrentUserIsOwnerResource(T resource) {
-        log.info("validateCurrentUserIsOwnerResource");
+        log.info("validate current user is owner resource");
         User currentUser = authenticationService.getCurrentUser();
         ResourceValidator.validateCurrentUserIsOwner(resource, currentUser);
     }
@@ -65,9 +65,11 @@ public class ResourceCommonService {
     public Page<Folder> getPageFolderBySpec(Specification<Folder> spec, Pageable pageable) {
         return folderRepo.findAll(spec, pageable);
     }
+
     public DocumentResponse mapToDocumentResponse(Document document) {
         return documentMapper.toDocumentResponse(document);
     }
+
     public FolderResponse mapToFolderResponse(Folder folder) {
         return folderMapper.toFolderResponse(folder);
     }

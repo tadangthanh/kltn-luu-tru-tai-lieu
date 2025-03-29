@@ -127,7 +127,7 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
     }
 
     @Override
-    public void deleteAccessByResource(Long resourceId) {
+    public void deleteAccessByResourceId(Long resourceId) {
         folderAccessRepo.deleteAllByResourceId(resourceId);
     }
 

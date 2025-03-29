@@ -95,7 +95,7 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
 
     @Override
     protected void deleteAccessByResourceAndRecipientId(Long resourceId, Long recipientId) {
-        folderAccessService.deleteAccessByResourceIdRecipient(resourceId, recipientId);
+        folderAccessService.deleteAccessByResourceRecipientId(resourceId, recipientId);
     }
 
     @Override
@@ -148,7 +148,7 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
 
     @Override
     protected void deleteAccessResourceById(Long id) {
-        folderAccessService.deleteAccessByResource(id);
+        folderAccessService.deleteAccessByResourceId(id);
     }
 
     @Override

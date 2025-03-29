@@ -57,7 +57,7 @@ public abstract class AbstractAccessService<T extends AccessResource, R extends 
     }
 
     @Override
-    public void deleteAccessByResourceIdRecipient(Long resourceId, Long recipientId) {
+    public void deleteAccessByResourceRecipientId(Long resourceId, Long recipientId) {
         deleteAccessByResourceIdAndRecipient(resourceId, recipientId);
     }
 

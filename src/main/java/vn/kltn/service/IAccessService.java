@@ -23,7 +23,7 @@ public interface IAccessService<T extends AccessResource, R extends BaseDto> {
 
     void validateUserIsEditor(Long resourceId, Long userId);
 
-    void deleteAccessByResourceIdRecipient(Long resourceId, Long recipientId);
+    void deleteAccessByResourceRecipientId(Long resourceId, Long recipientId);
 
-    void deleteAccessByResource(Long resourceId);
+    void deleteAccessByResourceId(Long resourceId);
 }
