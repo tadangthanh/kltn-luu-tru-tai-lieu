@@ -69,6 +69,7 @@ public abstract class AbstractAccessService<T extends AccessResource, R extends 
         }
     }
 
+
     protected abstract T getAccessByResourceAndRecipient(Long resourceId, Long recipientId);
 
     protected abstract Page<T> getPageAccessByResource(Pageable pageable);

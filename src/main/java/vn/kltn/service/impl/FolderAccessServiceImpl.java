@@ -9,17 +9,24 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.AccessRequest;
 import vn.kltn.dto.response.AccessResourceResponse;
+import vn.kltn.dto.response.FolderResponse;
+import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Folder;
 import vn.kltn.entity.FolderAccess;
 import vn.kltn.entity.User;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.AccessResourceMapper;
 import vn.kltn.repository.FolderAccessRepo;
+import vn.kltn.repository.specification.EntitySpecificationsBuilder;
+import vn.kltn.repository.specification.FolderSpecification;
+import vn.kltn.repository.specification.SpecificationUtil;
+import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IFolderAccessService;
 import vn.kltn.service.IMailService;
 import vn.kltn.service.IUserService;
 
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -137,5 +144,23 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
                 folderAccessRepo.save(folderNewAccess);
             });
         }
+    }
+
+    @Override
+    public PageResponse<List<FolderResponse>> getPageFolderSharedForMe(Pageable pageable, String[] folders) {
+        log.info("get page folder shared me");
+        User currentUser = authenticationService.getCurrentUser();
+        if (folders != null && folders.length > 0) {
+            EntitySpecificationsBuilder<Folder> builder = new EntitySpecificationsBuilder<>();
+            Specification<Folder> spec = SpecificationUtil.buildSpecificationFromFilters(folders, builder);
+            // nó trả trả về 1 spec mới
+            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
+            spec = spec.and(FolderSpecification.hasAccessByRecipient(currentUser.getId()));
+            Page<Folder> folderPage = resourceCommonService.getPageFolderBySpec(spec, pageable);
+            return PaginationUtils.convertToPageResponse(folderPage, pageable, resourceCommonService::mapToFolderResponse);
+        }
+        Specification<Folder> spec = FolderSpecification.hasAccessByRecipient(currentUser.getId());
+        return PaginationUtils.convertToPageResponse(resourceCommonService.getPageFolderBySpec(spec, pageable),
+                pageable, resourceCommonService::mapToFolderResponse);
     }
 }

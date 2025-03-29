@@ -29,6 +29,9 @@ public class Folder extends BaseEntity implements Resource {
     @OneToMany(mappedBy = "parent", cascade = CascadeType.REMOVE)
     private Set<Document> documents; // danh sách tài liệu
 
+    @OneToMany(mappedBy = "resource", cascade = CascadeType.REMOVE)
+    private Set<FolderAccess> folderAccessList; // danh sách quyền truy cập
+
     @ManyToOne
     @JoinColumn(name = "owner_id")
     private User owner; // chủ sở hữu

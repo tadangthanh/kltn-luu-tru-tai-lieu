@@ -135,8 +135,8 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
     }
 
     @Override
-    public PageResponse<List<DocumentResponse>> getPageDocumentSharedByCurrentUser(Pageable pageable, String[] documents) {
-        log.info("get page document shared by current user");
+    public PageResponse<List<DocumentResponse>> getPageDocumentSharedForMe(Pageable pageable, String[] documents) {
+        log.info("get page document shared me");
         User currentUser = authenticationService.getCurrentUser();
         if (documents != null && documents.length > 0) {
             EntitySpecificationsBuilder<Document> builder = new EntitySpecificationsBuilder<>();
@@ -144,11 +144,11 @@ public class DocumentAccessServiceImpl extends AbstractAccessService<DocumentAcc
             // nó trả trả về 1 spec mới
             spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
             spec = spec.and(DocumentSpecification.hasAccessByRecipient(currentUser.getId()));
-            Page<Document> documentPage = resourceCommonService.getPagePageDocumentBySpec(spec, pageable);
+            Page<Document> documentPage = resourceCommonService.getPageDocumentBySpec(spec, pageable);
             return PaginationUtils.convertToPageResponse(documentPage, pageable, resourceCommonService::mapToDocumentResponse);
         }
         Specification<Document> spec = DocumentSpecification.hasAccessByRecipient(currentUser.getId());
-        return PaginationUtils.convertToPageResponse(resourceCommonService.getPagePageDocumentBySpec(spec, pageable),
+        return PaginationUtils.convertToPageResponse(resourceCommonService.getPageDocumentBySpec(spec, pageable),
                 pageable, resourceCommonService::mapToDocumentResponse);
     }
 

@@ -7,12 +7,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.response.DocumentResponse;
+import vn.kltn.dto.response.FolderResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.Folder;
 import vn.kltn.entity.Resource;
 import vn.kltn.entity.User;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.DocumentMapper;
+import vn.kltn.map.FolderMapper;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.repository.FolderRepo;
 import vn.kltn.service.IAuthenticationService;
@@ -26,6 +28,7 @@ public class ResourceCommonService {
     private final FolderRepo folderRepo;
     private final DocumentRepo documentRepo;
     private final DocumentMapper documentMapper;
+    private final FolderMapper folderMapper;
 
 
     // T extends Resource là khai báo tham số T thuôc kiểu Resource
@@ -55,16 +58,18 @@ public class ResourceCommonService {
         });
     }
 
-    public Page<Document> getPageDocument(Pageable pageable) {
-        return documentRepo.findAll(pageable);
-    }
-
-    public Page<Document> getPagePageDocumentBySpec(Specification<Document> spec, Pageable pageable) {
+    public Page<Document> getPageDocumentBySpec(Specification<Document> spec, Pageable pageable) {
         return documentRepo.findAll(spec, pageable);
     }
 
+    public Page<Folder> getPageFolderBySpec(Specification<Folder> spec, Pageable pageable) {
+        return folderRepo.findAll(spec, pageable);
+    }
     public DocumentResponse mapToDocumentResponse(Document document) {
         return documentMapper.toDocumentResponse(document);
+    }
+    public FolderResponse mapToFolderResponse(Folder folder) {
+        return folderMapper.toFolderResponse(folder);
     }
 
 }
