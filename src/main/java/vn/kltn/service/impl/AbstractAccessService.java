@@ -12,7 +12,6 @@ import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.AccessResource;
 import vn.kltn.entity.Resource;
 import vn.kltn.entity.User;
-import vn.kltn.exception.InvalidDataException;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.specification.SpecificationUtil;
 import vn.kltn.repository.util.PaginationUtils;
@@ -68,14 +67,16 @@ public abstract class AbstractAccessService<T extends AccessResource, R extends 
     @Override
     public void validateUserIsEditor(Long resourceId, Long userId) {
         T access = getAccessByResourceAndRecipient(resourceId, userId);
+        // Kiểm tra xem user có quyền EDITOR trên document không
         if (access.getPermission() != Permission.EDITOR) {
-            throw new InvalidDataException("Bạn không có quyền thực hiện hành động này!");
+            throw new AccessDeniedException("Bạn không có quyền thực hiện hành động này!");
         }
     }
 
     protected void validateConditionsToUpdateAccess(T access) {
         // khi update quyen truy cap cho 1 folder/document nao do thi can phai kiem tra nguoi do
         // co quyen editor voi folder/document can update hay khong
+        // kiem tra quyen editor ở folder cha của resorce này
         User currentUser = getCurrentUser();
         // Nếu user là chủ sở hữu của document, cho phép cập nhật
         if (currentUserIsOwnerResource(access.getResource(), currentUser)) {

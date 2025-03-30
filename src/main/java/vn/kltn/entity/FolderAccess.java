@@ -19,7 +19,7 @@ public class FolderAccess extends BaseEntity implements AccessResource {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, name = "permission")
     private Permission permission;
-
+    private boolean isCustomPermission; // true: quyền truy cập tùy chỉnh, false: quyền truy cập mặc định kế thừa từ folder cha
     @Override
     public <T extends Resource> void setResource(T resource) {
         this.resource = (Folder) resource;

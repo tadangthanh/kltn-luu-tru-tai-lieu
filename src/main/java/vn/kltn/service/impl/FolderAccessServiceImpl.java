@@ -78,6 +78,7 @@ public class FolderAccessServiceImpl extends AbstractAccessService<FolderAccess,
         FolderAccess access = findAccessById(accessId);
         validateConditionsToUpdateAccess(access);
         access.setPermission(newPermission);
+        // update access cho các document và folder con trong folder này
 
         return mapToR(saveAccess(access));
     }

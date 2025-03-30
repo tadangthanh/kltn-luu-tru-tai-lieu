@@ -19,6 +19,10 @@ public class DocumentAccess extends BaseEntity implements AccessResource {
     @Enumerated(EnumType.STRING)
     @Column(name = "permission", nullable = false)
     private Permission permission;
+    // true: quyền truy cập tùy chỉnh, false: quyền truy cập mặc định kế thừa từ folder cha
+    // khi update quyền truy cập từ folder cha thì kiểm tra xem quyền truy cập này có phải là quyền truy cập tùy chỉnh hay không
+    //nếu là quyền truy cập tùy chỉnh thì không update quyền truy cập này
+    private boolean isCustomPermission;
 
     @Override
     public <T extends Resource> void setResource(T resource) {
