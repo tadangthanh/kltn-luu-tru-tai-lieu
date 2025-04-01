@@ -12,6 +12,8 @@ import vn.kltn.map.PermissionMapper;
 import vn.kltn.repository.PermissionRepo;
 import vn.kltn.service.IUserService;
 
+import java.util.List;
+
 @Service
 @Transactional
 @Slf4j(topic = "FOLDER_PERMISSION_SERVICE")
@@ -32,7 +34,8 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService<Folde
 
     @Override
     public PermissionResponse setPermissionResource(Long resourceId, PermissionRequest permissionRequest) {
-        validatePermissionNotExistByRecipientAndResourceId( permissionRequest.getRecipientId(),resourceId);
+        // validate quyền đã tồn tại hay chưa
+        validatePermissionNotExistByRecipientAndResourceId(permissionRequest.getRecipientId(), resourceId);
         FileSystemEntity resource = getResourceById(resourceId);
         // validate đã thêm quyền này cho người này hay chưa ?
         resourceCommonService.validateCurrentUserIsOwnerResource(resource);
@@ -40,6 +43,18 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService<Folde
         resourceCommonService.validateResourceNotDeleted(resource);
         Permission permission = mapToPermission(permissionRequest);
         permission.setResource(resource);
-        return mapToPermissionResponse(savePermission(permission));
+        Permission savedPermission = permissionRepo.save(permission);
+        return mapToPermissionResponse(savedPermission);
+    }
+
+    @Override
+    public PermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest) {
+        Permission permission = getPermissionByIdOrThrow(permissionId);
+        permission.setPermission(permissionRequest.getPermission());
+        permission = permissionRepo.save(permission);
+        List<Long> folderIds = folderCommonService.getCurrentAndChildFolderIdsByFolderId(permission.getResource().getId());
+        System.out.println("length folderIds: " + folderIds.size());
+        permissionRepo.updateAllChildNotCustom(folderIds, permission.getRecipient().getId(), permissionRequest.getPermission());
+        return mapToPermissionResponse(permission);
     }
 }

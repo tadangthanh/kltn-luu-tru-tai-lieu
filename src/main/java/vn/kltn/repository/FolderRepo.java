@@ -18,7 +18,7 @@ public interface FolderRepo extends JpaRepository<Folder, Long>, JpaSpecificatio
             WITH RECURSIVE sub_folders AS (
                 SELECT id FROM folder WHERE id = :folderId
                 UNION ALL
-                SELECT f.id FROM folder f INNER JOIN sub_folders sf ON f.parent_id = sf.id
+                SELECT f.id FROM folder f inner join file_system_entity fse ON f.id=fse.id INNER JOIN sub_folders sf ON fse.parent_id = sf.id
             )
             SELECT id FROM sub_folders;
             """, nativeQuery = true)

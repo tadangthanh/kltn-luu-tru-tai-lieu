@@ -6,4 +6,6 @@ import vn.kltn.entity.FileSystemEntity;
 
 public interface IPermissionService<T extends FileSystemEntity> {
     PermissionResponse setPermissionResource(Long resourceId, PermissionRequest permissionRequest);
+
+    PermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest);
 }

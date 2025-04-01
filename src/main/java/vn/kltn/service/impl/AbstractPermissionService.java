@@ -62,6 +62,11 @@ public abstract class AbstractPermissionService<T extends FileSystemEntity> impl
 
     protected abstract FileSystemEntity getResourceById(Long resourceId);
 
+    protected Permission getPermissionByIdOrThrow(Long permissionId) {
+        return permissionRepo.findById(permissionId)
+                .orElseThrow(() -> new InvalidDataException("Không tìm thấy quyền với id này"));
+    }
+
     protected Permission savePermission(Permission permission) {
         return permissionRepo.save(permission);
     }
