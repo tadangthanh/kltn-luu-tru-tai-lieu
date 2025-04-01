@@ -1,21 +1,23 @@
 package vn.kltn.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.HashSet;
-import java.util.Set;
 
 @Entity
 @Table(name = "permission")
 @Getter
 @Setter
-public class Permission extends BaseEntity{
-    private String name;
-    private String description;
-    @OneToMany(mappedBy = "permission")
-    private Set<RoleHasPermission> roles =new HashSet<>();
+public class Permission extends BaseEntity {
+    @ManyToOne
+    @JoinColumn(name = "recipient_id")
+    private User recipient;
+
+    @ManyToOne
+    @JoinColumn(name = "resource_id", nullable = false)
+    private FileSystemEntity resource;
+    @Enumerated(EnumType.STRING)
+    private vn.kltn.common.Permission permission;
+
+    private boolean isCustomPermission = false;
 }

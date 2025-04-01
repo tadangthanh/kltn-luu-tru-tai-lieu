@@ -21,10 +21,8 @@ import java.util.Set;
 public class Role extends BaseEntity implements GrantedAuthority {
     private String name;
     @OneToMany(mappedBy = "role")
-    private Set<RoleHasPermission> permissions =new HashSet<>();
+    private Set<UserHasRole> users = new HashSet<>();
 
-    @OneToMany(mappedBy = "role")
-    private Set<UserHasRole> users =new HashSet<>();
     @Override
     public String getAuthority() {
         return name;

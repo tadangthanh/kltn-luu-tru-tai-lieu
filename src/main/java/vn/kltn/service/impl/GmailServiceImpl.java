@@ -110,39 +110,39 @@ public class GmailServiceImpl implements IMailService {
         sendEmail("Ta dang thanh", email, subject, template, context);
     }
 
-    @Override
-    @Async
-    public void sendEmailInviteDocumentAccess(String recipientEmail, DocumentAccess documentAccess, String message) {
-        log.info("sending email invite to: {}", recipientEmail);
-        Document document = documentAccess.getResource();
-        User owner = document.getOwner();
-        String subject = String.format("%s đã chia sẻ một tài liệu với bạn", owner.getFullName());
-        String template = "email-invite-document.html";
-        Context context = new Context();
-        context.setVariable("openDocLink", openDocLink + document.getId());
-        context.setVariable("ownerName", owner.getFullName());
-        context.setVariable("documentName", document.getName());
-        context.setVariable("permission", documentAccess.getPermission().getDescription());
-        context.setVariable("message", message);
-        sendEmail(owner.getFullName(), recipientEmail, subject, template, context);
-    }
+//    @Override
+//    @Async
+//    public void sendEmailInviteDocumentAccess(String recipientEmail, DocumentAccess documentAccess, String message) {
+//        log.info("sending email invite to: {}", recipientEmail);
+//        Document document = documentAccess.getResource();
+//        User owner = document.getOwner();
+//        String subject = String.format("%s đã chia sẻ một tài liệu với bạn", owner.getFullName());
+//        String template = "email-invite-document.html";
+//        Context context = new Context();
+//        context.setVariable("openDocLink", openDocLink + document.getId());
+//        context.setVariable("ownerName", owner.getFullName());
+//        context.setVariable("documentName", document.getName());
+//        context.setVariable("permission", documentAccess.getPermission().getDescription());
+//        context.setVariable("message", message);
+//        sendEmail(owner.getFullName(), recipientEmail, subject, template, context);
+//    }
 
-    @Override
-    @Async
-    public void sendEmailInviteFolderAccess(String recipientEmail, FolderAccess folderAccess, String message) {
-        log.info("sending email invite to: {}", recipientEmail);
-        Folder folder = folderAccess.getResource();
-        User owner = folder.getOwner();
-        String subject = String.format("%s đã chia sẻ một tài liệu với bạn", owner.getFullName());
-        String template = "email-invite-folder.html";
-        Context context = new Context();
-        context.setVariable("openFolderLink", openFolderLink + folder.getId());
-        context.setVariable("ownerName", owner.getFullName());
-        context.setVariable("folderName", folder.getName());
-        context.setVariable("message", message);
-        context.setVariable("permission", folderAccess.getPermission().getDescription());
-        sendEmail(owner.getFullName(), recipientEmail, subject, template, context);
-    }
+//    @Override
+//    @Async
+//    public void sendEmailInviteFolderAccess(String recipientEmail, FolderAccess folderAccess, String message) {
+//        log.info("sending email invite to: {}", recipientEmail);
+//        Folder folder = folderAccess.getResource();
+//        User owner = folder.getOwner();
+//        String subject = String.format("%s đã chia sẻ một tài liệu với bạn", owner.getFullName());
+//        String template = "email-invite-folder.html";
+//        Context context = new Context();
+//        context.setVariable("openFolderLink", openFolderLink + folder.getId());
+//        context.setVariable("ownerName", owner.getFullName());
+//        context.setVariable("folderName", folder.getName());
+//        context.setVariable("message", message);
+//        context.setVariable("permission", folderAccess.getPermission().getDescription());
+//        sendEmail(owner.getFullName(), recipientEmail, subject, template, context);
+//    }
 
     @Override
     @Async

@@ -29,7 +29,7 @@ public class FolderCommonService {
         return folderMapper.toFolderResponse(folder);
     }
 
-    public Folder getFolderByIdOrThrow(Long folderId) {
+    public Folder  getFolderByIdOrThrow(Long folderId) {
         log.info("get folder by id or throw: folderId={}", folderId);
         return folderRepo.findById(folderId).orElseThrow(() -> {
             log.warn("Folder with id {} not found", folderId);

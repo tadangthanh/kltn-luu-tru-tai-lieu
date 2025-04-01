@@ -1,7 +1,6 @@
 package vn.kltn.service.impl;
 
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -21,7 +20,6 @@ import java.util.List;
 
 @Service
 @Transactional
-@RequiredArgsConstructor
 public abstract class AbstractResourceService<T extends Resource, R extends ResourceResponse> implements IResourceService<T, R> {
 
     @Override

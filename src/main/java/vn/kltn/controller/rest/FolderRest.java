@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.dto.response.FolderResponse;
 import vn.kltn.dto.response.PageResponse;
@@ -61,4 +62,6 @@ public class FolderRest {
     public ResponseData<FolderResponse> getFolder(@PathVariable Long folderId) {
         return new ResponseData<>(200, "Thành công", folderService.getResourceById(folderId));
     }
+
+
 }

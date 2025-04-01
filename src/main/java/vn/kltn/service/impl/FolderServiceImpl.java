@@ -8,18 +8,21 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.dto.response.FolderResponse;
 import vn.kltn.entity.Folder;
+import vn.kltn.entity.Permission;
 import vn.kltn.entity.User;
 import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.FolderMapper;
 import vn.kltn.repository.FolderRepo;
+import vn.kltn.repository.PermissionRepo;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IDocumentService;
-import vn.kltn.service.IFolderAccessService;
 import vn.kltn.service.IFolderService;
+import vn.kltn.service.IUserService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,8 +37,8 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
     private final IAuthenticationService authenticationService;
     private final IDocumentService documentService;
     private final ResourceCommonService resourceCommonService;
-    private final IFolderAccessService folderAccessService;
     private final FolderCommonService folderCommonService;
+    private final IUserService userService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
 
@@ -49,7 +52,7 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
         log.info("Creating folder with parentId {}", folderRequest.getFolderParentId());
         Folder folderSaved = saveFolderWithParent(folderRequest);
         // folder con sẽ kế thừa quyền truy cập từ folder cha
-        folderAccessService.inheritAccess(folderSaved);
+//        folderAccessService.inheritAccess(folderSaved);
         return mapToFolderResponse(folderSaved);
     }
 
@@ -96,12 +99,12 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
 
     @Override
     protected void deleteAccessByResourceAndRecipientId(Long resourceId, Long recipientId) {
-        folderAccessService.deleteAccessByResourceRecipientId(resourceId, recipientId);
+//        folderAccessService.deleteAccessByResourceRecipientId(resourceId, recipientId);
     }
 
     @Override
     protected void validateAccessEditor(Long resourceId, Long userId) {
-        folderAccessService.validateUserIsEditor(resourceId, userId);
+//        folderAccessService.validateUserIsEditor(resourceId, userId);
     }
 
     @Override
@@ -149,7 +152,7 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
 
     @Override
     protected void deleteAccessResourceById(Long id) {
-        folderAccessService.deleteAccessByResourceId(id);
+//        folderAccessService.deleteAccessByResourceId(id);
     }
 
     @Override
@@ -196,4 +199,5 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
         folderMapper.updateFolderFromRequest(folderRequest, folder);
         return mapToFolderResponse(folderRepo.save(folder));
     }
+
 }

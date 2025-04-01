@@ -10,6 +10,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentResponse;
@@ -48,7 +49,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     private int documentRetentionDays;
     private final ResourceCommonService resourceCommonService;
     private final FolderCommonService folderCommonService;
-    private final IDocumentAccessService documentAccessService;
 
     @Override
     public DocumentResponse uploadDocumentWithoutParent(DocumentRequest documentRequest, MultipartFile file) {
@@ -61,7 +61,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         Document document = processValidDocument(documentRequest, file);
         Folder folder = folderCommonService.getFolderByIdOrThrow(parentId);
         document.setParent(folder);
-        documentAccessService.inheritAccess(document);
+//        documentAccessService.inheritAccess(document);
         return mapToDocumentResponse(document);
     }
 
@@ -103,19 +103,20 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         return PaginationUtils.convertToPageResponse(documentRepo.findAll(pageable), pageable, this::mapToDocumentResponse);
     }
 
+
     @Override
     protected void deleteAccessByResourceAndRecipientId(Long resourceId, Long recipientId) {
-        documentAccessService.deleteAccessByResourceRecipientId(resourceId, recipientId);
+//        documentAccessService.deleteAccessByResourceRecipientId(resourceId, recipientId);
     }
 
     @Override
     protected void validateAccessEditor(Long resourceId, Long userId) {
-        documentAccessService.validateUserIsEditor(resourceId, userId);
+//        documentAccessService.validateUserIsEditor(resourceId, userId);
     }
 
     @Override
     protected void deleteAccessResourceById(Long id) {
-        documentAccessService.deleteAccessByResourceId(id);
+//        documentAccessService.deleteAccessByResourceId(id);
     }
 
     @Override

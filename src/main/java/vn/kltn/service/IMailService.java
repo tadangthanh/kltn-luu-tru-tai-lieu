@@ -6,9 +6,9 @@ import vn.kltn.entity.*;
 public interface IMailService {
     String sendEmail(String recipients, String subject, String content, MultipartFile[] files);
 
-    void sendEmailInviteDocumentAccess(String recipientEmail, DocumentAccess documentAccess, String message);
-
-    void sendEmailInviteFolderAccess(String recipientEmail, FolderAccess folderAccess, String message);
+//    void sendEmailInviteDocumentAccess(String recipientEmail, DocumentAccess documentAccess, String message);
+//
+//    void sendEmailInviteFolderAccess(String recipientEmail, FolderAccess folderAccess, String message);
 
     void sendEmailTransferOwnershipDocument(String recipientEmail, Document document);
 

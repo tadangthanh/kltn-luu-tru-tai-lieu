@@ -7,7 +7,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.Permission;
 import vn.kltn.dto.BaseDto;
-import vn.kltn.dto.request.AccessRequest;
+import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.AccessResource;
 import vn.kltn.entity.Resource;
@@ -24,12 +24,12 @@ public abstract class AbstractAccessService<T extends AccessResource, R extends 
 
     // Phương thức tạo mới access - dùng chung cho DocumentAccess và FolderAccess
     @Override
-    public R createAccess(Long resourceId, AccessRequest accessRequest) {
+    public R createAccess(Long resourceId, PermissionRequest permissionRequest) {
         T access = createEmptyAccess();
         setResource(access, resourceId);
-        access.setRecipient(getUserByEmail(accessRequest.getRecipientEmail()));
-        access.setPermission(accessRequest.getPermission());
-        sendEmailInviteAccess(access, accessRequest);
+//        access.setRecipient(getUserByEmail(permissionRequest.getRecipientId()));
+        access.setPermission(permissionRequest.getPermission());
+        sendEmailInviteAccess(access, permissionRequest);
         return mapToR(saveAccess(access));
     }
 
@@ -110,7 +110,7 @@ public abstract class AbstractAccessService<T extends AccessResource, R extends 
 
     protected abstract R mapToR(T access);
 
-    protected abstract void sendEmailInviteAccess(T access, AccessRequest accessRequest);
+    protected abstract void sendEmailInviteAccess(T access, PermissionRequest permissionRequest);
 
     protected abstract T createEmptyAccess();
 

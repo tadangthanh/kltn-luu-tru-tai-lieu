@@ -5,13 +5,12 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "document")
-public class Document extends BaseEntity implements Resource {
+public class Document extends FileSystemEntity {
     private String name;
     private String type;
     private String blobName;
@@ -25,18 +24,4 @@ public class Document extends BaseEntity implements Resource {
     private LocalDateTime permanentDeleteAt; // thoi gian xoa vinh vien
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
-    @ManyToOne
-    @JoinColumn(name = "parent_id")
-    private Folder parent;
-    @OneToMany(mappedBy = "resource")
-    private List<DocumentAccess> documentAccessList;
-
-    @Override
-    public void setParent(Resource parent) {
-        if (parent instanceof Folder) {
-            this.parent = (Folder) parent;
-        } else if (parent == null) {
-            this.parent = null;
-        }
-    }
 }

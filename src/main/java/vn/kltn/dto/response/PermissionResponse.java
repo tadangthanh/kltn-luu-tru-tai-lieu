@@ -7,7 +7,7 @@ import vn.kltn.dto.BaseDto;
 
 @Getter
 @Setter
-public class AccessResourceResponse extends BaseDto {
+public class PermissionResponse extends BaseDto {
     private Permission permission;
     private String recipientName;
     private String recipientEmail;
