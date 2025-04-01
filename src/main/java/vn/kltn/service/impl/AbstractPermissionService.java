@@ -43,6 +43,15 @@ public abstract class AbstractPermissionService<T extends FileSystemEntity> impl
         return mapToPermissionResponse(savePermission(permission));
     }
 
+    @Override
+    public PermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest) {
+        Permission permission = getPermissionByIdOrThrow(permissionId);
+        permission.setPermission(permissionRequest.getPermission());
+        permission = permissionRepo.save(permission);
+//        updatePermissionFoldersChild(permission);
+        return mapToPermissionResponse(permission);
+    }
+
     protected Permission mapToPermission(PermissionRequest permissionRequest) {
         Permission permission = new Permission();
         permission.setPermission(permissionRequest.getPermission());
