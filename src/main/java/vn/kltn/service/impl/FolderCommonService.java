@@ -43,4 +43,9 @@ public class FolderCommonService {
         log.info("Get current and child folder ids by folder id: folderId={}", folderId);
         return folderRepo.findCurrentAndChildFolderIdsByFolderId(folderId);
     }
+
+    public List<Long> getAllFolderChildInheritedPermission(Long folderId, Long userId) {
+        log.info("Find all folder child inherited permission: folderId={}", folderId);
+        return folderRepo.findAllFolderChildInheritedPermission(folderId, userId);
+    }
 }

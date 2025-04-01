@@ -52,7 +52,7 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService<Folde
         Permission permission = getPermissionByIdOrThrow(permissionId);
         permission.setPermission(permissionRequest.getPermission());
         permission = permissionRepo.save(permission);
-        List<Long> folderIds = folderCommonService.getCurrentAndChildFolderIdsByFolderId(permission.getResource().getId());
+        List<Long> folderIds = folderCommonService.getAllFolderChildInheritedPermission(permission.getResource().getId(), permission.getRecipient().getId());
         System.out.println("length folderIds: " + folderIds.size());
         permissionRepo.updateAllChildNotCustom(folderIds, permission.getRecipient().getId(), permissionRequest.getPermission());
         return mapToPermissionResponse(permission);
