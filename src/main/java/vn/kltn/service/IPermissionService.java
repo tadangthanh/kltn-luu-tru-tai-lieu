@@ -13,5 +13,6 @@ public interface IPermissionService<T extends FileSystemEntity> {
 
     PermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest);
 
+
     PageResponse<List<PermissionResponse>> getPagePermissionByResourceId(Long resourceId, Pageable pageable);
 }

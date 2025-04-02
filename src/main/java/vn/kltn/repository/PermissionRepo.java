@@ -26,4 +26,6 @@ public interface PermissionRepo extends JpaRepository<Permission, Long> {
     void updateAllChildNotCustom(List<Long> resourceIds, Long recipientId, vn.kltn.common.Permission permission);
 
     Page<Permission> findAllByResourceId(Long resourceId, Pageable pageable);
+
+    boolean existsByResourceIdAndRecipientIdAndPermission(Long resourceId, Long recipientId, vn.kltn.common.Permission permission);
 }

@@ -10,6 +10,7 @@ import vn.kltn.entity.Folder;
 import vn.kltn.entity.Permission;
 import vn.kltn.map.PermissionMapper;
 import vn.kltn.repository.PermissionRepo;
+import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IUserService;
 
 import java.util.List;
@@ -20,8 +21,8 @@ import java.util.List;
 public class FolderPermissionServiceImpl extends AbstractPermissionService<Folder> implements IFolderPermissionService {
     private final FolderCommonService folderCommonService;
 
-    protected FolderPermissionServiceImpl(PermissionRepo permissionRepo, IUserService userService, PermissionMapper permissionMapper, FolderCommonService folderCommonService, ResourceCommonService resourceCommonService) {
-        super(permissionRepo, userService, permissionMapper, resourceCommonService);
+    protected FolderPermissionServiceImpl(PermissionRepo permissionRepo, IUserService userService, PermissionMapper permissionMapper, IAuthenticationService authenticationService, FolderCommonService folderCommonService, ResourceCommonService resourceCommonService) {
+        super(permissionRepo, userService, permissionMapper, resourceCommonService,authenticationService);
         this.folderCommonService = folderCommonService;
     }
 
@@ -35,7 +36,7 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService<Folde
     @Override
     public PermissionResponse setPermissionResource(Long resourceId, PermissionRequest permissionRequest) {
         // validate quyền đã tồn tại hay chưa
-        validatePermissionNotExistByRecipientAndResourceId(permissionRequest.getRecipientId(), resourceId);
+        validatePermissionNotExists(permissionRequest.getRecipientId(), resourceId);
         FileSystemEntity resource = getResourceById(resourceId);
         // validate đã thêm quyền này cho người này hay chưa ?
         resourceCommonService.validateCurrentUserIsOwnerResource(resource);

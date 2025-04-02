@@ -8,6 +8,7 @@ import vn.kltn.entity.Document;
 import vn.kltn.entity.FileSystemEntity;
 import vn.kltn.map.PermissionMapper;
 import vn.kltn.repository.PermissionRepo;
+import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IDocumentPermissionService;
 import vn.kltn.service.IUserService;
 
@@ -18,10 +19,11 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService<Doc
 
     protected DocumentPermissionServiceImpl(
             PermissionRepo permissionRepo,
+            IAuthenticationService authenticationService,
             IUserService userService,
             PermissionMapper permissionMapper,
             ResourceCommonService resourceCommonService, DocumentCommonService documentCommonService) {
-        super(permissionRepo, userService, permissionMapper, resourceCommonService);
+        super(permissionRepo, userService, permissionMapper, resourceCommonService,authenticationService);
         this.documentCommonService = documentCommonService;
     }
 
