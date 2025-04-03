@@ -10,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 import vn.kltn.entity.Permission;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 public interface PermissionRepo extends JpaRepository<Permission, Long> {
 
@@ -51,4 +53,8 @@ public interface PermissionRepo extends JpaRepository<Permission, Long> {
     @Transactional
     @Query("delete Permission p where p.resource.id in ?1")
     void deleteAllByResourceIds(List<Long> resourceIds);
+
+    Optional<Permission> findByResourceIdAndRecipientId(Long resourceId, Long recipientId);
+
+    Set<Permission> findByResourceId(Long resourceId);
 }

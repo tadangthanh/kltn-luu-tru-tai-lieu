@@ -22,6 +22,8 @@ import vn.kltn.service.IPermissionService;
 import vn.kltn.service.IUserService;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static vn.kltn.common.Permission.EDITOR;
 
@@ -97,7 +99,7 @@ public abstract class AbstractPermissionService implements IPermissionService {
         log.info("validate user is editor by resourceId: {}, userId: {}", resourceId, userId);
         if (!permissionRepo.existsByResourceIdAndRecipientIdAndPermission(resourceId, userId, EDITOR)) {
             log.warn("User with id {} is not editor of resource with id {}", userId, resourceId);
-            throw new AccessDeniedException("Bạn không có quyền chỉnh sửa tài nguyên này");
+            throw new AccessDeniedException("Bạn không có quyền với tài nguyên này");
         }
     }
 
@@ -111,6 +113,56 @@ public abstract class AbstractPermissionService implements IPermissionService {
     public void deletePermissionByResourceIds(List<Long> resourceIds) {
         log.info("delete permission by resourceIds: {}", resourceIds);
         permissionRepo.deleteAllByResourceIds(resourceIds);
+    }
+
+    @Override
+    public void inheritPermissionByOwner(Long resourceId) {
+        inheritPermission(resourceId, null);
+    }
+
+    @Override
+    public void inheritPermissionByEditor(Long resourceId, Long ownerId) {
+        inheritPermission(resourceId, ownerId);
+    }
+
+    private void inheritPermission(Long resourceId, Long ownerId) {
+        FileSystemEntity resource = getResourceById(resourceId);
+
+        // Validate nếu resource bị xóa hoặc không có parent thì dừng lại
+        resourceCommonService.validateResourceNotDeleted(resource);
+        if (resource.getParent() == null) return;
+
+        // Lấy danh sách permission từ folder cha
+        Set<Permission> parentPermissions = getPermissionsByResourceId(resource.getParent().getId());
+        if (parentPermissions.isEmpty()) return;
+
+        // Tạo danh sách permission mới
+        List<Permission> newPermissions = parentPermissions.stream()
+                .map(permission -> new Permission(permission.getRecipient(), resource, permission.getPermission()))
+                .collect(Collectors.toList());
+
+        // Nếu là Editor, thêm quyền cho chủ sở hữu folder chứa cái folder mà edior đang tạo
+        if (ownerId != null) {
+            newPermissions.add(createPermissionForRecipientEditor(resourceId, ownerId));
+        }
+
+        // Lưu tất cả permissions một lần
+        saveAllPermissions(newPermissions);
+    }
+
+    protected Permission createPermissionForRecipientEditor(Long resourceId, Long recipientId) {
+        Permission permission = new Permission();
+        permission.setRecipient(getUserById(recipientId));
+        permission.setResource(getResourceById(resourceId));
+        permission.setPermission(EDITOR);
+        return permission;
+    }
+
+    protected void saveAllPermissions(List<Permission> permissions) {
+        if (permissions.isEmpty()) {
+            return;
+        }
+        permissionRepo.saveAll(permissions);
     }
 
     protected void validateEditorOrOwner(Resource resource) {
@@ -139,6 +191,10 @@ public abstract class AbstractPermissionService implements IPermissionService {
         if (permissionRepo.existsByRecipientIdAndResourceId(recipientId, resourceId)) {
             throw new InvalidDataException("Quyền đã tồn tại cho người dùng này trên tài nguyên này");
         }
+    }
+
+    protected Set<Permission> getPermissionsByResourceId(Long resourceId) {
+        return permissionRepo.findByResourceId(resourceId);
     }
 
     protected abstract FileSystemEntity getResourceById(Long resourceId);

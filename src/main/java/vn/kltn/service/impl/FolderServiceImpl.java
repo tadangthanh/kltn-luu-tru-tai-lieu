@@ -10,7 +10,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.dto.response.FolderResponse;
+import vn.kltn.entity.FileSystemEntity;
 import vn.kltn.entity.Folder;
+import vn.kltn.entity.Resource;
+import vn.kltn.entity.User;
 import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.FolderMapper;
@@ -46,16 +49,40 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
 
     @Override
     public FolderResponse createFolder(FolderRequest folderRequest) {
+        // tao folder khong co folder cha
         if (folderRequest.getFolderParentId() == null) {
             log.info("Creating folder with parentId is null");
             Folder folderSaved = saveFolderWithoutParent(folderRequest);
             return mapToFolderResponse(folderSaved);
         }
+        // tao folder co folder cha
         log.info("Creating folder with parentId {}", folderRequest.getFolderParentId());
+        validateConditionsToCreateFolder(folderRequest);
         Folder folderSaved = saveFolderWithParent(folderRequest);
-        // folder con sẽ kế thừa quyền truy cập từ folder cha
-//        folderAccessService.inheritAccess(folderSaved);
+        // folder con sẽ kế thừa quyền truy cập từ folder cha ( trong truong hop chu so huu folder cha tao)
+        // trong trong hop nguoi tao folder la editor thi chu so huu se co quyen editor voi folder con ma thanh vien nay tao
+        User currentUser = authenticationService.getCurrentUser();
+        Resource folderParent = folderSaved.getParent();
+        if (folderParent.getOwner().getId().equals(currentUser.getId())) {
+            // nếu chủ sở hữu của folder cha tạo thì folder được tạo sẽ kế thừa các permission từ folder cha
+            folderPermissionService.inheritPermissionByOwner(folderSaved.getId());
+        } else {
+            // nếu do editor tạo thì folder được tạo sẽ kế thừa các permission từ folder cha và chủ sở hữu folder cha là editor
+            folderPermissionService.inheritPermissionByEditor(folderSaved.getId(), folderParent.getOwner().getId());
+        }
         return mapToFolderResponse(folderSaved);
+    }
+
+    private void validateConditionsToCreateFolder(FolderRequest folderRequest) {
+        log.info("validate conditions to create folder with parentId {}", folderRequest.getFolderParentId());
+        FileSystemEntity folderParent = folderCommonService.getFolderByIdOrThrow(folderRequest.getFolderParentId());
+        // kiem tra xem folder cha co ton tai hay khong
+        validateResourceNotDeleted(folderParent);
+        User currentUser = getCurrentUser();
+        if (!folderParent.getOwner().getId().equals(currentUser.getId())) {
+            // neu ko phai la chu so huu thi kiem tra xem co phai la editor hay khong
+            folderPermissionService.validateUserIsEditor(folderParent.getId(), currentUser.getId());
+        }
     }
 
     // tạo thư mục không có thư mục cha

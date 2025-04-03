@@ -47,15 +47,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     private int documentRetentionDays;
     private final FolderCommonService folderCommonService;
 
-    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService,
-                               IFolderPermissionService folderPermissionService,
-                               DocumentRepo documentRepo,
-                               DocumentMapper documentMapper,
-                               IAzureStorageService azureStorageService,
-                               IDocumentHasTagService documentHasTagService,
-                               IAuthenticationService authenticationService,
-                               FolderCommonService folderCommonService,
-                               IDocumentPermissionService documentPermissionService) {
+    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService);
         this.documentRepo = documentRepo;
         this.documentMapper = documentMapper;
@@ -75,7 +67,9 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         Document document = processValidDocument(documentRequest, file);
         Folder folder = folderCommonService.getFolderByIdOrThrow(parentId);
         document.setParent(folder);
-//        documentAccessService.inheritAccess(document);
+        document = documentRepo.save(document);
+        // document moi tao se thua ke cac quyen tu folder cha
+        documentPermissionService.inheritPermissionByOwner(document.getId());
         return mapToDocumentResponse(document);
     }
 
@@ -213,15 +207,10 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         }
 
         // Lấy danh sách blobName để xóa trên Azure
-        List<String> blobNamesToDelete = documentsToDelete.stream()
-                .map(Document::getBlobName)
-                .filter(Objects::nonNull)
-                .toList();
+        List<String> blobNamesToDelete = documentsToDelete.stream().map(Document::getBlobName).filter(Objects::nonNull).toList();
 
         // Lấy danh sách documentId để xóa trong DB
-        List<Long> documentIdsToDelete = documentsToDelete.stream()
-                .map(Document::getId)
-                .toList();
+        List<Long> documentIdsToDelete = documentsToDelete.stream().map(Document::getId).toList();
 
         // Xóa trên cloud
         deleteBlobsFromCloud(blobNamesToDelete);

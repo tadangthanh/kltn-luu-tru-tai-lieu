@@ -12,6 +12,8 @@ public interface IPermissionService {
 
     PermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest);
 
+    void inheritPermissionByOwner(Long resourceId);
+
     void deletePermissionById(Long permissionId);
 
     void deletePermissionByResourceId(Long resourceId);
@@ -23,4 +25,6 @@ public interface IPermissionService {
     void deleteByResourceAndRecipientId(Long resourceId, Long recipientId);
 
     void deletePermissionByResourceIds(List<Long> resourceIds);
+
+    void inheritPermissionByEditor(Long resourceId, Long ownerId);
 }
