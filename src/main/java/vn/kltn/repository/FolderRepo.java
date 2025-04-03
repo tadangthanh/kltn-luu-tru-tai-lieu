@@ -18,7 +18,9 @@ public interface FolderRepo extends JpaRepository<Folder, Long>, JpaSpecificatio
             WITH RECURSIVE sub_folders AS (
                 SELECT id FROM folder WHERE id = :folderId
                 UNION ALL
-                SELECT f.id FROM folder f inner join file_system_entity fse ON f.id=fse.id INNER JOIN sub_folders sf ON fse.parent_id = sf.id
+                SELECT f.id FROM folder f
+                                inner join file_system_entity fse ON f.id=fse.id
+                                INNER JOIN sub_folders sf ON fse.parent_id = sf.id
             )
             SELECT id FROM sub_folders;
             """, nativeQuery = true)
@@ -40,6 +42,7 @@ public interface FolderRepo extends JpaRepository<Folder, Long>, JpaSpecificatio
                 INNER JOIN sub_folders sf ON fse.parent_id = sf.id
                 INNER JOIN permission p ON fse.id = p.resource_id
                 WHERE p.recipient_id = :userId
+                AND f.deleted_at IS NULL
                 AND p.is_custom_permission = false
                 AND NOT EXISTS (
                     SELECT 1
@@ -53,7 +56,7 @@ public interface FolderRepo extends JpaRepository<Folder, Long>, JpaSpecificatio
             -- Trả về các folder con hợp lệ
             SELECT id FROM sub_folders;
             """, nativeQuery = true)
-        // lấy danh sách các id của folder con và folder hiện tại để cập nhật quyền
+        // lấy danh sách các id của folder con và folder hiện tại để cập nhật quyền (ko bao gom cac folder da bi xoa)
     List<Long> findAllFolderChildInheritedPermission(@Param("folderId") Long folderId, @Param("userId") Long userId);
 
 

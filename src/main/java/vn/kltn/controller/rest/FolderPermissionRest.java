@@ -31,9 +31,16 @@ public class FolderPermissionRest {
     @RequestBody PermissionRequest permissionRequest) {
         return new ResponseData<>(200, "Thành công", folderPermissionService.updatePermission(permissionId, permissionRequest));
     }
+
     @GetMapping("/{folderId}")
     public ResponseData<PageResponse<List<PermissionResponse>>> getPagePermissionByResource(@PathVariable Long folderId, Pageable pageable) {
         PageResponse<List<PermissionResponse>> pageResponse = folderPermissionService.getPagePermissionByResourceId(folderId, pageable);
         return new ResponseData<>(200, "Thành công", pageResponse);
+    }
+
+    @DeleteMapping("/{permissionId}")
+    public ResponseData<Void> deletePermission(@PathVariable Long permissionId) {
+        folderPermissionService.deletePermissionById(permissionId);
+        return new ResponseData<>(200, "Thành công", null);
     }
 }

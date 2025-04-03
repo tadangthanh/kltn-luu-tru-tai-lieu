@@ -72,11 +72,17 @@ public abstract class AbstractPermissionService<T extends FileSystemEntity> impl
     @Override
     public PageResponse<List<PermissionResponse>> getPagePermissionByResourceId(Long resourceId, Pageable pageable) {
         log.info("get page permission by resource id: {}", resourceId);
-        Resource resource=getResourceById(resourceId);
-        validateEditorOrOwner(resource);
+        Resource resource = getResourceById(resourceId);
         // kiểm tra xem user hiện tại có permission với resource hiện tại hay k ?
+        validateEditorOrOwner(resource);
         Page<Permission> pagePermission = permissionRepo.findAllByResourceId(resourceId, pageable);
         return PaginationUtils.convertToPageResponse(pagePermission, pageable, this::mapToPermissionResponse);
+    }
+
+    @Override
+    public void deletePermissionById(Long permissionId) {
+        log.info("delete permission by permissionId: {}", permissionId);
+        permissionRepo.deleteById(permissionId);
     }
 
     protected void validateEditorOrOwner(Resource resource) {

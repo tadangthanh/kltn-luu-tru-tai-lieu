@@ -1,5 +1,6 @@
 package vn.kltn.service.impl;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -11,6 +12,8 @@ import vn.kltn.entity.Document;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.DocumentMapper;
 import vn.kltn.repository.DocumentRepo;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -34,4 +37,8 @@ public class DocumentCommonService {
         return documentMapper.toDocumentResponse(document);
     }
 
+    public List<Long> getDocumentChildIdsWithoutPermission(List<Long> parentResourceIds, Long recipientId) {
+        log.info("Get document child ids without permission: parentResourceIds={}, recipientId={}", parentResourceIds, recipientId);
+        return documentRepo.findDocumentChildIdsWithoutPermission(parentResourceIds, recipientId);
+    }
 }

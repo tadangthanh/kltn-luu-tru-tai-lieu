@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.kltn.entity.Document;
 
@@ -26,4 +27,15 @@ public interface DocumentRepo extends JpaRepository<Document, Long>, JpaSpecific
 
     @Query("select d.blobName from Document d where d.parent.id in ?1")
     List<String> getBlobNameDocumentsByParentIds(List<Long> parentIds);
+
+    @Query(value = """
+            select d.id from document d
+                            inner join file_system_entity fse on d.id=fse.id
+                                    where fse.parent_id in (:parentResourceIds)
+                        and d.deleted_at is null
+                        and not exists(select 1 from permission p
+                                        where p.recipient_id = :recipientId
+                                        and p.resource_id = fse.id)
+            """,nativeQuery = true)
+    List<Long> findDocumentChildIdsWithoutPermission(@Param("parentResourceIds") List<Long> parentResourceIds,@Param("recipientId") Long recipientId);
 }

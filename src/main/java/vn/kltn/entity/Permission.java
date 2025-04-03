@@ -5,7 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "permission")
+@Table(name = "permission",     uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"recipient_id", "resource_id"})})
 @Getter
 @Setter
 public class Permission extends BaseEntity {

@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import vn.kltn.entity.Permission;
 
 import java.util.List;
@@ -13,19 +14,31 @@ import java.util.List;
 public interface PermissionRepo extends JpaRepository<Permission, Long> {
 
     boolean existsByRecipientIdAndResourceId(Long recipientId, Long resourceId);
-//
-//    @Modifying
-//    @Transactional
-//    @Query("UPDATE Permission p SET p.permission = :permission WHERE p.resource.id IN :resourceIds AND p.recipient.id = :recipientId and p.isCustomPermission = false")
-//    void updateAllChildNotCustom(List<Long> resourceIds, Long recipientId, vn.kltn.common.Permission permission);
-
 
     @Modifying
     @Transactional
     @Query("UPDATE Permission p SET p.permission = :permission WHERE ((p.resource.id IN :resourceIds AND p.recipient.id = :recipientId) or (p.resource.parent.id IN :resourceIds)) and p.isCustomPermission = false")
+    //update cả folder và document có parent id thuộc folderIdsForUpdatePermission
     void updateAllChildNotCustom(List<Long> resourceIds, Long recipientId, vn.kltn.common.Permission permission);
 
     Page<Permission> findAllByResourceId(Long resourceId, Pageable pageable);
 
     boolean existsByResourceIdAndRecipientIdAndPermission(Long resourceId, Long recipientId, vn.kltn.common.Permission permission);
+
+    @Query(value = """
+            WITH RECURSIVE sub_folders AS (
+                SELECT id FROM folder WHERE id = :folderId
+                UNION ALL
+                SELECT f.id FROM folder f
+                                INNER JOIN file_system_entity fse ON f.id=fse.id
+                                INNER JOIN sub_folders sf ON fse.parent_id = sf.id
+                                where f.deleted_at is null AND NOT EXISTS(
+                                                SELECT 1 FROM permission p where p.recipient_id = :recipientId
+                                                                                         and p.resource_id = fse.id
+                                            )
+            )
+            SELECT id FROM sub_folders where id != :folderId;
+            """, nativeQuery = true)
+        // lấy danh sách các id của folder con  (ko bao gom cac folder da bi xoa và folder hiện tại)
+    List<Long> findSubFolderIdsWithoutPermission(@Param("folderId") Long folderId, @Param("recipientId") Long recipientId);
 }
