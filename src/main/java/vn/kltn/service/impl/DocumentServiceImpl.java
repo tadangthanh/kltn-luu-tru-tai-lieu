@@ -1,8 +1,8 @@
 package vn.kltn.service.impl;
 
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,7 +10,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentResponse;
@@ -32,23 +31,38 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
 @Service
 @Transactional
-@RequiredArgsConstructor
 @Slf4j(topic = "DOCUMENT_SERVICE")
 public class DocumentServiceImpl extends AbstractResourceService<Document, DocumentResponse> implements IDocumentService {
     private final DocumentRepo documentRepo;
     private final DocumentMapper documentMapper;
     private final IAzureStorageService azureStorageService;
     private final IDocumentHasTagService documentHasTagService;
-    private final IAuthenticationService authenticationService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
-    private final ResourceCommonService resourceCommonService;
     private final FolderCommonService folderCommonService;
+
+    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService,
+                               IFolderPermissionService folderPermissionService,
+                               DocumentRepo documentRepo,
+                               DocumentMapper documentMapper,
+                               IAzureStorageService azureStorageService,
+                               IDocumentHasTagService documentHasTagService,
+                               IAuthenticationService authenticationService,
+                               FolderCommonService folderCommonService,
+                               IDocumentPermissionService documentPermissionService) {
+        super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService);
+        this.documentRepo = documentRepo;
+        this.documentMapper = documentMapper;
+        this.azureStorageService = azureStorageService;
+        this.documentHasTagService = documentHasTagService;
+        this.folderCommonService = folderCommonService;
+    }
 
     @Override
     public DocumentResponse uploadDocumentWithoutParent(DocumentRequest documentRequest, MultipartFile file) {
@@ -103,36 +117,24 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         return PaginationUtils.convertToPageResponse(documentRepo.findAll(pageable), pageable, this::mapToDocumentResponse);
     }
 
-
-    @Override
-    protected void deleteAccessByResourceAndRecipientId(Long resourceId, Long recipientId) {
-//        documentAccessService.deleteAccessByResourceRecipientId(resourceId, recipientId);
-    }
-
-    @Override
-    protected void validateAccessEditor(Long resourceId, Long userId) {
-//        documentAccessService.validateUserIsEditor(resourceId, userId);
-    }
-
-    @Override
-    protected void deleteAccessResourceById(Long id) {
-//        documentAccessService.deleteAccessByResourceId(id);
-    }
-
     @Override
     protected void hardDeleteResource(Document resource) {
+        log.info("hard delete document with id {}", resource.getId());
         azureStorageService.deleteBlob(resource.getBlobName());
         documentHasTagService.deleteAllByDocumentId(resource.getId());
+        documentPermissionService.deletePermissionByResourceId(resource.getId());
         documentRepo.delete(resource);
     }
 
     @Override
     protected Page<Document> getPageResource(Pageable pageable) {
+        log.info("get page document");
         return documentRepo.findAll(pageable);
     }
 
     @Override
     protected Page<Document> getPageResourceBySpec(Specification<Document> spec, Pageable pageable) {
+        log.info("get page document by specification");
         return documentRepo.findAll(spec, pageable);
     }
 
@@ -142,12 +144,8 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     }
 
     @Override
-    protected User getCurrentUser() {
-        return authenticationService.getCurrentUser();
-    }
-
-    @Override
     protected void softDeleteResource(Document document) {
+        log.info("soft delete document with id {}", document.getId());
         validateResourceNotDeleted(document);
         validateCurrentUserIsOwnerResource(document);
         document.setDeletedAt(LocalDateTime.now());
@@ -156,6 +154,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
     @Override
     public DocumentResponse restoreResourceById(Long resourceId) {
+        log.info("restore document with id {}", resourceId);
         Document resource = getResourceByIdOrThrow(resourceId);
         validateCurrentUserIsOwnerResource(resource);
         validateResourceDeleted(resource);
@@ -175,6 +174,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
     @Override
     public DocumentResponse moveResourceToFolder(Long resourceId, Long folderId) {
+        log.info("move document with id {} to folder with id {}", resourceId, folderId);
         Document resource = getResourceByIdOrThrow(resourceId);
         Folder resourceDestination = folderCommonService.getFolderByIdOrThrow(folderId);
         validateCurrentUserIsOwnerResource(resource);
@@ -199,18 +199,64 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
     @Override
     public void softDeleteDocumentsByFolderIds(List<Long> folderIds) {
+        log.info("delete document by folder ids");
         documentRepo.setDeleteDocument(folderIds, LocalDateTime.now(), LocalDateTime.now().plusDays(documentRetentionDays));
     }
 
     @Override
     public void hardDeleteDocumentByFolderIds(List<Long> folderIds) {
-        // xóa blob trên azure trước
-        // sau đó xóa document
-        List<String> documentBlobsToDelete = documentRepo.getBlobNameDocumentsByParentIds(folderIds);
-        azureStorageService.deleteBLobs(documentBlobsToDelete);
-        documentHasTagService.deleteAllByFolderIds(folderIds);
-        documentRepo.deleteDocumentByListParentId(folderIds);
+        // Lấy danh sách documents theo folderIds
+        List<Document> documentsToDelete = documentRepo.findDocumentsByParentIds(folderIds);
+
+        if (documentsToDelete.isEmpty()) {
+            return; // Không có document nào để xóa, thoát sớm
+        }
+
+        // Lấy danh sách blobName để xóa trên Azure
+        List<String> blobNamesToDelete = documentsToDelete.stream()
+                .map(Document::getBlobName)
+                .filter(Objects::nonNull)
+                .toList();
+
+        // Lấy danh sách documentId để xóa quyền và xóa trong DB
+        List<Long> documentIdsToDelete = documentsToDelete.stream()
+                .map(Document::getId)
+                .toList();
+
+        // Xóa trên cloud
+        deleteBlobsFromCloud(blobNamesToDelete);
+        // Xóa tags liên quan đến documents
+        deleteTags(documentIdsToDelete);
+        // Xóa permission liên quan
+//        deletePermissions(documentIdsToDelete);
+        // Xóa documents khỏi database
+        deleteDocuments(documentIdsToDelete);
     }
+
+    private void deleteBlobsFromCloud(List<String> blobNames) {
+        if (!blobNames.isEmpty()) {
+            azureStorageService.deleteBLobs(blobNames);
+        }
+    }
+
+    private void deleteTags(List<Long> documentIds) {
+        if (!documentIds.isEmpty()) {
+            documentHasTagService.deleteAllByDocumentIds(documentIds);
+        }
+    }
+
+    private void deletePermissions(List<Long> documentIds) {
+        if (!documentIds.isEmpty()) {
+            documentPermissionService.deletePermissionByResourceIds(documentIds);
+        }
+    }
+
+    private void deleteDocuments(List<Long> documentIds) {
+        if (!documentIds.isEmpty()) {
+            documentRepo.deleteAllById(documentIds);
+        }
+    }
+
 
     @Override
     public void restoreDocumentsByFolderIds(List<Long> folderIds) {

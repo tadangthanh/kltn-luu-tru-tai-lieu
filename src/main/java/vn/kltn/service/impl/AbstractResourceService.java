@@ -1,6 +1,7 @@
 package vn.kltn.service.impl;
 
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -14,6 +15,8 @@ import vn.kltn.exception.InvalidDataException;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.specification.SpecificationUtil;
 import vn.kltn.repository.util.PaginationUtils;
+import vn.kltn.service.IAuthenticationService;
+import vn.kltn.service.IDocumentPermissionService;
 import vn.kltn.service.IResourceService;
 
 import java.util.List;
@@ -21,6 +24,20 @@ import java.util.List;
 @Service
 @Transactional
 public abstract class AbstractResourceService<T extends Resource, R extends ResourceResponse> implements IResourceService<T, R> {
+    protected final IDocumentPermissionService documentPermissionService;
+    protected final IFolderPermissionService folderPermissionService;
+    protected final IAuthenticationService authenticationService;
+    protected final AbstractPermissionService abstractPermissionService;
+
+    protected AbstractResourceService(IDocumentPermissionService documentPermissionService,
+                                      IFolderPermissionService folderPermissionService,
+                                      IAuthenticationService authenticationService,
+                                      @Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService) {
+        this.documentPermissionService = documentPermissionService;
+        this.folderPermissionService = folderPermissionService;
+        this.authenticationService = authenticationService;
+        this.abstractPermissionService = abstractPermissionService;
+    }
 
     @Override
     public void validateResourceNotDeleted(Resource resource) {
@@ -54,7 +71,7 @@ public abstract class AbstractResourceService<T extends Resource, R extends Reso
     public void hardDeleteResourceById(Long resourceId) {
         T resource = getResourceByIdOrThrow(resourceId);
         validateResourceDeleted(resource);
-        deleteAccessResourceById(resource.getId());
+        deletePermissionResourceById(resource.getId());
         hardDeleteResource(resource);
     }
 
@@ -83,22 +100,28 @@ public abstract class AbstractResourceService<T extends Resource, R extends Reso
             softDeleteResource(resource);
         } else {
             // nguoi thuc hien co quyen editor
-            validateAccessEditor(resourceId, currentUser.getId());
+            validateUserIsEditor(resourceId, currentUser.getId());
             if (resource.getParent() != null) {
                 //xoa access
-                deleteAccessByResourceAndRecipientId(resourceId, currentUser.getId());
+                deletePermissionByResourceAndRecipientId(resourceId, currentUser.getId());
             }
             resource.setParent(null);
         }
     }
 
-    protected abstract void deleteAccessByResourceAndRecipientId(Long resourceId, Long recipientId);
+    protected void deletePermissionByResourceAndRecipientId(Long resourceId, Long recipientId) {
+        abstractPermissionService.deleteByResourceAndRecipientId(resourceId, recipientId);
+    }
 
-    protected abstract void validateAccessEditor(Long resourceId, Long userId);
+    protected void validateUserIsEditor(Long resourceId, Long userId) {
+        abstractPermissionService.validateUserIsEditor(resourceId, userId);
+    }
 
     protected abstract void softDeleteResource(T resource);
 
-    protected abstract void deleteAccessResourceById(Long id);
+    protected void deletePermissionResourceById(Long resourceId) {
+        abstractPermissionService.deletePermissionByResourceId(resourceId);
+    }
 
     protected abstract void hardDeleteResource(T resource);
 
@@ -108,5 +131,7 @@ public abstract class AbstractResourceService<T extends Resource, R extends Reso
 
     protected abstract R mapToR(T resource);
 
-    protected abstract User getCurrentUser();
+    protected User getCurrentUser() {
+        return authenticationService.getCurrentUser();
+    }
 }

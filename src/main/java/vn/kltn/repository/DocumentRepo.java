@@ -36,6 +36,13 @@ public interface DocumentRepo extends JpaRepository<Document, Long>, JpaSpecific
                         and not exists(select 1 from permission p
                                         where p.recipient_id = :recipientId
                                         and p.resource_id = fse.id)
-            """,nativeQuery = true)
-    List<Long> findDocumentChildIdsWithoutPermission(@Param("parentResourceIds") List<Long> parentResourceIds,@Param("recipientId") Long recipientId);
+            """, nativeQuery = true)
+    List<Long> findDocumentChildIdsWithoutPermission(@Param("parentResourceIds") List<Long> parentResourceIds, @Param("recipientId") Long recipientId);
+
+    @Modifying
+    @Query("select d.id from Document d where d.parent.id in ?1")
+    List<Long> findDocumentIdsWithParentIds(List<Long> folderIds);
+
+    @Query("select d from Document d where d.parent.id in ?1")
+    List<Document> findDocumentsByParentIds(List<Long> folderIds);
 }

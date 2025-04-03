@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.response.PermissionResponse;
 import vn.kltn.entity.FileSystemEntity;
-import vn.kltn.entity.Folder;
 import vn.kltn.entity.Permission;
 import vn.kltn.map.PermissionMapper;
 import vn.kltn.repository.PermissionRepo;
@@ -20,7 +19,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @Slf4j(topic = "FOLDER_PERMISSION_SERVICE")
-public class FolderPermissionServiceImpl extends AbstractPermissionService<Folder> implements IFolderPermissionService {
+public class FolderPermissionServiceImpl extends AbstractPermissionService implements IFolderPermissionService {
     private final FolderCommonService folderCommonService;
     private final DocumentCommonService documentCommonService;
 

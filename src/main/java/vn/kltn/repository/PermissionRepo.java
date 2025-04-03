@@ -43,4 +43,12 @@ public interface PermissionRepo extends JpaRepository<Permission, Long> {
     List<Long> findSubFolderIdsWithoutPermission(@Param("folderId") Long folderId, @Param("recipientId") Long recipientId);
 
     void deleteByResourceId(Long resourceId);
+
+
+    void deleteByResourceIdAndRecipientId(Long resourceId, Long recipientId);
+
+    @Modifying
+    @Transactional
+    @Query("delete Permission p where p.resource.id in ?1")
+    void deleteAllByResourceIds(List<Long> resourceIds);
 }

@@ -28,7 +28,7 @@ import static vn.kltn.common.Permission.EDITOR;
 @Service
 @Transactional
 @Slf4j
-public abstract class AbstractPermissionService<T extends FileSystemEntity> implements IPermissionService<T> {
+public abstract class AbstractPermissionService implements IPermissionService {
     protected final PermissionRepo permissionRepo;
     protected final IUserService userService;
     protected final PermissionMapper permissionMapper;
@@ -48,6 +48,7 @@ public abstract class AbstractPermissionService<T extends FileSystemEntity> impl
     @Override
     public PermissionResponse setPermissionResource(Long resourceId, PermissionRequest permissionRequest) {
         log.info("set permission for resourceId: {}, permissionRequest: {}", resourceId, permissionRequest);
+        // kiem tra quyen da ton tai hay chua
         validatePermissionNotExists(permissionRequest.getRecipientId(), resourceId);
         FileSystemEntity resource = getResourceById(resourceId);
         // validate đã thêm quyền này cho người này hay chưa ?
@@ -87,7 +88,29 @@ public abstract class AbstractPermissionService<T extends FileSystemEntity> impl
 
     @Override
     public void deletePermissionByResourceId(Long resourceId) {
+        log.info("delete permission by resource id: {}", resourceId);
         permissionRepo.deleteByResourceId(resourceId);
+    }
+
+    @Override
+    public void validateUserIsEditor(Long resourceId, Long userId) {
+        log.info("validate user is editor by resourceId: {}, userId: {}", resourceId, userId);
+        if (!permissionRepo.existsByResourceIdAndRecipientIdAndPermission(resourceId, userId, EDITOR)) {
+            log.warn("User with id {} is not editor of resource with id {}", userId, resourceId);
+            throw new AccessDeniedException("Bạn không có quyền chỉnh sửa tài nguyên này");
+        }
+    }
+
+    @Override
+    public void deleteByResourceAndRecipientId(Long resourceId, Long recipientId) {
+        log.info("delete permission by resourceId: {}, recipientId: {}", resourceId, recipientId);
+        permissionRepo.deleteByResourceIdAndRecipientId(resourceId, recipientId);
+    }
+
+    @Override
+    public void deletePermissionByResourceIds(List<Long> resourceIds) {
+        log.info("delete permission by resourceIds: {}", resourceIds);
+        permissionRepo.deleteAllByResourceIds(resourceIds);
     }
 
     protected void validateEditorOrOwner(Resource resource) {
