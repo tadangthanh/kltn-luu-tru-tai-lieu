@@ -18,7 +18,7 @@ public interface PermissionRepo extends JpaRepository<Permission, Long> {
     @Modifying
     @Transactional
     @Query("UPDATE Permission p SET p.permission = :permission WHERE ((p.resource.id IN :resourceIds AND p.recipient.id = :recipientId) or (p.resource.parent.id IN :resourceIds)) and p.isCustomPermission = false")
-    //update cả folder và document có parent id thuộc folderIdsForUpdatePermission
+        //update cả folder và document có parent id thuộc folderIdsForUpdatePermission
     void updateAllChildNotCustom(List<Long> resourceIds, Long recipientId, vn.kltn.common.Permission permission);
 
     Page<Permission> findAllByResourceId(Long resourceId, Pageable pageable);
@@ -41,4 +41,6 @@ public interface PermissionRepo extends JpaRepository<Permission, Long> {
             """, nativeQuery = true)
         // lấy danh sách các id của folder con  (ko bao gom cac folder da bi xoa và folder hiện tại)
     List<Long> findSubFolderIdsWithoutPermission(@Param("folderId") Long folderId, @Param("recipientId") Long recipientId);
+
+    void deleteByResourceId(Long resourceId);
 }

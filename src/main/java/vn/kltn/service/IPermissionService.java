@@ -15,5 +15,7 @@ public interface IPermissionService<T extends FileSystemEntity> {
 
     void deletePermissionById(Long permissionId);
 
+    void deletePermissionByResourceId(Long resourceId);
+
     PageResponse<List<PermissionResponse>> getPagePermissionByResourceId(Long resourceId, Pageable pageable);
 }

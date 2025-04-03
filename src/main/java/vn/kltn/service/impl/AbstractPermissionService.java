@@ -85,6 +85,11 @@ public abstract class AbstractPermissionService<T extends FileSystemEntity> impl
         permissionRepo.deleteById(permissionId);
     }
 
+    @Override
+    public void deletePermissionByResourceId(Long resourceId) {
+        permissionRepo.deleteByResourceId(resourceId);
+    }
+
     protected void validateEditorOrOwner(Resource resource) {
         User curentUser = authenticationService.getCurrentUser();
         if (resource.getOwner().getId().equals(curentUser.getId())) {
