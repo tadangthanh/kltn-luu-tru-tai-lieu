@@ -218,7 +218,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
                 .filter(Objects::nonNull)
                 .toList();
 
-        // Lấy danh sách documentId để xóa quyền và xóa trong DB
+        // Lấy danh sách documentId để xóa trong DB
         List<Long> documentIdsToDelete = documentsToDelete.stream()
                 .map(Document::getId)
                 .toList();
@@ -227,9 +227,8 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         deleteBlobsFromCloud(blobNamesToDelete);
         // Xóa tags liên quan đến documents
         deleteTags(documentIdsToDelete);
-        // Xóa permission liên quan
-//        deletePermissions(documentIdsToDelete);
         // Xóa documents khỏi database
+        // vì để cascade là ALL với permission nên ko cần xóa thủ công
         deleteDocuments(documentIdsToDelete);
     }
 
@@ -242,12 +241,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     private void deleteTags(List<Long> documentIds) {
         if (!documentIds.isEmpty()) {
             documentHasTagService.deleteAllByDocumentIds(documentIds);
-        }
-    }
-
-    private void deletePermissions(List<Long> documentIds) {
-        if (!documentIds.isEmpty()) {
-            documentPermissionService.deletePermissionByResourceIds(documentIds);
         }
     }
 

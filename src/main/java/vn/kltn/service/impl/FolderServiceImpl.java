@@ -35,14 +35,7 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
 
-    public FolderServiceImpl(@Qualifier("folderPermissionServiceImpl")AbstractPermissionService abstractPermissionService,
-                             IDocumentPermissionService documentPermissionService,
-                             FolderMapper folderMapper, FolderRepo folderRepo,
-                             IAuthenticationService authenticationService,
-                             IDocumentService documentService,
-                             ResourceCommonService resourceCommonService,
-                             FolderCommonService folderCommonService,
-                             IFolderPermissionService folderPermissionService) {
+    public FolderServiceImpl(@Qualifier("folderPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IDocumentPermissionService documentPermissionService, FolderMapper folderMapper, FolderRepo folderRepo, IAuthenticationService authenticationService, IDocumentService documentService, ResourceCommonService resourceCommonService, FolderCommonService folderCommonService, IFolderPermissionService folderPermissionService) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService);
         this.folderMapper = folderMapper;
         this.folderRepo = folderRepo;
@@ -158,8 +151,6 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
         List<Long> folderIdsDelete = folderRepo.findCurrentAndChildFolderIdsByFolderId(resource.getId());
         // xoa cac document thuoc cac folder truoc do
         documentService.hardDeleteDocumentByFolderIds(folderIdsDelete);
-        // xoa cac permission cua folde hien tai va cac folder con
-//        folderPermissionService.deletePermissionByResourceIds(folderIdsDelete);
         folderRepo.delete(resource);
     }
 
