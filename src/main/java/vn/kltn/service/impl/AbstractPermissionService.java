@@ -57,6 +57,8 @@ public abstract class AbstractPermissionService implements IPermissionService {
         resourceCommonService.validateCurrentUserIsOwnerResource(resource);
         // validate xem resource co bi xoa hay chua
         resourceCommonService.validateResourceNotDeleted(resource);
+        // validate xem người dùng có quyền tạo permission hay không
+        validateEditorOrOwner(resource);
         Permission permission = mapToPermission(permissionRequest);
         permission.setResource(getResourceById(resourceId));
         return mapToPermissionResponse(savePermission(permission));
@@ -115,17 +117,39 @@ public abstract class AbstractPermissionService implements IPermissionService {
         permissionRepo.deleteAllByResourceIds(resourceIds);
     }
 
+    /***
+     *  folder con sẽ kế thừa quyền truy cập từ folder cha ( trong truong hop chu so huu folder cha tao)
+     *  trong trong hop nguoi tao folder la editor thi chu so huu se co quyen editor voi folder con ma thanh vien nay tao
+     * @param resource : tài nguyên được tạo mới
+     */
     @Override
-    public void inheritPermissionCreateByOwner(FileSystemEntity resource) {
+    public void inheritPermissions(FileSystemEntity resource) {
+        // folder cha của tài nguyên được tạo mới, lấy các permission từ folder cha và gán cho tài nguyên mới
+        Resource folderParent = resource.getParent();
+        User currentUser = authenticationService.getCurrentUser();
+        if (folderParent.getOwner().getId().equals(currentUser.getId())) {
+            // nếu chủ sở hữu của folder cha tạo thì folder được tạo sẽ kế thừa các permission từ folder cha
+            inheritPermissionsForOwnerCreatedResource(resource);
+        } else {
+            // nếu do editor tạo thì folder được tạo sẽ kế thừa các permission từ folder cha và chủ sở hữu folder cha là editor
+            inheritPermissionsForEditorCreatedResource(resource, folderParent.getOwner().getId());
+        }
+    }
+
+    private void inheritPermissionsForOwnerCreatedResource(FileSystemEntity resource) {
         inheritPermission(resource, null);
     }
 
-    @Override
-    public void inheritPermissionCreateByEditor(FileSystemEntity resource, Long ownerId) {
-        inheritPermission(resource, ownerId);
+    private void inheritPermissionsForEditorCreatedResource(FileSystemEntity resource, Long ownerParentId) {
+        inheritPermission(resource, ownerParentId);
     }
 
-    private void inheritPermission(FileSystemEntity resource, Long ownerId) {
+    /***
+     * Thực hiện kế thừa quyền từ folder cha khi tạo folder con
+     * @param resource: resource tạo mới
+     * @param ownerParentId : id của chủ sở hữu folder cha
+     */
+    private void inheritPermission(FileSystemEntity resource, Long ownerParentId) {
         // Validate nếu resource bị xóa hoặc không có parent thì dừng lại
         resourceCommonService.validateResourceNotDeleted(resource);
         if (resource.getParent() == null) return;
@@ -140,14 +164,20 @@ public abstract class AbstractPermissionService implements IPermissionService {
                 .collect(Collectors.toList());
 
         // Nếu là Editor, thêm quyền cho chủ sở hữu folder chứa cái folder mà edior đang tạo
-        if (ownerId != null) {
-            newPermissions.add(createPermissionForRecipientEditor(resource, ownerId));
+        if (ownerParentId != null) {
+            newPermissions.add(createPermissionForRecipientEditor(resource, ownerParentId));
         }
 
         // Lưu tất cả permissions một lần
         saveAllPermissions(newPermissions);
     }
 
+    /***
+     * Tạo permission editor cho chủ sở hữu folder cha với tài nguyên mà editor đang tạo
+     * @param resource : tài nguyên mà editor đang tạo
+     * @param recipientId : id của chủ sở hữu folder chứa tài nguyên mà editor đang tạo
+     * @return: permission
+     */
     protected Permission createPermissionForRecipientEditor(FileSystemEntity resource, Long recipientId) {
         Permission permission = new Permission();
         permission.setRecipient(getUserById(recipientId));
@@ -185,6 +215,11 @@ public abstract class AbstractPermissionService implements IPermissionService {
         return permissionMapper.toPermissionResponse(permission);
     }
 
+    /***
+     *  1 user chỉ có 1 quyền với 1 tài nguyên
+     * @param recipientId : id của user được cấp quyền
+     * @param resourceId : id tài nguyên được cấp quyền
+     */
     protected void validatePermissionNotExists(Long recipientId, Long resourceId) {
         if (permissionRepo.existsByRecipientIdAndResourceId(recipientId, resourceId)) {
             throw new InvalidDataException("Quyền đã tồn tại cho người dùng này trên tài nguyên này");

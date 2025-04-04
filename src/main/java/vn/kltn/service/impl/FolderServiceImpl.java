@@ -12,7 +12,6 @@ import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.dto.response.FolderResponse;
 import vn.kltn.entity.FileSystemEntity;
 import vn.kltn.entity.Folder;
-import vn.kltn.entity.Resource;
 import vn.kltn.entity.User;
 import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.ResourceNotFoundException;
@@ -69,17 +68,7 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
      * @param folderSaved: folder cần kế thừa các permission từ folder cha của nó
      */
     private void inheritedPermissionFromParent(Folder folderSaved) {
-        // folder con sẽ kế thừa quyền truy cập từ folder cha ( trong truong hop chu so huu folder cha tao)
-        // trong trong hop nguoi tao folder la editor thi chu so huu se co quyen editor voi folder con ma thanh vien nay tao
-        User currentUser = authenticationService.getCurrentUser();
-        Resource folderParent = folderSaved.getParent();
-        if (folderParent.getOwner().getId().equals(currentUser.getId())) {
-            // nếu chủ sở hữu của folder cha tạo thì folder được tạo sẽ kế thừa các permission từ folder cha
-            folderPermissionService.inheritPermissionCreateByOwner(folderSaved);
-        } else {
-            // nếu do editor tạo thì folder được tạo sẽ kế thừa các permission từ folder cha và chủ sở hữu folder cha là editor
-            folderPermissionService.inheritPermissionCreateByEditor(folderSaved, folderParent.getOwner().getId());
-        }
+        folderPermissionService.inheritPermissions(folderSaved);
     }
 
 
@@ -170,7 +159,7 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
     /***
      * Di chuyển tài nguyên vào thư mục
      * Tài nguyên bị di chuyển sẽ kế thừa các permission từ thư mục đích
-     * các permission cũ của resource nếu không tồn taị ở thu mục đích sẽ bị xóa
+     * các permission cũ của resource sẽ bị xóa
      * @param resourceId   : id tài nguyên cần di chuyển
      * @param folderId : id thư mục đích
      * @return :
@@ -178,12 +167,17 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
     @Override
     public FolderResponse moveResourceToFolder(Long resourceId, Long folderId) {
         Folder folderToMove = getFolderByIdOrThrow(folderId);
-        // folder cha va folder can di chuyen chua bi xoa
+        // folder can di chuyen chua bi xoa
         resourceCommonService.validateResourceNotDeleted(folderToMove);
         Folder folderDestination = getFolderByIdOrThrow(folderId);
+        // folder dich chua bi xoa
         resourceCommonService.validateResourceNotDeleted(folderDestination);
         folderToMove.setParent(folderDestination);
-        return mapToFolderResponse(folderRepo.save(folderToMove));
+        folderToMove = folderRepo.save(folderToMove);
+        // xoa cac permission cu
+        folderPermissionService.deletePermissionByResourceId(resourceId);
+        // them cac permission moi o folder cha moi
+        return mapToFolderResponse(folderToMove);
     }
 
     @Override

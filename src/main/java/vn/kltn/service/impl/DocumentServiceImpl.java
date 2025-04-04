@@ -69,7 +69,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         document.setParent(folder);
         document = documentRepo.save(document);
         // document moi tao se thua ke cac quyen tu folder cha
-        documentPermissionService.inheritPermissionCreateByOwner(document);
+        documentPermissionService.inheritPermissionsForOwnerCreatedResource(document);
         return mapToDocumentResponse(document);
     }
 

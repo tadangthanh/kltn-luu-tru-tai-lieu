@@ -13,13 +13,10 @@ public interface IPermissionService {
 
     PermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest);
 
-    void inheritPermissionCreateByOwner(FileSystemEntity resource);
-
-    void inheritPermissionCreateByEditor(FileSystemEntity resource, Long ownerId);
+    void inheritPermissions(FileSystemEntity resource);
 
     void deletePermissionById(Long permissionId);
 
-    void deletePermissionByResourceId(Long resourceId);
 
     PageResponse<List<PermissionResponse>> getPagePermissionByResourceId(Long resourceId, Pageable pageable);
 
@@ -28,5 +25,7 @@ public interface IPermissionService {
     void deleteByResourceAndRecipientId(Long resourceId, Long recipientId);
 
     void deletePermissionByResourceIds(List<Long> resourceIds);
+
+    void deletePermissionByResourceId(Long resourceId);
 
 }
