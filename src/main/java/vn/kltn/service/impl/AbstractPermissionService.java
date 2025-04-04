@@ -116,18 +116,16 @@ public abstract class AbstractPermissionService implements IPermissionService {
     }
 
     @Override
-    public void inheritPermissionByOwner(Long resourceId) {
-        inheritPermission(resourceId, null);
+    public void inheritPermissionCreateByOwner(FileSystemEntity resource) {
+        inheritPermission(resource, null);
     }
 
     @Override
-    public void inheritPermissionByEditor(Long resourceId, Long ownerId) {
-        inheritPermission(resourceId, ownerId);
+    public void inheritPermissionCreateByEditor(FileSystemEntity resource, Long ownerId) {
+        inheritPermission(resource, ownerId);
     }
 
-    private void inheritPermission(Long resourceId, Long ownerId) {
-        FileSystemEntity resource = getResourceById(resourceId);
-
+    private void inheritPermission(FileSystemEntity resource, Long ownerId) {
         // Validate nếu resource bị xóa hoặc không có parent thì dừng lại
         resourceCommonService.validateResourceNotDeleted(resource);
         if (resource.getParent() == null) return;
@@ -143,17 +141,17 @@ public abstract class AbstractPermissionService implements IPermissionService {
 
         // Nếu là Editor, thêm quyền cho chủ sở hữu folder chứa cái folder mà edior đang tạo
         if (ownerId != null) {
-            newPermissions.add(createPermissionForRecipientEditor(resourceId, ownerId));
+            newPermissions.add(createPermissionForRecipientEditor(resource, ownerId));
         }
 
         // Lưu tất cả permissions một lần
         saveAllPermissions(newPermissions);
     }
 
-    protected Permission createPermissionForRecipientEditor(Long resourceId, Long recipientId) {
+    protected Permission createPermissionForRecipientEditor(FileSystemEntity resource, Long recipientId) {
         Permission permission = new Permission();
         permission.setRecipient(getUserById(recipientId));
-        permission.setResource(getResourceById(resourceId));
+        permission.setResource(resource);
         permission.setPermission(EDITOR);
         return permission;
     }

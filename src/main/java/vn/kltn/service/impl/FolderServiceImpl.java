@@ -59,19 +59,29 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
         log.info("Creating folder with parentId {}", folderRequest.getFolderParentId());
         validateConditionsToCreateFolder(folderRequest);
         Folder folderSaved = saveFolderWithParent(folderRequest);
+        inheritedPermissionFromParent(folderSaved);
+        return mapToFolderResponse(folderSaved);
+    }
+
+    /***
+     * Khi tạo thư mục con thì sẽ kế thừa quyền truy cập từ thư mục cha
+     *
+     * @param folderSaved: folder cần kế thừa các permission từ folder cha của nó
+     */
+    private void inheritedPermissionFromParent(Folder folderSaved) {
         // folder con sẽ kế thừa quyền truy cập từ folder cha ( trong truong hop chu so huu folder cha tao)
         // trong trong hop nguoi tao folder la editor thi chu so huu se co quyen editor voi folder con ma thanh vien nay tao
         User currentUser = authenticationService.getCurrentUser();
         Resource folderParent = folderSaved.getParent();
         if (folderParent.getOwner().getId().equals(currentUser.getId())) {
             // nếu chủ sở hữu của folder cha tạo thì folder được tạo sẽ kế thừa các permission từ folder cha
-            folderPermissionService.inheritPermissionByOwner(folderSaved.getId());
+            folderPermissionService.inheritPermissionCreateByOwner(folderSaved);
         } else {
             // nếu do editor tạo thì folder được tạo sẽ kế thừa các permission từ folder cha và chủ sở hữu folder cha là editor
-            folderPermissionService.inheritPermissionByEditor(folderSaved.getId(), folderParent.getOwner().getId());
+            folderPermissionService.inheritPermissionCreateByEditor(folderSaved, folderParent.getOwner().getId());
         }
-        return mapToFolderResponse(folderSaved);
     }
+
 
     private void validateConditionsToCreateFolder(FolderRequest folderRequest) {
         log.info("validate conditions to create folder with parentId {}", folderRequest.getFolderParentId());
@@ -157,7 +167,14 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
         });
     }
 
-
+    /***
+     * Di chuyển tài nguyên vào thư mục
+     * Tài nguyên bị di chuyển sẽ kế thừa các permission từ thư mục đích
+     * các permission cũ của resource nếu không tồn taị ở thu mục đích sẽ bị xóa
+     * @param resourceId   : id tài nguyên cần di chuyển
+     * @param folderId : id thư mục đích
+     * @return :
+     */
     @Override
     public FolderResponse moveResourceToFolder(Long resourceId, Long folderId) {
         Folder folderToMove = getFolderByIdOrThrow(folderId);

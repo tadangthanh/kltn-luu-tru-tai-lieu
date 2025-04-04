@@ -4,6 +4,7 @@ import org.springframework.data.domain.Pageable;
 import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.PermissionResponse;
+import vn.kltn.entity.FileSystemEntity;
 
 import java.util.List;
 
@@ -12,7 +13,9 @@ public interface IPermissionService {
 
     PermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest);
 
-    void inheritPermissionByOwner(Long resourceId);
+    void inheritPermissionCreateByOwner(FileSystemEntity resource);
+
+    void inheritPermissionCreateByEditor(FileSystemEntity resource, Long ownerId);
 
     void deletePermissionById(Long permissionId);
 
@@ -26,5 +29,4 @@ public interface IPermissionService {
 
     void deletePermissionByResourceIds(List<Long> resourceIds);
 
-    void inheritPermissionByEditor(Long resourceId, Long ownerId);
 }

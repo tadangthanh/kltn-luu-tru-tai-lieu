@@ -24,9 +24,9 @@ public class Permission extends BaseEntity {
 
     private boolean isCustomPermission = false;
 
-    public Permission(User recipient, FileSystemEntity resource, vn.kltn.common.Permission permission) {
+    public Permission(User recipient, Resource resource, vn.kltn.common.Permission permission) {
         this.recipient = recipient;
-        this.resource = resource;
+        this.resource = (FileSystemEntity) resource;
         this.permission = permission;
     }
 }
