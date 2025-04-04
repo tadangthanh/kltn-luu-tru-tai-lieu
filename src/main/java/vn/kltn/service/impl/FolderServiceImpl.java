@@ -166,7 +166,7 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
      */
     @Override
     public FolderResponse moveResourceToFolder(Long resourceId, Long folderId) {
-        Folder folderToMove = getFolderByIdOrThrow(folderId);
+        Folder folderToMove = getFolderByIdOrThrow(resourceId);
         // folder can di chuyen chua bi xoa
         resourceCommonService.validateResourceNotDeleted(folderToMove);
         Folder folderDestination = getFolderByIdOrThrow(folderId);
@@ -176,7 +176,8 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
         folderToMove = folderRepo.save(folderToMove);
         // xoa cac permission cu
         folderPermissionService.deletePermissionByResourceId(resourceId);
-        // them cac permission moi o folder cha moi
+        // them cac permission moi cua folder cha moi
+        folderPermissionService.inheritPermissions(folderToMove);
         return mapToFolderResponse(folderToMove);
     }
 

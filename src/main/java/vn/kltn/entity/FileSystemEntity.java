@@ -27,7 +27,8 @@ public abstract class FileSystemEntity extends BaseEntity implements Resource {
         if (parent instanceof Folder) {
             this.parent = (Folder) parent;
         } else {
-            throw new IllegalArgumentException("Parent must be a Folder");
+            this.parent = null; // Hoặc throw Exception nếu cần
         }
     }
+
 }
