@@ -19,6 +19,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
 @RestController
 @RequestMapping("/api/v1/document-conversion")
 @RequiredArgsConstructor
@@ -26,22 +27,23 @@ public class DocumentConversionRest {
     private final IDocumentConversionService documentConversionService;
     // Đường dẫn nơi lưu trữ file tạm thời trên server
     private static final String TEMP_DIR = "D:\\export\\temp\\";
-    // Endpoint để upload tài liệu Word và chuyển đổi thành PDF
-    @PostMapping("/word-to-pdf")
-    public ResponseEntity<byte[]> convertUploadedDocument(@RequestParam("file") MultipartFile file) throws Exception {
-        if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body("Vui lòng upload một tệp Word!".getBytes());
-        }
 
-        InputStream inputStream = file.getInputStream();
-        byte[] pdfBytes = documentConversionService.convertWordToPdf(inputStream);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("attachment", "converted.pdf");
-
-        return ResponseEntity.ok().headers(headers).body(pdfBytes);
-    }
+//    // Endpoint để upload tài liệu Word và chuyển đổi thành PDF
+//    @PostMapping("/word-to-pdf")
+//    public ResponseEntity<byte[]> convertUploadedDocument(@RequestParam("file") MultipartFile file) throws Exception {
+//        if (file.isEmpty()) {
+//            return ResponseEntity.badRequest().body("Vui lòng upload một tệp Word!".getBytes());
+//        }
+//
+//        InputStream inputStream = file.getInputStream();
+//        byte[] pdfBytes = documentConversionService.convertWordToPdf(inputStream);
+//
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.setContentType(MediaType.APPLICATION_PDF);
+//        headers.setContentDispositionFormData("attachment", "converted.pdf");
+//
+//        return ResponseEntity.ok().headers(headers).body(pdfBytes);
+//    }
 
     @PostMapping("/word-to-html")
     public String convertUsingPandoc(@RequestParam("file") MultipartFile file) {
@@ -84,7 +86,7 @@ public class DocumentConversionRest {
         }
     }
 
-    @PostMapping("/upload")
+    @PostMapping("/word-to-pdf")
     public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No file uploaded");
@@ -98,65 +100,28 @@ public class DocumentConversionRest {
             file.transferTo(tempFile);
 
             // Chuyển đổi sang PDF
-            pdfFile = convertWordToPdf(tempFile);
+            pdfFile = documentConversionService.convertWordToPdf(tempFile);
 
             // Đọc nội dung file PDF dưới dạng byte array
-            byte[] pdfBytes = Files.readAllBytes(pdfFile.toPath());
+            byte[] pdfBytes = documentConversionService.readPdfFileAsBytes(pdfFile);
 
             // Xóa file tạm thời ngay sau khi đọc xong
-            tempFile.delete();
-            pdfFile.delete();
+            documentConversionService.deleteFileIfExists(tempFile);
+            documentConversionService.deleteFileIfExists(pdfFile);
 
             // Trả file PDF về client dưới dạng stream mà không lưu trữ
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_PDF)
                     .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename*=UTF-8''" + URLEncoder.encode(pdfFile.getName(), StandardCharsets.UTF_8.toString()))
+                            "attachment; filename*=UTF-8''" + URLEncoder.encode(pdfFile.getName(), StandardCharsets.UTF_8))
                     .body(pdfBytes);
 
         } catch (IOException e) {
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File conversion failed");
         } finally {
             // Đảm bảo xóa file tạm thời dù có lỗi hay không
-            if (tempFile != null && tempFile.exists()) {
-                tempFile.delete();
-            }
-            if (pdfFile != null && pdfFile.exists()) {
-                pdfFile.delete();
-            }
+            documentConversionService.deleteFileIfExists(tempFile);
+            documentConversionService.deleteFileIfExists(pdfFile);
         }
-    }
-
-    // Hàm gọi LibreOffice để chuyển đổi Word sang PDF
-    private File convertWordToPdf(File wordFile) throws IOException {
-        String outputFilePath = wordFile.getParent() + File.separator + wordFile.getName().replace(".docx", ".pdf");
-        File pdfFile = new File(outputFilePath);
-
-        // Gọi lệnh LibreOffice với đường dẫn đầy đủ
-        ProcessBuilder processBuilder = new ProcessBuilder(
-                "C:\\Program Files\\LibreOffice\\program\\soffice.exe",
-                "--headless",
-                "--convert-to", "pdf",
-                "--outdir", wordFile.getParent(),
-                wordFile.getAbsolutePath()
-        );
-
-        Process process = processBuilder.start();
-        try {
-            int exitValue = process.waitFor(); // Chờ quá trình hoàn tất
-            if (exitValue != 0) {
-                throw new IOException("PDF conversion failed with exit code: " + exitValue);
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            throw new IOException("Conversion interrupted", e);
-        }
-
-        if (!pdfFile.exists()) {
-            throw new IOException("PDF conversion failed: Output file not created.");
-        }
-
-        return pdfFile;
     }
 }

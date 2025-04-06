@@ -8,6 +8,8 @@ server:
       charset: UTF-8
       force: true
 app:
+  conversion:
+    temp-dir: ${TEMP_DIR:D:\export\temp\}
   base-url: ${BASE_URL:http://localhost:8080}
   delete:
     document-retention-days: 30 #số ngày giữ lại tài liệu đã xóa
