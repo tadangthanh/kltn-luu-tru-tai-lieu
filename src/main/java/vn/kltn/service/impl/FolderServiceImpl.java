@@ -10,9 +10,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.dto.response.FolderResponse;
-import vn.kltn.entity.FileSystemEntity;
 import vn.kltn.entity.Folder;
-import vn.kltn.entity.Resource;
 import vn.kltn.entity.User;
 import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.ResourceNotFoundException;
@@ -39,7 +37,7 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
     private int documentRetentionDays;
 
     public FolderServiceImpl(@Qualifier("folderPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IDocumentPermissionService documentPermissionService, FolderMapper folderMapper, FolderRepo folderRepo, IAuthenticationService authenticationService, IDocumentService documentService, ResourceCommonService resourceCommonService, FolderCommonService folderCommonService, IFolderPermissionService folderPermissionService) {
-        super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService,folderCommonService);
+        super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
         this.folderMapper = folderMapper;
         this.folderRepo = folderRepo;
         this.documentService = documentService;
@@ -162,32 +160,6 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
         });
     }
 
-//    /***
-//     * Di chuyển tài nguyên vào thư mục
-//     * Tài nguyên bị di chuyển sẽ kế thừa các permission từ thư mục đích
-//     * các permission cũ của resource sẽ bị xóa
-//     * @param resourceId   : id tài nguyên cần di chuyển
-//     * @param folderId : id thư mục đích
-//     * @return :
-//     */
-//    @Override
-//    public FolderResponse moveResourceToFolder(Long resourceId, Long folderId) {
-//        Folder folderToMove = getFolderByIdOrThrow(resourceId);
-//        //kiem tra xem nguoi dung hien tai co quyen di chuyen folder hay khong ()
-//        validateCurrentUserIsOwnerOrEditorResource(folderToMove.getParent());
-//        // folder can di chuyen chua bi xoa
-//        resourceCommonService.validateResourceNotDeleted(folderToMove);
-//        Folder folderDestination = getFolderByIdOrThrow(folderId);
-//        // folder dich chua bi xoa
-//        resourceCommonService.validateResourceNotDeleted(folderDestination);
-//        folderToMove.setParent(folderDestination);
-//        folderToMove = folderRepo.save(folderToMove);
-//        // xoa cac permission cu
-//        folderPermissionService.deletePermissionByResourceId(resourceId);
-//        // them cac permission moi cua folder cha moi
-//        folderPermissionService.inheritPermissions(folderToMove);
-//        return mapToFolderResponse(folderToMove);
-//    }
 
     @Override
     protected void hardDeleteResource(Folder resource) {

@@ -48,7 +48,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     private final FolderCommonService folderCommonService;
 
     public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService) {
-        super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService,folderCommonService);
+        super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
         this.documentRepo = documentRepo;
         this.documentMapper = documentMapper;
         this.azureStorageService = azureStorageService;
@@ -165,18 +165,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         });
     }
 
-
-//    @Override
-//    public DocumentResponse moveResourceToFolder(Long resourceId, Long folderId) {
-//        log.info("move document with id {} to folder with id {}", resourceId, folderId);
-//        Document resource = getResourceByIdOrThrow(resourceId);
-//        Folder resourceDestination = folderCommonService.getFolderByIdOrThrow(folderId);
-//        validateCurrentUserIsOwnerResource(resource);
-//        validateResourceNotDeleted(resource);
-//        validateResourceNotDeleted(resourceDestination);
-//        resource.setParent(resourceDestination);
-//        return mapToR(resource);
-//    }
 
     @Override
     protected Document saveResource(Document resource) {
