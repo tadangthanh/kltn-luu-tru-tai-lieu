@@ -13,7 +13,9 @@ public interface IResourceService<T extends Resource, R extends ResourceResponse
 
     void validateResourceDeleted(Resource resource);
 
-    void validateCurrentUserIsOwnerResource(T resource);
+    void validateCurrentUserIsOwnerResource(Resource resource);
+
+    void validateCurrentUserIsOwnerOrEditorResource(Resource resource);
 
     void deleteResourceById(Long resourceId);
 

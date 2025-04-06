@@ -16,6 +16,7 @@ public class Permission extends BaseEntity {
     @JoinColumn(name = "recipient_id")
     private User recipient;
 
+    @Setter
     @ManyToOne
     @JoinColumn(name = "resource_id", nullable = false)
     private FileSystemEntity resource;

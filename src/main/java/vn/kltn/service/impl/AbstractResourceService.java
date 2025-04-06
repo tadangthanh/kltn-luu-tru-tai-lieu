@@ -9,6 +9,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResourceResponse;
+import vn.kltn.entity.Folder;
 import vn.kltn.entity.Resource;
 import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
@@ -28,15 +29,17 @@ public abstract class AbstractResourceService<T extends Resource, R extends Reso
     protected final IFolderPermissionService folderPermissionService;
     protected final IAuthenticationService authenticationService;
     protected final AbstractPermissionService abstractPermissionService;
+    protected final FolderCommonService folderCommonService;
 
     protected AbstractResourceService(IDocumentPermissionService documentPermissionService,
                                       IFolderPermissionService folderPermissionService,
                                       IAuthenticationService authenticationService,
-                                      @Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService) {
+                                      @Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, FolderCommonService folderCommonService) {
         this.documentPermissionService = documentPermissionService;
         this.folderPermissionService = folderPermissionService;
         this.authenticationService = authenticationService;
         this.abstractPermissionService = abstractPermissionService;
+        this.folderCommonService = folderCommonService;
     }
 
     @Override
@@ -81,11 +84,27 @@ public abstract class AbstractResourceService<T extends Resource, R extends Reso
     }
 
     @Override
-    public void validateCurrentUserIsOwnerResource(T resource) {
+    public void validateCurrentUserIsOwnerResource(Resource resource) {
         User currentUser = getCurrentUser();
         if (!resource.getOwner().getId().equals(currentUser.getId())) {
             throw new InvalidDataException("Bạn không có quyền thực hiện thao tác này");
         }
+    }
+
+    /**
+     * Kiểm tra xem người dùng hiện tại có quyền sở hữu hoặc chỉnh sửa tài nguyên hay không
+     *
+     * @param resource Tài nguyên cần kiểm tra
+     */
+    @Override
+    public void validateCurrentUserIsOwnerOrEditorResource(Resource resource) {
+        User currentUser = getCurrentUser();
+        // neu la chu so huu thi ko can kiem tra quyen editor
+        if (resource.getOwner().getId().equals(currentUser.getId())) {
+            return;
+        }
+        // nếu khong là chu so huu thi kiem tra quyen editor
+        validateUserIsEditor(resource.getId(), currentUser.getId());
     }
 
     @Override
@@ -108,6 +127,30 @@ public abstract class AbstractResourceService<T extends Resource, R extends Reso
             resource.setParent(null);
         }
     }
+
+    @Override
+    public R moveResourceToFolder(Long resourceId, Long folderId) {
+        T resourceToMove = getResourceByIdOrThrow(resourceId);
+        //kiem tra xem nguoi dung hien tai co quyen di chuyen folder hay khong ( kiem tra quyen o folder cha)
+        validateCurrentUserIsOwnerOrEditorResource(resourceToMove.getParent());
+        // folder can di chuyen chua bi xoa
+        validateResourceNotDeleted(resourceToMove);
+        Folder folderDestination = getFolderByIdOrThrow(folderId);
+        // folder dich chua bi xoa
+        validateResourceNotDeleted(folderDestination);
+        resourceToMove.setParent(folderDestination);
+        resourceToMove = saveResource(resourceToMove);
+        // xoa cac permission cu
+        folderPermissionService.deletePermissionByResourceId(resourceId);
+        // them cac permission moi cua folder cha moi
+        folderPermissionService.inheritPermissions(resourceToMove);
+        return mapToR(resourceToMove);
+    }
+
+    protected Folder getFolderByIdOrThrow(Long folderId){
+        return folderCommonService.getFolderByIdOrThrow(folderId);
+    }
+    protected abstract T saveResource(T resource);
 
     protected void deletePermissionByResourceAndRecipientId(Long resourceId, Long recipientId) {
         abstractPermissionService.deleteByResourceAndRecipientId(resourceId, recipientId);

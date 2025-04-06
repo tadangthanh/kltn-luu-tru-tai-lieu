@@ -123,7 +123,7 @@ public abstract class AbstractPermissionService implements IPermissionService {
      * @param resource : tài nguyên được tạo mới
      */
     @Override
-    public void inheritPermissions(FileSystemEntity resource) {
+    public void inheritPermissions(Resource resource) {
         // folder cha của tài nguyên được tạo mới, lấy các permission từ folder cha và gán cho tài nguyên mới
         Resource folderParent = resource.getParent();
         User currentUser = authenticationService.getCurrentUser();
@@ -136,11 +136,11 @@ public abstract class AbstractPermissionService implements IPermissionService {
         }
     }
 
-    private void inheritPermissionsForOwnerCreatedResource(FileSystemEntity resource) {
+    private void inheritPermissionsForOwnerCreatedResource(Resource resource) {
         inheritPermission(resource, null);
     }
 
-    private void inheritPermissionsForEditorCreatedResource(FileSystemEntity resource, Long ownerParentId) {
+    private void inheritPermissionsForEditorCreatedResource(Resource resource, Long ownerParentId) {
         inheritPermission(resource, ownerParentId);
     }
 
@@ -149,7 +149,7 @@ public abstract class AbstractPermissionService implements IPermissionService {
      * @param resource: resource tạo mới
      * @param ownerParentId : id của chủ sở hữu folder cha
      */
-    private void inheritPermission(FileSystemEntity resource, Long ownerParentId) {
+    private void inheritPermission(Resource resource, Long ownerParentId) {
         // Validate nếu resource bị xóa hoặc không có parent thì dừng lại
         resourceCommonService.validateResourceNotDeleted(resource);
         if (resource.getParent() == null) return;
@@ -178,10 +178,10 @@ public abstract class AbstractPermissionService implements IPermissionService {
      * @param recipientId : id của chủ sở hữu folder chứa tài nguyên mà editor đang tạo
      * @return: permission
      */
-    protected Permission createPermissionForRecipientEditor(FileSystemEntity resource, Long recipientId) {
+    protected Permission createPermissionForRecipientEditor(Resource resource, Long recipientId) {
         Permission permission = new Permission();
         permission.setRecipient(getUserById(recipientId));
-        permission.setResource(resource);
+        permission.setResource((FileSystemEntity) resource);
         permission.setPermission(EDITOR);
         return permission;
     }
