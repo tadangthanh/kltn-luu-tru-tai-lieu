@@ -31,10 +31,7 @@ public abstract class AbstractResourceService<T extends Resource, R extends Reso
     protected final AbstractPermissionService abstractPermissionService;
     protected final FolderCommonService folderCommonService;
 
-    protected AbstractResourceService(IDocumentPermissionService documentPermissionService,
-                                      IFolderPermissionService folderPermissionService,
-                                      IAuthenticationService authenticationService,
-                                      @Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, FolderCommonService folderCommonService) {
+    protected AbstractResourceService(IDocumentPermissionService documentPermissionService, IFolderPermissionService folderPermissionService, IAuthenticationService authenticationService, @Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, FolderCommonService folderCommonService) {
         this.documentPermissionService = documentPermissionService;
         this.folderPermissionService = folderPermissionService;
         this.authenticationService = authenticationService;
@@ -112,6 +109,10 @@ public abstract class AbstractResourceService<T extends Resource, R extends Reso
         T resource = getResourceByIdOrThrow(resourceId);
         // resource chua bi xoa
         validateResourceNotDeleted(resource);
+        // validate chu so huu hoac editor o resource cha
+        if (resource.getParent() != null) {
+            validateCurrentUserIsOwnerOrEditorResource(resource.getParent());
+        }
         User currentUser = getCurrentUser();
         User owner = resource.getOwner();
         if (currentUser.getId().equals(owner.getId())) {
@@ -120,10 +121,7 @@ public abstract class AbstractResourceService<T extends Resource, R extends Reso
         } else {
             // nguoi thuc hien co quyen editor
             validateUserIsEditor(resourceId, currentUser.getId());
-            if (resource.getParent() != null) {
-                //xoa access
-                deletePermissionByResourceAndRecipientId(resourceId, currentUser.getId());
-            }
+            // set parent = null la se dua resource nay vao drive cua toi
             resource.setParent(null);
         }
     }
@@ -147,9 +145,10 @@ public abstract class AbstractResourceService<T extends Resource, R extends Reso
         return mapToR(resourceToMove);
     }
 
-    protected Folder getFolderByIdOrThrow(Long folderId){
+    protected Folder getFolderByIdOrThrow(Long folderId) {
         return folderCommonService.getFolderByIdOrThrow(folderId);
     }
+
     protected abstract T saveResource(T resource);
 
     protected void deletePermissionByResourceAndRecipientId(Long resourceId, Long recipientId) {

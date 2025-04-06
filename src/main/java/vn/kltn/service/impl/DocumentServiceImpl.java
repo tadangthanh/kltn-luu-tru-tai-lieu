@@ -140,8 +140,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     @Override
     protected void softDeleteResource(Document document) {
         log.info("soft delete document with id {}", document.getId());
-        validateResourceNotDeleted(document);
-        validateCurrentUserIsOwnerResource(document);
         document.setDeletedAt(LocalDateTime.now());
         document.setPermanentDeleteAt(LocalDateTime.now().plusDays(documentRetentionDays));
     }

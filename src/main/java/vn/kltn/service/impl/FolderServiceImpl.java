@@ -131,8 +131,6 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
 
     @Override
     protected void softDeleteResource(Folder folder) {
-        // dam bao resource chua bi xoa
-        resourceCommonService.validateResourceNotDeleted(folder);
         // lay danh sach id cac folder va cac folder con can xoa
         List<Long> folderIdsDelete = folderRepo.findCurrentAndChildFolderIdsByFolderId(folder.getId());
         // update deletedAt cho cac folder va cac folder con
