@@ -73,7 +73,7 @@ public class DocumentConversionRest {
     }
 
     @GetMapping("/convert-to-image")
-    public ResponseData<List<String>> convertToImage(@RequestParam("blobName") String blobName) {
-        return new ResponseData<>(200, "thành công", documentConversionService.convertPdfToImagesAndUpload(blobName));
+    public ResponseData<List<String>> convertToImage(@RequestParam("blobName") String blobName, @RequestParam("pages") String pages) {
+        return new ResponseData<>(200, "thành công", documentConversionService.convertPdfToImagesAndUpload(blobName,pages));
     }
 }

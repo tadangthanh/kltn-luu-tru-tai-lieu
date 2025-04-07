@@ -154,7 +154,7 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
     }
 
     @Override
-    public List<String> convertPdfToImagesAndUpload(String blobName) {
+    public List<String> convertPdfToImagesAndUpload(String blobName,String pages) {
         List<String> uploadedImageUrls = new ArrayList<>();
         File pdfFile = null;
 
@@ -163,7 +163,7 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
             pdfFile = azureStorageService.downloadToFile(blobName,tempDir);
 
             // 2. Chuyển đổi PDF thành các ảnh (PNG)
-            File[] imageFiles = convertPdfToImages(pdfFile);
+            File[] imageFiles = convertPdfToImages(pdfFile,pages);
 
             // 3. Tải các ảnh lên Azure Blob Storage
             for (File imageFile : imageFiles) {
@@ -187,31 +187,43 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
 
 
     /**
-     * Chuyển đổi PDF thành các ảnh
+     * Chuyển đổi PDF thành các ảnh cho các trang cụ thể
      */
-    private File[] convertPdfToImages(File pdfFile) throws IOException, InterruptedException {
-        // Tạo đường dẫn tạm thời cho các tệp ảnh
-        String pdfFilePath = pdfFile.getAbsolutePath();
-        String imageFilePattern = tempDir + "output_page-%03d.png";  // Định dạng tên tệp ảnh (ví dụ: output_page-001.png)
+    private File[] convertPdfToImages(File pdfFile, String pages) throws IOException, InterruptedException {
+        List<File> imageFiles = new ArrayList<>();
 
-        // Sử dụng ImageMagick để chuyển PDF thành ảnh PNG
-        ProcessBuilder processBuilder = new ProcessBuilder(
-                "magick",
-                "-density", "300",  // Đặt độ phân giải
-                pdfFilePath,
-                imageFilePattern
-        );
+        // Chia các trang được chỉ định thành mảng (ví dụ: "1,3,5" => ["0", "2", "4"])
+        String[] pagesArray = pages.split(",");
 
-        Process process = processBuilder.start();
-        int exitCode = process.waitFor();
+        // Lặp qua các trang và chuyển đổi từng trang một
+        for (String page : pagesArray) {
+            // Tạo đường dẫn tạm thời cho các tệp ảnh
+            String pdfFilePath = pdfFile.getAbsolutePath();
+            String imageFilePattern = tempDir + "output_page-" + String.format("%03d", Integer.parseInt(page) + 1) + ".png";  // Đặt tên ảnh
 
-        if (exitCode != 0) {
-            throw new IOException("Lỗi khi chuyển đổi PDF thành ảnh.");
+            // Sử dụng ImageMagick để chuyển đổi từng trang
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "magick",
+                    "-density", "300",  // Đặt độ phân giải
+                    pdfFilePath + "[" + page + "]",  // Chỉ định trang cụ thể
+                    imageFilePattern
+            );
+
+            Process process = processBuilder.start();
+            int exitCode = process.waitFor();
+
+            if (exitCode != 0) {
+                throw new IOException("Lỗi khi chuyển đổi PDF thành ảnh cho trang: " + page);
+            }
+
+            // Thêm ảnh đã tạo vào danh sách
+            File imageFile = new File(imageFilePattern);
+            if (imageFile.exists()) {
+                imageFiles.add(imageFile);
+            }
         }
 
-        // Lấy các tệp ảnh đã được tạo ra (output_page-001.png, output_page-002.png, ...)
-        File outputDir = new File(tempDir);
-        return outputDir.listFiles((dir, name) -> name.startsWith("output_page-") && name.endsWith(".png"));
+        return imageFiles.toArray(new File[0]);
     }
 
     /**
