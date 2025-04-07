@@ -2,10 +2,7 @@ package vn.kltn.controller.rest;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.DocumentFormat;
 import vn.kltn.dto.response.ResponseData;
@@ -64,8 +61,13 @@ public class DocumentConversionRest {
         }
     }
 
-    @PostMapping("/word-to-pdf")
-    public ResponseData<String> convertWordToPdf(@RequestParam("file") MultipartFile file,@RequestParam("format") String format) {
-        return new ResponseData<>(200, "thành công", documentConversionService.convertFile(file,format));
+    @PostMapping("/convert")
+    public ResponseData<String> convert(@RequestParam("file") MultipartFile file, @RequestParam("format") String format) {
+        return new ResponseData<>(200, "thành công", documentConversionService.convertFile(file, format));
+    }
+
+    @GetMapping("/convert-blob")
+    public ResponseData<String> convertBlob( @RequestParam("blobName") String blobName, @RequestParam("format") String format) {
+        return new ResponseData<>(200, "thành công", documentConversionService.convertStoredFile(blobName, format));
     }
 }

@@ -18,7 +18,10 @@ import vn.kltn.exception.CustomBlobStorageException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.service.IAzureStorageService;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -98,8 +101,6 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
             throw new CustomBlobStorageException("Lỗi upload file ");
         }
     }
-
-
 
 
     @Override
@@ -217,6 +218,30 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     public InputStream downloadBlobInputStream(String blobName) {
         return getInputStreamBlob(containerNameDefault, blobName);
     }
+
+    @Override
+    public File downloadToFile(String blobName, String tempDirPath) {
+        try {
+            BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerNameDefault);
+            BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(blobName).getBlockBlobClient();
+
+            // Tạo thư mục tạm nếu chưa tồn tại
+            File tempDir = new File(tempDirPath);
+            if (!tempDir.exists()) {
+                tempDir.mkdirs();
+            }
+
+            // Tạo file tạm để lưu
+            File downloadedFile = new File(tempDirPath + File.separator + blobName);
+            blockBlobClient.downloadToFile(downloadedFile.getAbsolutePath(), true); // true = overwrite if exists
+
+            return downloadedFile;
+        } catch (Exception e) {
+            log.error("Lỗi khi tải file từ Azure Blob: {}", e.getMessage());
+            throw new CustomBlobStorageException("Không thể tải file từ Azure Blob: " + e.getMessage());
+        }
+    }
+
 
     private InputStream getInputStreamBlob(String containerName, String blobName) {
         try {

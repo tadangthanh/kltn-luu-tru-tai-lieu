@@ -29,5 +29,7 @@ public interface IAzureStorageService {
 
     InputStream downloadBlobInputStream(String blobName); // Tải blob về
 
+    File downloadToFile(String blobName, String tempDirPath);
+
     byte[] downloadBlobByteData(String containerName, String blobName); // Tải blob về dạng byte[]
 }

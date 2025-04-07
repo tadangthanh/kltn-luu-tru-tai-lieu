@@ -38,7 +38,7 @@ public enum DocumentFormat {
             DocumentFormat.PPTX, Set.of(DocumentFormat.PDF, DocumentFormat.ODP),
             DocumentFormat.XLSX, Set.of(DocumentFormat.PDF, DocumentFormat.ODS),
             DocumentFormat.ODT, Set.of(DocumentFormat.PDF),
-            DocumentFormat.PDF, Set.of(DocumentFormat.DOCX, DocumentFormat.ODT), // nếu hỗ trợ
+//            DocumentFormat.PDF, Set.of(DocumentFormat.DOCX, DocumentFormat.ODT), // nếu hỗ trợ
             DocumentFormat.TXT, Set.of(DocumentFormat.PDF)
     );
 
