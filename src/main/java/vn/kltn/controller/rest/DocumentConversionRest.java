@@ -1,6 +1,7 @@
 package vn.kltn.controller.rest;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -14,7 +15,6 @@ import vn.kltn.service.IDocumentConversionService;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -23,27 +23,11 @@ import java.nio.file.Path;
 @RestController
 @RequestMapping("/api/v1/document-conversion")
 @RequiredArgsConstructor
+@Slf4j(topic = "DOCUMENT_CONVERSION_REST")
 public class DocumentConversionRest {
     private final IDocumentConversionService documentConversionService;
     // Đường dẫn nơi lưu trữ file tạm thời trên server
     private static final String TEMP_DIR = "D:\\export\\temp\\";
-
-//    // Endpoint để upload tài liệu Word và chuyển đổi thành PDF
-//    @PostMapping("/word-to-pdf")
-//    public ResponseEntity<byte[]> convertUploadedDocument(@RequestParam("file") MultipartFile file) throws Exception {
-//        if (file.isEmpty()) {
-//            return ResponseEntity.badRequest().body("Vui lòng upload một tệp Word!".getBytes());
-//        }
-//
-//        InputStream inputStream = file.getInputStream();
-//        byte[] pdfBytes = documentConversionService.convertWordToPdf(inputStream);
-//
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.setContentType(MediaType.APPLICATION_PDF);
-//        headers.setContentDispositionFormData("attachment", "converted.pdf");
-//
-//        return ResponseEntity.ok().headers(headers).body(pdfBytes);
-//    }
 
     @PostMapping("/word-to-html")
     public String convertUsingPandoc(@RequestParam("file") MultipartFile file) {
@@ -81,15 +65,15 @@ public class DocumentConversionRest {
             return html;
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
             return "Lỗi xử lý: " + e.getMessage();
         }
     }
 
     @PostMapping("/word-to-pdf")
-    public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> convertWordToPdf(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No file uploaded");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Không có file nào được upload");
         }
 
         File tempFile = null;
