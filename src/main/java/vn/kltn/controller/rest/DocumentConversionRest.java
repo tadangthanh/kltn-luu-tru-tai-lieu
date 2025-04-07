@@ -10,6 +10,7 @@ import vn.kltn.service.IDocumentConversionService;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/document-conversion")
@@ -67,7 +68,12 @@ public class DocumentConversionRest {
     }
 
     @GetMapping("/convert-blob")
-    public ResponseData<String> convertBlob( @RequestParam("blobName") String blobName, @RequestParam("format") String format) {
+    public ResponseData<String> convertBlob(@RequestParam("blobName") String blobName, @RequestParam("format") String format) {
         return new ResponseData<>(200, "thành công", documentConversionService.convertStoredFile(blobName, format));
+    }
+
+    @GetMapping("/convert-to-image")
+    public ResponseData<List<String>> convertToImage(@RequestParam("blobName") String blobName) {
+        return new ResponseData<>(200, "thành công", documentConversionService.convertPdfToImagesAndUpload(blobName));
     }
 }

@@ -15,6 +15,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import static com.google.common.io.Files.getFileExtension;
@@ -150,6 +152,84 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
             deleteFileIfExists(convertedFile);
         }
     }
+
+    @Override
+    public List<String> convertPdfToImagesAndUpload(String blobName) {
+        List<String> uploadedImageUrls = new ArrayList<>();
+        File pdfFile = null;
+
+        try {
+            // 1. Tải tệp PDF từ Azure Blob Storage
+            pdfFile = azureStorageService.downloadToFile(blobName,tempDir);
+
+            // 2. Chuyển đổi PDF thành các ảnh (PNG)
+            File[] imageFiles = convertPdfToImages(pdfFile);
+
+            // 3. Tải các ảnh lên Azure Blob Storage
+            for (File imageFile : imageFiles) {
+                String uploadedImageUrl = uploadImageToBlob(imageFile);
+                uploadedImageUrls.add(uploadedImageUrl);
+                deleteFileIfExists(imageFile);  // Xóa ảnh sau khi upload
+            }
+
+        } catch (IOException e) {
+            log.error("Có lỗi xảy ra trong quá trình chuyển đổi PDF thành hình ảnh", e);
+            throw new BadRequestException("Có lỗi trong quá trình chuyển đổi PDF thành hình ảnh");
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } finally {
+            // Xóa tệp PDF sau khi xử lý xong
+            deleteFileIfExists(pdfFile);
+        }
+
+        return uploadedImageUrls;
+    }
+
+
+    /**
+     * Chuyển đổi PDF thành các ảnh
+     */
+    private File[] convertPdfToImages(File pdfFile) throws IOException, InterruptedException {
+        // Tạo đường dẫn tạm thời cho các tệp ảnh
+        String pdfFilePath = pdfFile.getAbsolutePath();
+        String imageFilePattern = tempDir + "output_page-%03d.png";  // Định dạng tên tệp ảnh (ví dụ: output_page-001.png)
+
+        // Sử dụng ImageMagick để chuyển PDF thành ảnh PNG
+        ProcessBuilder processBuilder = new ProcessBuilder(
+                "magick",
+                "-density", "300",  // Đặt độ phân giải
+                pdfFilePath,
+                imageFilePattern
+        );
+
+        Process process = processBuilder.start();
+        int exitCode = process.waitFor();
+
+        if (exitCode != 0) {
+            throw new IOException("Lỗi khi chuyển đổi PDF thành ảnh.");
+        }
+
+        // Lấy các tệp ảnh đã được tạo ra (output_page-001.png, output_page-002.png, ...)
+        File outputDir = new File(tempDir);
+        return outputDir.listFiles((dir, name) -> name.startsWith("output_page-") && name.endsWith(".png"));
+    }
+
+    /**
+     * Tải tệp ảnh lên Azure Blob Storage
+     */
+    private String uploadImageToBlob(File imageFile) throws IOException {
+        // Tạo stream từ ảnh
+        try (InputStream imageStream = new FileInputStream(imageFile)) {
+            // Upload ảnh lên Azure Blob Storage
+            return azureStorageService.uploadChunkedWithContainerDefault(
+                    imageStream,
+                    imageFile.getName(),
+                    imageFile.length(),
+                    10 * 1024 * 1024  // Đặt kích thước chunk 10MB
+            );
+        }
+    }
+
 
     private String replaceExtension(String fileName, String newExt) {
         int lastDot = fileName.lastIndexOf('.');

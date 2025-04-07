@@ -18,10 +18,7 @@ import vn.kltn.exception.CustomBlobStorageException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.service.IAzureStorageService;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -241,6 +238,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
             throw new CustomBlobStorageException("Không thể tải file từ Azure Blob: " + e.getMessage());
         }
     }
+
 
 
     private InputStream getInputStreamBlob(String containerName, String blobName) {
