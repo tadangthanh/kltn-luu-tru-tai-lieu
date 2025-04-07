@@ -1,13 +1,12 @@
 package vn.kltn.service;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import java.io.File;
-import java.io.IOException;
 
 public interface IDocumentConversionService {
 
-    File convertWordToPdf(File wordFile) throws IOException;
-
-    byte[] readPdfFileAsBytes(File pdfFile) throws IOException;
+    String convertFile(MultipartFile file, String targetFormat);
 
     void deleteFileIfExists(File file);
 }

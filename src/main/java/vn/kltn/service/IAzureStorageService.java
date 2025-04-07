@@ -2,6 +2,7 @@ package vn.kltn.service;
 
 import vn.kltn.entity.MemberRole;
 
+import java.io.File;
 import java.io.InputStream;
 import java.util.List;
 
@@ -20,11 +21,12 @@ public interface IAzureStorageService {
 
     void deleteBlob(String containerName, String blobName);
 
-    void deleteBlob( String blobName);
+    void deleteBlob(String blobName);
 
     void deleteBLobs(List<String> blobNames);
 
     InputStream downloadBlobInputStream(String containerName, String blobName); // Tải blob về
+
     InputStream downloadBlobInputStream(String blobName); // Tải blob về
 
     byte[] downloadBlobByteData(String containerName, String blobName); // Tải blob về dạng byte[]

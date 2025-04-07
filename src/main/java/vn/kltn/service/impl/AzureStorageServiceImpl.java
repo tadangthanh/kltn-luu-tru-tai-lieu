@@ -18,9 +18,7 @@ import vn.kltn.exception.CustomBlobStorageException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.service.IAzureStorageService;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -100,6 +98,9 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
             throw new CustomBlobStorageException("Lỗi upload file ");
         }
     }
+
+
+
 
     @Override
     public String copyBlob(String sourceBlobName, String destinationBlobName) {
