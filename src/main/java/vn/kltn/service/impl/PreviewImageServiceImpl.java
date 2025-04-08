@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.PreviewPageSelectionRequest;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.PreviewImage;
-import vn.kltn.map.PreviewImageMapper;
+import vn.kltn.exception.InternalServerErrorException;
 import vn.kltn.repository.PreviewImageRepo;
 import vn.kltn.service.IDocumentConversionService;
 import vn.kltn.service.IDocumentService;
@@ -22,7 +22,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j(topic = "PREVIEW_IMAGE_SERVICE")
 public class PreviewImageServiceImpl implements IPreviewImageService {
-    private final PreviewImageMapper previewImageMapper;
     private final PreviewImageRepo previewImageRepo;
     private final IDocumentService documentService;
     private final IDocumentConversionService documentConversionService;
@@ -31,7 +30,7 @@ public class PreviewImageServiceImpl implements IPreviewImageService {
     public String createPreviewImages(PreviewPageSelectionRequest request) {
         log.info("Yêu cầu tạo preview async cho docId: {}", request.getDocumentId());
         generatePreviewImagesAsync(request.getDocumentId(), request.getPageNumbers());
-        return "Yêu cầu đang được xử lý, ảnh preview sẽ sớm được tạo!";
+        return "Yêu cầu đang được xử lý, preview tài liệu sẽ sớm được tạo!";
     }
 
     @Async
@@ -50,10 +49,11 @@ public class PreviewImageServiceImpl implements IPreviewImageService {
             }
 
             previewImageRepo.saveAll(previewImages);
-            // Optional: push thông báo, log, update trạng thái tài liệu,...
+            //  push thông báo, log, update trạng thái tài liệu,...
         } catch (Exception e) {
             // Log hoặc retry hoặc lưu trạng thái lỗi tùy chiến lược
             log.error("Lỗi khi tạo preview async", e);
+            throw new InternalServerErrorException("Có lỗi xảy ra khi tạo preview tài liệu");
         }
     }
 
