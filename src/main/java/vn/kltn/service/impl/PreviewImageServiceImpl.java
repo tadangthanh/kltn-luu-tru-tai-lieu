@@ -56,7 +56,7 @@ public class PreviewImageServiceImpl implements IPreviewImageService {
         List<String> imageBlobNames = new ArrayList<>();
         try {
             Document document = documentService.getResourceByIdOrThrow(documentId);
-            imageBlobNames.addAll(documentConversionService.convertPdfToImagesAndUpload(document.getBlobName(), pages));
+            imageBlobNames.addAll(documentConversionService.convertPdfToImagesAndUpload(document, pages));
             if (imageBlobNames.size() != pages.size()) {
                 log.error("Số lượng ảnh tạo ra không khớp với số trang yêu cầu");
                 throw new InternalServerErrorException("Có lỗi xảy ra khi tạo preview tài liệu");

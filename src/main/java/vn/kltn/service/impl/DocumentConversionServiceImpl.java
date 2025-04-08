@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.DocumentFormat;
+import vn.kltn.entity.Document;
 import vn.kltn.exception.BadRequestException;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.service.IAzureStorageService;
@@ -15,6 +16,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -144,21 +147,24 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
 
     /***
      * chuyển đổi 1 blob trên azure thành nhiều ảnh dựa theo pages truyền vào, và lưu lại ảnh trên azure
-     * @param blobName: tên blob trên azure
+     * @param document: document cần chuyển đổi sang hình ảnh preview
      * @param pages: các trang cần chuyển đổi thành ảnh, ví dụ: "1,5,7" (trang 1,5,7)
      * @return : danh sách các blobName img đã được lưu trên azure cloud
      */
     @Override
-    public List<String> convertPdfToImagesAndUpload(String blobName, List<Integer> pages) {
+    public List<String> convertPdfToImagesAndUpload(Document document, List<Integer> pages) {
         List<String> uploadedImageBlobs = new ArrayList<>();
-        File pdfFile = null;
+        File blobFile = null;
 
         try {
             // 1. Tải file PDF từ Azure Blob Storage
-            pdfFile = azureStorageService.downloadToFile(blobName, tempDir);
+            blobFile = azureStorageService.downloadToFile(document.getBlobName(), tempDir);
+            if (!blobFile.getName().toLowerCase().endsWith(".pdf")) {
+                blobFile = convertToPdf(blobFile);
+            }
 
             // 2. Chuyển đổi thành ảnh
-            File[] imageFiles = convertPdfToImages(pdfFile, pages);
+            File[] imageFiles = convertPdfToImages(blobFile, pages);
 
             // 3. Upload bất đồng bộ từng ảnh
             List<CompletableFuture<String>> uploadFutures = Arrays.stream(imageFiles)
@@ -187,11 +193,56 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
             log.error("Lỗi khi chuyển đổi PDF sang ảnh và upload", e);
             throw new BadRequestException("Lỗi khi chuyển đổi hoặc upload hình ảnh");
         } finally {
-            deleteFileIfExists(pdfFile);
+            deleteFileIfExists(blobFile);
         }
 
         return uploadedImageBlobs;
     }
+
+    @Override
+    public File convertToPdf(File file) {
+        File tempFile = null;
+        File outputFile = null;
+        try {
+            // Lưu file gốc tạm thời
+            tempFile = new File(tempDir + file.getName());
+            Files.copy(file.toPath(), tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+            // Validate không phải PDF, nếu là PDF thì không cần convert
+            validateExtension(tempFile, "pdf");
+
+            // Tạo tên file đầu ra
+            String baseName = Objects.requireNonNull(file.getName()).substring(0, file.getName().lastIndexOf("."));
+            String outputFilePath = tempFile.getParent() + File.separator + baseName + ".pdf";
+            outputFile = new File(outputFilePath);
+
+            // Gọi LibreOffice để chuyển đổi
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "soffice",
+                    "--headless",
+                    "--convert-to", "pdf",
+                    "--outdir", tempFile.getParent(),
+                    tempFile.getAbsolutePath()
+            );
+
+            Process process = processBuilder.start();
+            int exitValue = process.waitFor();
+            if (exitValue != 0 || !outputFile.exists()) {
+                log.error("Chuyển đổi thất bại hoặc không tạo được file đầu ra.");
+                throw new BadRequestException("Có lỗi xảy ra trong quá trình chuyển đổi định dạng");
+            }
+
+            return outputFile;
+
+        } catch (IOException | InterruptedException e) {
+            log.error("Lỗi chuyển đổi: {}", e.getMessage());
+            throw new BadRequestException("Có lỗi xảy ra trong quá trình chuyển đổi định dạng");
+        } finally {
+            log.info("Hoàn tất chuyển đổi file.");
+            deleteFileIfExists(tempFile);       //  XÓA file gốc
+        }
+    }
+
 
 
     /**
@@ -199,27 +250,35 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
      */
     private File[] convertPdfToImages(File pdfFile, List<Integer> pages) throws IOException, InterruptedException {
         List<File> imageFiles = new ArrayList<>();
-        // Chia các trang được chỉ định thành mảng (ví dụ: "1,3,5" => ["0", "2", "4"])
-        String[] pagesArray = pages.stream()
-                .map(String::valueOf) // chuyển từng số thành chuỗi
-                .toArray(String[]::new);
-        // Lặp qua các trang và chuyển đổi từng trang một
-        for (String page : pagesArray) {
-            // Tạo đường dẫn tạm thời cho các tệp ảnh
+        String watermarkText = "abc@example.com"; // ← watermark email
+
+        for (Integer page : pages) {
             String pdfFilePath = pdfFile.getAbsolutePath();
-            String imageFilePattern = tempDir + "output_page-" + String.format("%03d", Integer.parseInt(page) + 1) + System.currentTimeMillis() + ".png";  // Đặt tên ảnh
-            // Sử dụng ImageMagick để chuyển đổi từng trang
-            ProcessBuilder processBuilder = new ProcessBuilder("magick", "-density", "300",  // Đặt độ phân giải
-                    pdfFilePath + "[" + page + "]",  // Chỉ định trang cụ thể
-                    imageFilePattern);
+
+            // Tên file ảnh tạm
+            String imageFilePath = tempDir + "output_page-" + String.format("%03d", page) + "_" + System.currentTimeMillis() + ".png";
+
+            // Tạo lệnh với watermark
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "magick",
+                    "-density", "300",
+                    pdfFilePath + "[" + (page - 1) + "]", // trừ 1 vì page bắt đầu từ 0 trong ImageMagick
+                    "-quality", "100",
+                    "-fill", "rgba(0,0,0,0.4)", // watermark màu đen, mờ 50%
+                    "-gravity", "center",
+                    "-pointsize", "40",
+                    "-annotate", "45", watermarkText,
+                    imageFilePath
+            );
+
             Process process = processBuilder.start();
             int exitCode = process.waitFor();
 
             if (exitCode != 0) {
                 throw new IOException("Lỗi khi chuyển đổi PDF thành ảnh cho trang: " + page);
             }
-            // Thêm ảnh đã tạo vào danh sách
-            File imageFile = new File(imageFilePattern);
+
+            File imageFile = new File(imageFilePath);
             if (imageFile.exists()) {
                 imageFiles.add(imageFile);
             }
@@ -227,6 +286,7 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
 
         return imageFiles.toArray(new File[0]);
     }
+
 
     /**
      * Tải tệp ảnh lên Azure Blob Storage

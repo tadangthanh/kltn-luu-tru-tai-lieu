@@ -4,13 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import vn.kltn.common.DocumentFormat;
 import vn.kltn.dto.response.ResponseData;
 import vn.kltn.service.IDocumentConversionService;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/document-conversion")
@@ -72,8 +70,4 @@ public class DocumentConversionRest {
         return new ResponseData<>(200, "thành công", documentConversionService.convertStoredFile(blobName, format));
     }
 
-    @GetMapping("/convert-to-image")
-    public ResponseData<List<String>> convertToImage(@RequestParam("blobName") String blobName, @RequestParam("pages") List<Integer> pages) { //pages= 1,2,3
-        return new ResponseData<>(200, "thành công", documentConversionService.convertPdfToImagesAndUpload(blobName,pages));
-    }
 }
