@@ -41,7 +41,7 @@ public class PreviewImageServiceImpl implements IPreviewImageService {
             return "Tất cả các trang đã được tạo preview.";
         }
 
-//        // Gọi task async để chuyển đổi preview (không chặn API)
+        // Gọi task async để chuyển đổi preview
         asyncPreviewImageService.generatePreviewImagesAsync(request.getDocumentId(), pagesToGenerate)
                 .thenAccept(previewImages -> {
                     log.info("Tạo preview thành công cho {} trang", previewImages.size());
