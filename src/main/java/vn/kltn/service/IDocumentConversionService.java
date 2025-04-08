@@ -11,7 +11,7 @@ public interface IDocumentConversionService {
 
     String convertStoredFile(String blobName, String targetFormat);
 
-    List<String> convertPdfToImagesAndUpload(String blobName,String pages);
+    List<String> convertPdfToImagesAndUpload(String blobName, List<Integer> pages);
 
     void deleteFileIfExists(File file);
 }

@@ -16,8 +16,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.google.common.io.Files.getFileExtension;
 import static vn.kltn.common.DocumentFormat.SUPPORTED_CONVERSIONS;
@@ -29,6 +34,7 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
     @Value("${app.conversion.temp-dir}")
     private String tempDir;
     private final IAzureStorageService azureStorageService;
+    private final ExecutorService executor = Executors.newFixedThreadPool(5); // Tùy chỉnh số luồng
 
     private void validateExtension(File file, String targetFormat) {
         String originalExt = getFileExtension(Objects.requireNonNull(file.getName()));
@@ -143,29 +149,44 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
      * @return : danh sách các blobName img đã được lưu trên azure cloud
      */
     @Override
-    public List<String> convertPdfToImagesAndUpload(String blobName, String pages) {
+    public List<String> convertPdfToImagesAndUpload(String blobName, List<Integer> pages) {
         List<String> uploadedImageBlobs = new ArrayList<>();
         File pdfFile = null;
 
         try {
-            // 1. Tải tệp PDF từ Azure Blob Storage
+            // 1. Tải file PDF từ Azure Blob Storage
             pdfFile = azureStorageService.downloadToFile(blobName, tempDir);
 
-            // 2. Chuyển đổi PDF thành các ảnh (PNG)
+            // 2. Chuyển đổi thành ảnh
             File[] imageFiles = convertPdfToImages(pdfFile, pages);
 
-            // 3. Tải các ảnh lên Azure Blob Storage
-            for (File imageFile : imageFiles) {
-                String uploadedImageBlob = uploadImageToBlob(imageFile);
-                uploadedImageBlobs.add(uploadedImageBlob);
-                deleteFileIfExists(imageFile);  // Xóa ảnh sau khi upload
+            // 3. Upload bất đồng bộ từng ảnh
+            List<CompletableFuture<String>> uploadFutures = Arrays.stream(imageFiles)
+                    .map(imageFile -> CompletableFuture.supplyAsync(() -> {
+                        try {
+                            return uploadImageToBlob(imageFile);
+                        } catch (IOException e) {
+                            log.error("Lỗi khi upload ảnh: {}", e.getMessage());
+                            throw new BadRequestException("Lỗi khi upload ảnh: " + e.getMessage());
+                        } finally {
+                            log.info("finish convert file");
+                            deleteFileIfExists(imageFile);
+                        }
+                    }, executor))
+                    .toList();
+
+            // 4. Chờ tất cả upload hoàn tất
+            CompletableFuture.allOf(uploadFutures.toArray(new CompletableFuture[0])).join();
+
+            // 5. Lấy kết quả upload
+            for (CompletableFuture<String> future : uploadFutures) {
+                uploadedImageBlobs.add(future.get());
             }
 
-        } catch (IOException | InterruptedException e) {
-            log.error("Có lỗi xảy ra trong quá trình chuyển đổi PDF thành hình ảnh", e);
-            throw new BadRequestException("Có lỗi trong quá trình chuyển đổi PDF thành hình ảnh");
+        } catch (IOException | InterruptedException | ExecutionException e) {
+            log.error("Lỗi khi chuyển đổi PDF sang ảnh và upload", e);
+            throw new BadRequestException("Lỗi khi chuyển đổi hoặc upload hình ảnh");
         } finally {
-            // Xóa tệp PDF sau khi xử lý xong
             deleteFileIfExists(pdfFile);
         }
 
@@ -176,10 +197,12 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
     /**
      * Chuyển đổi PDF thành các ảnh cho các trang cụ thể
      */
-    private File[] convertPdfToImages(File pdfFile, String pages) throws IOException, InterruptedException {
+    private File[] convertPdfToImages(File pdfFile, List<Integer> pages) throws IOException, InterruptedException {
         List<File> imageFiles = new ArrayList<>();
         // Chia các trang được chỉ định thành mảng (ví dụ: "1,3,5" => ["0", "2", "4"])
-        String[] pagesArray = pages.split(",");
+        String[] pagesArray = pages.stream()
+                .map(String::valueOf) // chuyển từng số thành chuỗi
+                .toArray(String[]::new);
         // Lặp qua các trang và chuyển đổi từng trang một
         for (String page : pagesArray) {
             // Tạo đường dẫn tạm thời cho các tệp ảnh

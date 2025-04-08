@@ -14,7 +14,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Configuration
 @RequiredArgsConstructor
 @EnableCaching
-@EnableAsync
 @EnableAspectJAutoProxy
 public class AppConfig {
     @Value("${google.api-key}")

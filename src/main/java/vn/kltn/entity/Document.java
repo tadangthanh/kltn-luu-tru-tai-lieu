@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -24,4 +26,7 @@ public class Document extends FileSystemEntity {
     private LocalDateTime permanentDeleteAt; // thoi gian xoa vinh vien
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PreviewImage> previewImages = new ArrayList<>();
 }
