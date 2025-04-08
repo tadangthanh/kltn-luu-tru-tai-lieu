@@ -5,7 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "preview_image")
+@Table(name = "preview_image",uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"pageNumber", "document_id"})})
 @Getter
 @Setter
 public class PreviewImage extends BaseEntity {
