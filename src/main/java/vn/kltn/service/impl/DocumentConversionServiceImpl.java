@@ -66,7 +66,14 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
             outputFile = new File(outputFilePath);
 
             // Gọi LibreOffice để chuyển đổi
-            ProcessBuilder processBuilder = new ProcessBuilder("soffice", "--headless", "--convert-to", targetFormat, "--outdir", tempFile.getParent(), tempFile.getAbsolutePath());
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "soffice",
+                    "--headless",
+                    "--convert-to",
+                    targetFormat,
+                    "--outdir",
+                    tempFile.getParent(),
+                    tempFile.getAbsolutePath());
 
             Process process = processBuilder.start();
             int exitValue = process.waitFor();
