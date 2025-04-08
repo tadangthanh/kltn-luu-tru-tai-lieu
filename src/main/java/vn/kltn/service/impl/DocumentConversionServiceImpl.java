@@ -32,17 +32,14 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
 
     private void validateExtension(File file, String targetFormat) {
         String originalExt = getFileExtension(Objects.requireNonNull(file.getName()));
-        DocumentFormat sourceFormat = DocumentFormat.fromExtension(originalExt)
-                .orElseThrow(() -> new BadRequestException("Định dạng gốc không được hỗ trợ"));
+        DocumentFormat sourceFormat = DocumentFormat.fromExtension(originalExt).orElseThrow(() -> new BadRequestException("Định dạng gốc không được hỗ trợ"));
 
-        DocumentFormat target = DocumentFormat.fromExtension(targetFormat)
-                .orElseThrow(() -> new BadRequestException("Định dạng đích không được hỗ trợ"));
+        DocumentFormat target = DocumentFormat.fromExtension(targetFormat).orElseThrow(() -> new BadRequestException("Định dạng đích không được hỗ trợ"));
         if (sourceFormat.getExtension().equals(target.getExtension())) {
             log.warn("Định dạng phải khác nhau");
             throw new InvalidDataException("Không hỗ trợ chuyển đổi từ PDF sang WORD");
         }
-        if (!SUPPORTED_CONVERSIONS.containsKey(sourceFormat) ||
-            !SUPPORTED_CONVERSIONS.get(sourceFormat).contains(target)) {
+        if (!SUPPORTED_CONVERSIONS.containsKey(sourceFormat) || !SUPPORTED_CONVERSIONS.get(sourceFormat).contains(target)) {
             throw new BadRequestException("Chuyển đổi từ " + sourceFormat.getExtension() + " sang " + target.getExtension() + " không được hỗ trợ.");
         }
     }
@@ -69,13 +66,7 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
             outputFile = new File(outputFilePath);
 
             // Gọi LibreOffice để chuyển đổi
-            ProcessBuilder processBuilder = new ProcessBuilder(
-                    "soffice",
-                    "--headless",
-                    "--convert-to", targetFormat,
-                    "--outdir", tempFile.getParent(),
-                    tempFile.getAbsolutePath()
-            );
+            ProcessBuilder processBuilder = new ProcessBuilder("soffice", "--headless", "--convert-to", targetFormat, "--outdir", tempFile.getParent(), tempFile.getAbsolutePath());
 
             Process process = processBuilder.start();
             int exitValue = process.waitFor();
@@ -85,18 +76,14 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
             }
             // Upload lên Azure
             try (InputStream outputStream = new FileInputStream(outputFile)) {
-                return azureStorageService.uploadChunkedWithContainerDefault(
-                        outputStream,
-                        outputFile.getName(),
-                        outputFile.length(),
-                        10 * 1024 * 1024
-                );
+                return azureStorageService.uploadChunkedWithContainerDefault(outputStream, outputFile.getName(), outputFile.length(), 10 * 1024 * 1024);
             }
 
         } catch (IOException | InterruptedException e) {
             log.error("Lỗi chuyển đổi: {}", e.getMessage());
             throw new BadRequestException("Có lỗi xảy ra trong quá trình chuyển đổi định dạng");
         } finally {
+            log.info("finish convert file");
             deleteFileIfExists(tempFile);
             deleteFileIfExists(outputFile);
         }
@@ -121,13 +108,7 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
             convertedFile = new File(outputFilePath);
 
             // 3. Gọi LibreOffice để chuyển đổi
-            ProcessBuilder pb = new ProcessBuilder(
-                    "soffice",
-                    "--headless",
-                    "--convert-to", targetFormat,
-                    "--outdir", downloadedFile.getParent(),
-                    downloadedFile.getAbsolutePath()
-            );
+            ProcessBuilder pb = new ProcessBuilder("soffice", "--headless", "--convert-to", targetFormat, "--outdir", downloadedFile.getParent(), downloadedFile.getAbsolutePath());
             Process process = pb.start();
             int exitCode = process.waitFor();
             if (exitCode != 0 || !convertedFile.exists()) {
@@ -136,12 +117,7 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
 
             // 4. Upload lại file đã chuyển đổi
             try (InputStream convertedStream = new FileInputStream(convertedFile)) {
-                return azureStorageService.uploadChunkedWithContainerDefault(
-                        convertedStream,
-                        convertedFile.getName(),
-                        convertedFile.length(),
-                        10 * 1024 * 1024
-                );
+                return azureStorageService.uploadChunkedWithContainerDefault(convertedStream, convertedFile.getName(), convertedFile.length(), 10 * 1024 * 1024);
             }
 
         } catch (IOException | InterruptedException e) {
@@ -201,14 +177,11 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
         for (String page : pagesArray) {
             // Tạo đường dẫn tạm thời cho các tệp ảnh
             String pdfFilePath = pdfFile.getAbsolutePath();
-            String imageFilePattern = tempDir + "output_page-" + String.format("%03d", Integer.parseInt(page) + 1) +System.currentTimeMillis()+ ".png";  // Đặt tên ảnh
+            String imageFilePattern = tempDir + "output_page-" + String.format("%03d", Integer.parseInt(page) + 1) + System.currentTimeMillis() + ".png";  // Đặt tên ảnh
             // Sử dụng ImageMagick để chuyển đổi từng trang
-            ProcessBuilder processBuilder = new ProcessBuilder(
-                    "magick",
-                    "-density", "300",  // Đặt độ phân giải
+            ProcessBuilder processBuilder = new ProcessBuilder("magick", "-density", "300",  // Đặt độ phân giải
                     pdfFilePath + "[" + page + "]",  // Chỉ định trang cụ thể
-                    imageFilePattern
-            );
+                    imageFilePattern);
             Process process = processBuilder.start();
             int exitCode = process.waitFor();
 
@@ -232,11 +205,7 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
         // Tạo stream từ ảnh
         try (InputStream imageStream = new FileInputStream(imageFile)) {
             // Upload ảnh lên Azure Blob Storage
-            return azureStorageService.uploadChunkedWithContainerDefault(
-                    imageStream,
-                    imageFile.getName(),
-                    imageFile.length(),
-                    10 * 1024 * 1024  // Đặt kích thước chunk 10MB
+            return azureStorageService.uploadChunkedWithContainerDefault(imageStream, imageFile.getName(), imageFile.length(), 10 * 1024 * 1024  // Đặt kích thước chunk 10MB
             );
         }
     }
@@ -252,7 +221,11 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
     @Override
     public void deleteFileIfExists(File file) {
         if (file != null && file.exists()) {
-            file.delete();
+            log.info("Deleting file: {}", file.getName());
+            // Compliant: result of file deletion is checked.
+            if (!file.delete()) {
+                throw new BadRequestException("Failed to delete the file!");
+            }
         }
     }
 
