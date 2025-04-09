@@ -181,6 +181,11 @@
             <groupId>com.azure.spring</groupId>
             <artifactId>spring-cloud-azure-starter</artifactId>
         </dependency>
+<!--        elasticsearch-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+        </dependency>
     </dependencies>
     <profiles>
         <profile>

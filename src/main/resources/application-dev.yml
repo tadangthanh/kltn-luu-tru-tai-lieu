@@ -26,6 +26,8 @@ spring:
   config:
     activate:
       on-profile: dev
+  elasticsearch:
+    uris: http://localhost:9200
   cloud:
     azure:
       storage:
@@ -96,6 +98,7 @@ repo:
   max-repos-per-member-default: ${MAX_REPOS_PER_MEMBER_DEFAULT:5}
 google:
   api-key: ${googleapikey}
-
+elasticsearch:
+  url: ${ELASTICSEARCH_HOST:localhost}:${ELASTICSEARCH_PORT:9200}
 
 
