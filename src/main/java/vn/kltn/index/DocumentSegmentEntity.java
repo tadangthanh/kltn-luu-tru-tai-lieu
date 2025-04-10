@@ -29,4 +29,5 @@ public class DocumentSegmentEntity extends BaseSearchEntity {
     private Long ownerId;
     @Field(type = FieldType.Keyword)
     private List<Long> sharedWith;
+    private boolean isDeleted = false;
 }

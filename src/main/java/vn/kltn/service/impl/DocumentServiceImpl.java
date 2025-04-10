@@ -122,6 +122,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         documentHasTagService.deleteAllByDocumentId(resource.getId());
         documentPermissionService.deletePermissionByResourceId(resource.getId());
         documentRepo.delete(resource);
+        documentIndexService.deleteIndexByDocumentId(resource.getId());
     }
 
     @Override
@@ -146,6 +147,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         log.info("soft delete document with id {}", document.getId());
         document.setDeletedAt(LocalDateTime.now());
         document.setPermanentDeleteAt(LocalDateTime.now().plusDays(documentRetentionDays));
+        documentIndexService.markDeleteDocument(document.getId());
     }
 
     @Override
@@ -214,6 +216,14 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         // Xóa documents khỏi database
         // vì để cascade là ALL với permission nên ko cần xóa thủ công
         deleteDocuments(documentIdsToDelete);
+        // xóa trong elasticsearch
+        deleteDataElasticSearch(documentIdsToDelete);
+    }
+
+    private void deleteDataElasticSearch(List<Long> documentIds) {
+        if (!documentIds.isEmpty()) {
+            documentIndexService.deleteIndexByDocumentIds(documentIds);
+        }
     }
 
     private void deleteBlobsFromCloud(List<String> blobNames) {

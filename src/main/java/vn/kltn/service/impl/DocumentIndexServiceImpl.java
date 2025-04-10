@@ -13,6 +13,7 @@ import vn.kltn.entity.Tag;
 import vn.kltn.exception.CustomIOException;
 import vn.kltn.index.DocumentSegmentEntity;
 import vn.kltn.map.DocumentSegmentMapper;
+import vn.kltn.repository.elasticsearch.CustomDocumentSegmentRepo;
 import vn.kltn.repository.elasticsearch.DocumentSegmentRepo;
 import vn.kltn.service.IDocumentHasTagService;
 import vn.kltn.service.IDocumentIndexService;
@@ -32,7 +33,7 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     private final DocumentSegmentMapper documentSegmentMapper;
     private final IDocumentHasTagService documentHasTagService;
     private final IDocumentPermissionService documentPermissionService;
-
+    private final CustomDocumentSegmentRepo customDocumentSegmentRepo;
     @Override
     @Async
     public void indexDocument(Document document, InputStream inputStream) {
@@ -61,10 +62,29 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
         log.info("Indexed {} segments for document {}", segmentNumber, document.getId());
     }
 
+    @Override
+    public void deleteIndexByDocumentId(Long documentId) {
+        documentSegmentRepo.deleteByDocumentId(documentId);
+    }
+
+    @Override
+    public void markDeleteByDocumentIds(List<Long> documentIds) {
+        customDocumentSegmentRepo.markDeleteByDocumentIds(documentIds);
+    }
+
+    @Override
+    public void deleteIndexByDocumentIds(List<Long> documentIds) {
+        documentSegmentRepo.deleteAllByDocumentIdIn(documentIds);
+    }
+
+    @Override
+    public void markDeleteDocument(Long documentId) {
+        log.info("mark deleted documentId: {}", documentId);
+        customDocumentSegmentRepo.markDeletedByDocumentId(documentId);
+    }
+
     private List<String> getTagsByDocumentId(Long documentId) {
-        return documentHasTagService.getTagsByDocumentId(documentId).stream()
-                .map(Tag::getName)
-                .toList();
+        return documentHasTagService.getTagsByDocumentId(documentId).stream().map(Tag::getName).toList();
     }
 
 
