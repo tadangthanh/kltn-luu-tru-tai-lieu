@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.DocumentFormat;
 import vn.kltn.entity.Document;
 import vn.kltn.exception.BadRequestException;
+import vn.kltn.exception.ConversionException;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IDocumentConversionService;
@@ -124,21 +125,29 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
             convertedFile = new File(outputFilePath);
 
             // 3. Gọi LibreOffice để chuyển đổi
-            ProcessBuilder pb = new ProcessBuilder("soffice", "--headless", "--convert-to", targetFormat, "--outdir", downloadedFile.getParent(), downloadedFile.getAbsolutePath());
+            ProcessBuilder pb = new ProcessBuilder(
+                    "soffice",
+                    "--headless",
+                    "--convert-to",
+                    targetFormat,
+                    "--outdir",
+                    downloadedFile.getParent(),
+                    downloadedFile.getAbsolutePath());
             Process process = pb.start();
             int exitCode = process.waitFor();
             if (exitCode != 0 || !convertedFile.exists()) {
-                throw new BadRequestException("Chuyển đổi định dạng thất bại");
+                throw new ConversionException("Chuyển đổi định dạng thất bại");
             }
 
             // 4. Upload lại file đã chuyển đổi
             try (InputStream convertedStream = new FileInputStream(convertedFile)) {
-                return azureStorageService.uploadChunkedWithContainerDefault(convertedStream, convertedFile.getName(), convertedFile.length(), 10 * 1024 * 1024);
+                return azureStorageService.uploadChunkedWithContainerDefault(convertedStream,
+                        convertedFile.getName(), convertedFile.length(), 10 * 1024 * 1024);
             }
 
         } catch (IOException | InterruptedException e) {
             log.error("Lỗi khi chuyển đổi file từ blob: {}", e.getMessage());
-            throw new BadRequestException("Chuyển đổi file thất bại: " + e.getMessage());
+            throw new ConversionException("Chuyển đổi file thất bại: " + e.getMessage());
         } finally {
             deleteFileIfExists(downloadedFile);
             deleteFileIfExists(convertedFile);
@@ -191,7 +200,7 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
 
         } catch (IOException | InterruptedException | ExecutionException e) {
             log.error("Lỗi khi chuyển đổi PDF sang ảnh và upload", e);
-            throw new BadRequestException("Lỗi khi chuyển đổi hoặc upload hình ảnh");
+            throw new ConversionException("Lỗi khi chuyển đổi hoặc upload hình ảnh");
         } finally {
             deleteFileIfExists(blobFile);
         }
@@ -202,7 +211,7 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
     @Override
     public File convertToPdf(File file) {
         File tempFile = null;
-        File outputFile = null;
+        File outputFile;
         try {
             // Lưu file gốc tạm thời
             tempFile = new File(tempDir + file.getName());
@@ -229,14 +238,14 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
             int exitValue = process.waitFor();
             if (exitValue != 0 || !outputFile.exists()) {
                 log.error("Chuyển đổi thất bại hoặc không tạo được file đầu ra.");
-                throw new BadRequestException("Có lỗi xảy ra trong quá trình chuyển đổi định dạng");
+                throw new ConversionException("Có lỗi xảy ra trong quá trình chuyển đổi định dạng");
             }
 
             return outputFile;
 
         } catch (IOException | InterruptedException e) {
             log.error("Lỗi chuyển đổi: {}", e.getMessage());
-            throw new BadRequestException("Có lỗi xảy ra trong quá trình chuyển đổi định dạng");
+            throw new ConversionException("Có lỗi xảy ra trong quá trình chuyển đổi định dạng");
         } finally {
             log.info("Hoàn tất chuyển đổi file.");
             deleteFileIfExists(tempFile);       //  XÓA file gốc

@@ -24,7 +24,4 @@ public interface IDocumentService extends IResourceService<Document, DocumentRes
     void restoreDocumentsByFolderIds(List<Long> folderIds);
 
     DocumentDataResponse openDocumentById(Long documentId);
-
-    void indexDocumentById(Long documentId); //chỉ mục tài liệu theo id
-
 }

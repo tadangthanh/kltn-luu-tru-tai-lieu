@@ -6,6 +6,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.Tag;
@@ -14,6 +15,7 @@ import vn.kltn.index.DocumentSegmentEntity;
 import vn.kltn.map.DocumentSegmentMapper;
 import vn.kltn.repository.elasticsearch.DocumentSegmentRepo;
 import vn.kltn.service.IDocumentHasTagService;
+import vn.kltn.service.IDocumentIndexService;
 import vn.kltn.service.IDocumentPermissionService;
 
 import java.io.IOException;
@@ -25,12 +27,14 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j(topic = "DOCUMENT_INDEX_SERVICE")
-public class DocumentIndexService {
+public class DocumentIndexServiceImpl implements IDocumentIndexService {
     private final DocumentSegmentRepo documentSegmentRepo;
     private final DocumentSegmentMapper documentSegmentMapper;
     private final IDocumentHasTagService documentHasTagService;
     private final IDocumentPermissionService documentPermissionService;
 
+    @Override
+    @Async
     public void indexDocument(Document document, InputStream inputStream) {
         List<String> segments = new ArrayList<>();
         // Phân loại theo type file (ở đây ví dụ là PDF)

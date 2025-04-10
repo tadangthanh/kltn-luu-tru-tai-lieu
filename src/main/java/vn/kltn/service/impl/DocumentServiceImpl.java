@@ -46,9 +46,9 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
     private final FolderCommonService folderCommonService;
-    private final DocumentIndexService documentIndexService;
+    private final IDocumentIndexService documentIndexService;
 
-    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, DocumentIndexService documentIndexService) {
+    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
         this.documentRepo = documentRepo;
         this.documentMapper = documentMapper;
@@ -61,6 +61,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     @Override
     public DocumentResponse uploadDocumentWithoutParent(DocumentRequest documentRequest, MultipartFile file) {
         Document document = processValidDocument(documentRequest, file);
+        documentIndexService.indexDocument(document, azureStorageService.downloadBlobInputStream(document.getBlobName()));
         return mapToDocumentResponse(document);
     }
 
@@ -72,6 +73,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         document = documentRepo.save(document);
         // document moi tao se thua ke cac quyen tu folder cha
         documentPermissionService.inheritPermissions(document);
+        documentIndexService.indexDocument(document, azureStorageService.downloadBlobInputStream(document.getBlobName()));
         return mapToDocumentResponse(document);
     }
 
@@ -242,12 +244,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     public DocumentDataResponse openDocumentById(Long documentId) {
         Document document = getResourceByIdOrThrow(documentId);
         return mapDocToDocDataResponse(document);
-    }
-
-    @Override
-    public void indexDocumentById(Long documentId) {
-        Document document = getResourceByIdOrThrow(documentId);
-        documentIndexService.indexDocument(document, azureStorageService.downloadBlobInputStream(document.getBlobName()));
     }
 
     private DocumentDataResponse mapDocToDocDataResponse(Document document) {
