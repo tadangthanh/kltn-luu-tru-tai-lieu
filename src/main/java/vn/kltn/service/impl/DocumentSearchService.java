@@ -15,7 +15,7 @@ public class DocumentSearchService {
     private final DocumentSearchRepository repository;
 
     public List<DocumentSearchEntity> search(String keyword) {
-        return repository.findByTitleContainingOrContentContaining(keyword, keyword);
+        return repository.findByDescriptionContainingOrContentContainingOrName(keyword, keyword, keyword);
     }
 
     public List<DocumentSearchEntity> searchByTag(String tag) {

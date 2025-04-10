@@ -6,7 +6,7 @@ import vn.kltn.index.DocumentSearchEntity;
 import java.util.List;
 
 public interface DocumentSearchRepository extends ElasticsearchRepository<DocumentSearchEntity, String> {
-    List<DocumentSearchEntity> findByTitleContainingOrContentContaining(String title, String content);
+    List<DocumentSearchEntity> findByDescriptionContainingOrContentContainingOrName(String description, String content,String name);
 
     List<DocumentSearchEntity> findByTags(String tag);
 }
