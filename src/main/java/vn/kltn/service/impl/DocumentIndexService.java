@@ -14,6 +14,7 @@ import vn.kltn.index.DocumentSegmentEntity;
 import vn.kltn.map.DocumentSegmentMapper;
 import vn.kltn.repository.elasticsearch.DocumentSegmentRepo;
 import vn.kltn.service.IDocumentHasTagService;
+import vn.kltn.service.IDocumentPermissionService;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,6 +29,7 @@ public class DocumentIndexService {
     private final DocumentSegmentRepo documentSegmentRepo;
     private final DocumentSegmentMapper documentSegmentMapper;
     private final IDocumentHasTagService documentHasTagService;
+    private final IDocumentPermissionService documentPermissionService;
 
     public void indexDocument(Document document, InputStream inputStream) {
         List<String> segments = new ArrayList<>();
@@ -41,13 +43,14 @@ public class DocumentIndexService {
         int segmentNumber = 0;
         List<DocumentSegmentEntity> segmentEntities = new ArrayList<>();
         List<String> tagsList = getTagsByDocumentId(document.getId());
-
+        List<Long> sharedWith = getSharedWithByDocumentId(document.getId());
         for (String segment : segments) {
             DocumentSegmentEntity segmentEntity = documentSegmentMapper.toSegmentEntity(document);
             segmentEntity.setId(UUID.randomUUID().toString());
             segmentEntity.setContent(segment);
             segmentEntity.setSegmentNumber(segmentNumber++);
             segmentEntity.setTags(tagsList);
+            segmentEntity.setSharedWith(sharedWith);
             segmentEntities.add(segmentEntity);
         }
         documentSegmentRepo.saveAll(segmentEntities); // index hàng loạt
@@ -60,6 +63,10 @@ public class DocumentIndexService {
                 .toList();
     }
 
+
+    private List<Long> getSharedWithByDocumentId(Long documentId) {
+        return documentPermissionService.getSharedWithByDocumentId(documentId).stream().toList();
+    }
 
     private List<String> extractDocxByChunk(InputStream inputStream, int wordsPerChunk) {
         List<String> chunks = new ArrayList<>();

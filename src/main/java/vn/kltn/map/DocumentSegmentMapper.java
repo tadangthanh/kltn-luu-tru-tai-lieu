@@ -10,5 +10,6 @@ import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 @Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = IGNORE)
 public interface DocumentSegmentMapper {
     @Mapping(target = "documentId", source = "id")
+    @Mapping(target = "ownerId", source = "owner.id")
     DocumentSegmentEntity toSegmentEntity(Document document);
 }

@@ -50,6 +50,12 @@ PUT /document_segments
       },
       "tags": {
         "type": "keyword"
+      },
+      "ownerId":{
+        "type":"keyword"
+      },
+       "sharedWith": {
+        "type": "keyword"
       }
     }
   }

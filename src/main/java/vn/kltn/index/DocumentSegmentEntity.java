@@ -26,4 +26,7 @@ public class DocumentSegmentEntity extends BaseSearchEntity {
     @Field(type = FieldType.Keyword)
     private List<String> tags;
     private int segmentNumber;
+    private Long ownerId;
+    @Field(type = FieldType.Keyword)
+    private List<Long> sharedWith;
 }

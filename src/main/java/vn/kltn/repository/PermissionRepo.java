@@ -57,4 +57,7 @@ public interface PermissionRepo extends JpaRepository<Permission, Long> {
     Optional<Permission> findByResourceIdAndRecipientId(Long resourceId, Long recipientId);
 
     Set<Permission> findByResourceId(Long resourceId);
+
+    @Query("SELECT p.recipient.id FROM Permission p WHERE p.resource.id = ?1")
+    Set<Long> findIdsUserSharedWithByResourceId(Long resourceId);
 }

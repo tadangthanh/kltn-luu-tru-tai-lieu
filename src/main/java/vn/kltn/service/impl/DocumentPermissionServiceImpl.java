@@ -9,6 +9,8 @@ import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IDocumentPermissionService;
 import vn.kltn.service.IUserService;
 
+import java.util.Set;
+
 @Service
 @Transactional
 public class DocumentPermissionServiceImpl extends AbstractPermissionService implements IDocumentPermissionService {
@@ -30,4 +32,8 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
         return documentCommonService.getDocumentByIdOrThrow(resourceId);
     }
 
+    @Override
+    public Set<Long> getSharedWithByDocumentId(Long documentId) {
+        return permissionRepo.findIdsUserSharedWithByResourceId(documentId);
+    }
 }
