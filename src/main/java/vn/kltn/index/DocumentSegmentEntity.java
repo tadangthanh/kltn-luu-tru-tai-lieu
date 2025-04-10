@@ -8,6 +8,9 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
+import java.util.List;
+
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -18,7 +21,9 @@ public class DocumentSegmentEntity extends BaseSearchEntity {
     private String description; // Mô tả tài liệu
     private String name;
     private String type;
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Text, analyzer = "folding_analyzer", searchAnalyzer = "folding_analyzer")
     private String content;
+    @Field(type = FieldType.Keyword)
+    private List<String> tags;
     private int segmentNumber;
 }

@@ -1,0 +1,56 @@
+PUT /document_segments
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "folding_analyzer": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "asciifolding"
+          ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "content": {
+        "type": "text",
+        "analyzer": "folding_analyzer",
+        "search_analyzer": "folding_analyzer"
+      },
+      "description": {
+        "type": "text"
+      },
+      "name": {
+        "type": "text"
+      },
+      "type": {
+        "type": "keyword"
+      },
+      "segmentNumber": {
+        "type": "integer"
+      },
+      "documentId": {
+        "type": "keyword"
+      },
+      "createdBy": {
+        "type": "keyword"
+      },
+      "createdAt": {
+        "type": "date"
+      },
+      "updatedBy": {
+        "type": "keyword"
+      },
+      "updatedAt": {
+        "type": "date"
+      },
+      "tags": {
+        "type": "keyword"
+      }
+    }
+  }
+}

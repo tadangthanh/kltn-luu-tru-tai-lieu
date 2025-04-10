@@ -8,9 +8,12 @@ import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.springframework.stereotype.Service;
 import vn.kltn.entity.Document;
+import vn.kltn.entity.Tag;
 import vn.kltn.exception.CustomIOException;
 import vn.kltn.index.DocumentSegmentEntity;
+import vn.kltn.map.DocumentSegmentMapper;
 import vn.kltn.repository.elasticsearch.DocumentSegmentRepo;
+import vn.kltn.service.IDocumentHasTagService;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,6 +26,8 @@ import java.util.UUID;
 @Slf4j(topic = "DOCUMENT_INDEX_SERVICE")
 public class DocumentIndexService {
     private final DocumentSegmentRepo documentSegmentRepo;
+    private final DocumentSegmentMapper documentSegmentMapper;
+    private final IDocumentHasTagService documentHasTagService;
 
     public void indexDocument(Document document, InputStream inputStream) {
         List<String> segments = new ArrayList<>();
@@ -33,28 +38,30 @@ public class DocumentIndexService {
             segments = extractDocxByChunk(inputStream, 200); // 200 từ mỗi đoạn
         }
 
-
         int segmentNumber = 0;
         List<DocumentSegmentEntity> segmentEntities = new ArrayList<>();
+        List<String> tagsList = getTagsByDocumentId(document.getId());
 
         for (String segment : segments) {
-            DocumentSegmentEntity segmentEntity = new DocumentSegmentEntity();
+            DocumentSegmentEntity segmentEntity = documentSegmentMapper.toSegmentEntity(document);
             segmentEntity.setId(UUID.randomUUID().toString());
-            segmentEntity.setDocumentId(document.getId());
-            segmentEntity.setDescription(document.getDescription());
             segmentEntity.setContent(segment);
             segmentEntity.setSegmentNumber(segmentNumber++);
-            segmentEntity.setUpdatedAt(document.getUpdatedAt());
-            segmentEntity.setCreatedBy(document.getCreatedBy());
-
+            segmentEntity.setTags(tagsList);
             segmentEntities.add(segmentEntity);
         }
         documentSegmentRepo.saveAll(segmentEntities); // index hàng loạt
         log.info("Indexed {} segments for document {}", segmentNumber, document.getId());
     }
 
+    private List<String> getTagsByDocumentId(Long documentId) {
+        return documentHasTagService.getTagsByDocumentId(documentId).stream()
+                .map(Tag::getName)
+                .toList();
+    }
 
-    public List<String> extractDocxByChunk(InputStream inputStream, int wordsPerChunk) {
+
+    private List<String> extractDocxByChunk(InputStream inputStream, int wordsPerChunk) {
         List<String> chunks = new ArrayList<>();
         try (XWPFDocument document = new XWPFDocument(inputStream)) {
             StringBuilder currentChunk = new StringBuilder();
@@ -83,7 +90,7 @@ public class DocumentIndexService {
         return chunks;
     }
 
-    public List<String> extractPdfByPage(InputStream inputStream) {
+    private List<String> extractPdfByPage(InputStream inputStream) {
         List<String> pages = new ArrayList<>();
         try (PDDocument document = PDDocument.load(inputStream)) {
             PDFTextStripper stripper = new PDFTextStripper();
