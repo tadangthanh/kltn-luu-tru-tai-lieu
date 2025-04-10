@@ -64,7 +64,7 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.OK);
     }
 
-    @ExceptionHandler({CustomBlobStorageException.class,InternalServerErrorException.class})
+    @ExceptionHandler({CustomBlobStorageException.class, CustomIOException.class})
     public final ResponseEntity<ErrorResponse> handleBlobStorageException(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(LocalDateTime.now());

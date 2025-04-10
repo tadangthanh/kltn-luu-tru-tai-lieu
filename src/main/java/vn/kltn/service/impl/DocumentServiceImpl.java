@@ -46,14 +46,16 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
     private final FolderCommonService folderCommonService;
+    private final DocumentIndexService documentIndexService;
 
-    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService) {
+    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, DocumentIndexService documentIndexService) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
         this.documentRepo = documentRepo;
         this.documentMapper = documentMapper;
         this.azureStorageService = azureStorageService;
         this.documentHasTagService = documentHasTagService;
         this.folderCommonService = folderCommonService;
+        this.documentIndexService = documentIndexService;
     }
 
     @Override
@@ -240,6 +242,12 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     public DocumentDataResponse openDocumentById(Long documentId) {
         Document document = getResourceByIdOrThrow(documentId);
         return mapDocToDocDataResponse(document);
+    }
+
+    @Override
+    public void indexDocumentById(Long documentId) {
+        Document document = getResourceByIdOrThrow(documentId);
+        documentIndexService.indexDocument(document, azureStorageService.downloadBlobInputStream(document.getBlobName()));
     }
 
     private DocumentDataResponse mapDocToDocDataResponse(Document document) {

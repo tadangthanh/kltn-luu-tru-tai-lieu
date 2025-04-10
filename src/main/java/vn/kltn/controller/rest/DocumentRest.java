@@ -80,10 +80,13 @@ public class DocumentRest {
     @GetMapping("/open")
     public ResponseEntity<InputStreamResource> openDoc(@RequestParam(value = "documentId") Long documentId) {
         DocumentDataResponse documentDataResponse = documentService.openDocumentById(documentId);
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
-                        "inline; filename=\"" + documentDataResponse.getName() + "\"")
-                .contentType(MediaType.parseMediaType(documentDataResponse.getType()))
-                .body(new InputStreamResource(new ByteArrayInputStream(documentDataResponse.getData())));
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + documentDataResponse.getName() + "\"").contentType(MediaType.parseMediaType(documentDataResponse.getType())).body(new InputStreamResource(new ByteArrayInputStream(documentDataResponse.getData())));
+    }
+
+    @PostMapping("/index/{documentId}")
+    public ResponseData<Void> indexDocument(@PathVariable Long documentId) {
+        documentService.indexDocumentById(documentId);
+        return new ResponseData<>(200, "Thành công");
     }
 
 }

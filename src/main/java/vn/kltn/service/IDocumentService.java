@@ -25,4 +25,6 @@ public interface IDocumentService extends IResourceService<Document, DocumentRes
 
     DocumentDataResponse openDocumentById(Long documentId);
 
+    void indexDocumentById(Long documentId); //chỉ mục tài liệu theo id
+
 }
