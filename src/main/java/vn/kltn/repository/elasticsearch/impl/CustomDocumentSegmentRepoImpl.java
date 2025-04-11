@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import vn.kltn.exception.CustomIOException;
+import vn.kltn.index.DocumentSegmentEntity;
 import vn.kltn.repository.elasticsearch.CustomDocumentSegmentRepo;
 
 import java.io.IOException;
@@ -19,7 +20,7 @@ public class CustomDocumentSegmentRepoImpl implements CustomDocumentSegmentRepo 
     private final ElasticsearchClient elasticsearchClient;
 
     @Override
-    public void markDeletedByDocumentId(Long documentId) {
+    public void markDeletedByDocumentId(Long documentId, boolean value) {
         log.info("mark deleted documentId: {}", documentId);
         try {
             elasticsearchClient.updateByQuery(UpdateByQueryRequest.of(b -> b
@@ -30,13 +31,39 @@ public class CustomDocumentSegmentRepoImpl implements CustomDocumentSegmentRepo 
                                     .value(documentId)
                             )
                     ).script(s -> s
-                            .source("ctx._source.isDeleted = true")
+                            .source("ctx._source.isDeleted = " + value)
                             .lang("painless")
                     )
             ));
         } catch (IOException e) {
             log.error("Error marking documents as deleted: {}", e.getMessage(), e);
             throw new CustomIOException("Failed to mark documents as deleted");
+        }
+    }
+
+    @Override
+    public void updateDocument(DocumentSegmentEntity documentUpdated) {
+        try {
+            elasticsearchClient.updateByQuery(UpdateByQueryRequest.of(b -> b
+                    .index("document_segments")
+                    .query(q -> q
+                            .term(t -> t
+                                    .field("documentId")
+                                    .value(documentUpdated.getDocumentId())  // cast đúng kiểu String là keyword
+                            )
+                    )
+                    .script(s -> s
+                            .source("ctx._source.name = params.name; " +
+                                    "ctx._source.description = params.description; " +
+                                    "ctx._source.updatedAt = params.updatedAt;" +
+                                    " ctx._source.updatedBy = params.updatedBy;") // add các field cần update
+                            .lang("painless")
+                            .params(documentUpdated.toParamMap())
+                    )
+            ));
+        } catch (IOException e) {
+            log.error("Error updating document: {}", e.getMessage(), e);
+            throw new CustomIOException("Failed to update document");
         }
     }
 

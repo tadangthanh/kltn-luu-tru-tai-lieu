@@ -21,6 +21,7 @@ import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.DocumentMapper;
+import vn.kltn.map.DocumentSegmentMapper;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.specification.SpecificationUtil;
@@ -48,7 +49,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     private final FolderCommonService folderCommonService;
     private final IDocumentIndexService documentIndexService;
 
-    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService) {
+    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService ) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
         this.documentRepo = documentRepo;
         this.documentMapper = documentMapper;
@@ -147,7 +148,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         log.info("soft delete document with id {}", document.getId());
         document.setDeletedAt(LocalDateTime.now());
         document.setPermanentDeleteAt(LocalDateTime.now().plusDays(documentRetentionDays));
-        documentIndexService.markDeleteDocument(document.getId());
+        documentIndexService.markDeleteDocument(document.getId(),true);
     }
 
     @Override
@@ -158,6 +159,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         validateResourceDeleted(resource);
         resource.setDeletedAt(null);
         resource.setPermanentDeleteAt(null);
+        documentIndexService.markDeleteDocument(resourceId,false);
         return mapToR(resource);
     }
 
@@ -299,7 +301,11 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
     @Override
     public DocumentResponse updateDocumentById(Long documentId, DocumentRequest documentRequest) {
-        return null;
+        log.info("update document by id: {}", documentId);
+        Document docExists = getResourceByIdOrThrow(documentId);
+        documentMapper.updateDocument(docExists, documentRequest);
+        docExists = documentRepo.save(docExists);
+        documentIndexService.updateDocument(docExists);
+        return mapToDocumentResponse(docExists);
     }
-
 }

@@ -34,6 +34,7 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     private final IDocumentHasTagService documentHasTagService;
     private final IDocumentPermissionService documentPermissionService;
     private final CustomDocumentSegmentRepo customDocumentSegmentRepo;
+
     @Override
     @Async
     public void indexDocument(Document document, InputStream inputStream) {
@@ -63,28 +64,48 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     }
 
     @Override
+    @Async
     public void deleteIndexByDocumentId(Long documentId) {
         documentSegmentRepo.deleteByDocumentId(documentId);
     }
 
     @Override
+    @Async
     public void markDeleteByDocumentIds(List<Long> documentIds) {
         customDocumentSegmentRepo.markDeleteByDocumentIds(documentIds);
     }
 
     @Override
+    @Async
     public void deleteIndexByDocumentIds(List<Long> documentIds) {
         documentSegmentRepo.deleteAllByDocumentIdIn(documentIds);
     }
 
     @Override
-    public void markDeleteDocument(Long documentId) {
+    @Async
+    public void markDeleteDocument(Long documentId,boolean value) {
         log.info("mark deleted documentId: {}", documentId);
-        customDocumentSegmentRepo.markDeletedByDocumentId(documentId);
+        customDocumentSegmentRepo.markDeletedByDocumentId(documentId,value);
+    }
+
+    @Override
+    @Async
+    public void updateDocument(Document document) {
+        log.info("update documentId: {}", document.getId());
+        customDocumentSegmentRepo.updateDocument(mapDocumentToSegmentEntity(document));
     }
 
     private List<String> getTagsByDocumentId(Long documentId) {
         return documentHasTagService.getTagsByDocumentId(documentId).stream().map(Tag::getName).toList();
+    }
+
+    private DocumentSegmentEntity mapDocumentToSegmentEntity(Document document) {
+        DocumentSegmentEntity segmentEntity = documentSegmentMapper.toSegmentEntity(document);
+        List<String> tagsList = getTagsByDocumentId(document.getId());
+        List<Long> sharedWith = getSharedWithByDocumentId(document.getId());
+        segmentEntity.setTags(tagsList);
+        segmentEntity.setSharedWith(sharedWith);
+        return segmentEntity;
     }
 
 

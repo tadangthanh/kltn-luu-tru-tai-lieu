@@ -27,4 +27,8 @@ public interface DocumentHasTagRepo extends JpaRepository<DocumentHasTag, Long> 
     @Query("delete from DocumentHasTag dht where dht.document.parent.id in ?1 ")
     void deleteTagDocumentByListParentId(List<Long> parentIds);
 
+    @Query("select case when count(dht) > 0 then true else false end from DocumentHasTag dht where dht.document.id = ?1 and dht.tag.id = ?2")
+    boolean existsByDocumentIdAndTagId(Long documentId, Long tagId);
+
+    void deleteAllByDocumentId(Long id);
 }

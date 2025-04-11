@@ -5,7 +5,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.TagRequest;
-import vn.kltn.entity.*;
+import vn.kltn.entity.Document;
+import vn.kltn.entity.DocumentHasTag;
+import vn.kltn.entity.Tag;
 import vn.kltn.repository.DocumentHasTagRepo;
 import vn.kltn.service.IDocumentHasTagService;
 import vn.kltn.service.ITagService;
@@ -38,8 +40,18 @@ public class DocumentHasTagServiceImpl implements IDocumentHasTagService {
     @Override
     public void addDocumentToTag(Document document, Set<Tag> tags) {
         for (Tag tag : tags) {
+            if (documentHasTagRepo.existsByDocumentIdAndTagId(document.getId(), tag.getId())) {
+                continue;
+            }
             saveDocumentTag(document, tag);
         }
+    }
+
+    @Override
+    public void updateTagDocument(Document document, TagRequest[] tags) {
+        log.info("update tag document {}", document.getId());
+        documentHasTagRepo.deleteAllByDocumentId(document.getId());
+        addDocumentToTag(document, tags);
     }
 
     @Override
@@ -49,10 +61,12 @@ public class DocumentHasTagServiceImpl implements IDocumentHasTagService {
 
     @Override
     public void deleteAllByFolderIds(List<Long> folderIds) {
+        log.warn("deleteAllByFolderIds: " + folderIds);
         documentHasTagRepo.deleteTagDocumentByListParentId(folderIds);
     }
 
     private void saveDocumentTag(Document document, Tag tag) {
+        log.info("saveDocumentTag: " + document.getId() + " - " + tag.getId());
         DocumentHasTag documentHasTag = new DocumentHasTag();
         documentHasTag.setDocument(document);
         documentHasTag.setTag(tag);

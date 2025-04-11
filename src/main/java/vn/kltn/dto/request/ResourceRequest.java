@@ -7,4 +7,5 @@ import lombok.Setter;
 @Setter
 public abstract class ResourceRequest {
     private String description;
+    private String name;
 }
