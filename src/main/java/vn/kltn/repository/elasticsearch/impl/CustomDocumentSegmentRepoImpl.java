@@ -2,9 +2,12 @@ package vn.kltn.repository.elasticsearch.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.UpdateByQueryRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Repository;
 import vn.kltn.exception.CustomIOException;
 import vn.kltn.index.DocumentSegmentEntity;
@@ -12,6 +15,8 @@ import vn.kltn.repository.elasticsearch.CustomDocumentSegmentRepo;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @Repository
 @RequiredArgsConstructor
@@ -93,4 +98,63 @@ public class CustomDocumentSegmentRepoImpl implements CustomDocumentSegmentRepo 
             throw new CustomIOException("Failed to mark documents as deleted");
         }
     }
+
+    @Override
+    public List<DocumentSegmentEntity> getDocumentByMe(Set<Long> listDocumentSharedWith, String query, int page, int size) {
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        try {
+            SearchResponse<DocumentSegmentEntity> response = elasticsearchClient.search(s -> s
+                            .index("document_segments")
+                            .from(page * size)
+                            .size(size)
+                            .query(q -> q
+                                    .bool(b -> b
+                                            .must(m -> m
+                                                    .matchPhrase(match -> match
+                                                            .field("content")
+                                                            .query(query)
+                                                    )
+                                            )
+                                            .filter(f -> f
+                                                    .term(t -> t
+                                                            .field("isDeleted")
+                                                            .value(false)
+                                                    )
+                                            )
+                                            .should(sh1 -> sh1
+                                                    .term(t -> t
+                                                            .field("createdBy")
+                                                            .value(currentEmail)
+                                                    )
+                                            )
+                                            .should(sh2 -> sh2
+                                                    .terms(t -> t
+                                                            .field("sharedWith")
+                                                            .terms(tq -> tq
+                                                                    .value(listDocumentSharedWith.stream()
+                                                                            .map(String::valueOf)
+                                                                            .map(FieldValue::of)
+                                                                            .toList())
+                                                            )
+                                                    )
+                                            )
+                                            .minimumShouldMatch("1") // ít nhất 1 điều kiện should phải đúng
+                                    )
+                            ),
+                    DocumentSegmentEntity.class
+            );
+
+            return response.hits().hits().stream()
+                    .map(Hit::source)
+                    .filter(Objects::nonNull)
+                    .toList();
+
+        } catch (IOException e) {
+            log.error("Error searching document segments: {}", e.getMessage(), e);
+            throw new CustomIOException("Failed to search documents");
+        }
+    }
+
+
 }

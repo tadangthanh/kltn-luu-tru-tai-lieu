@@ -14,6 +14,7 @@ import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
+import vn.kltn.index.DocumentSegmentEntity;
 import vn.kltn.service.IDocumentService;
 
 import java.io.ByteArrayInputStream;
@@ -70,6 +71,11 @@ public class DocumentRest {
     @GetMapping
     public ResponseData<PageResponse<List<DocumentResponse>>> search(Pageable pageable, @RequestParam(required = false, value = "documents") String[] documents) {
         return new ResponseData<>(200, "Thành công", documentService.searchByCurrentUser(pageable, documents));
+    }
+
+    @GetMapping("/search-metadata")
+    public ResponseData<List<DocumentSegmentEntity>> searchMetadata(@RequestParam(required = false, value = "query") String query, Pageable pageable) {
+        return new ResponseData<>(200, "Thành công", documentService.searchMetadata(query, pageable));
     }
 
     @GetMapping("/{documentId}")

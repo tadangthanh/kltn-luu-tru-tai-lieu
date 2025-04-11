@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -49,7 +50,7 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
         int segmentNumber = 0;
         List<DocumentSegmentEntity> segmentEntities = new ArrayList<>();
         List<String> tagsList = getTagsByDocumentId(document.getId());
-        List<Long> sharedWith = getSharedWithByDocumentId(document.getId());
+        List<Long> sharedWith = getUserIdsByDocumentShared(document.getId());
         for (String segment : segments) {
             DocumentSegmentEntity segmentEntity = documentSegmentMapper.toSegmentEntity(document);
             segmentEntity.setId(UUID.randomUUID().toString());
@@ -90,6 +91,11 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     }
 
     @Override
+    public List<DocumentSegmentEntity> getDocumentByMe(Set<Long> listDocumentSharedWith, String query, int page, int size) {
+        return customDocumentSegmentRepo.getDocumentByMe(listDocumentSharedWith,query, page,size);
+    }
+
+    @Override
     @Async
     public void updateDocument(Document document) {
         log.info("update documentId: {}", document.getId());
@@ -103,15 +109,15 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     private DocumentSegmentEntity mapDocumentToSegmentEntity(Document document) {
         DocumentSegmentEntity segmentEntity = documentSegmentMapper.toSegmentEntity(document);
         List<String> tagsList = getTagsByDocumentId(document.getId());
-        List<Long> sharedWith = getSharedWithByDocumentId(document.getId());
+        List<Long> sharedWith = getUserIdsByDocumentShared(document.getId());
         segmentEntity.setTags(tagsList);
         segmentEntity.setSharedWith(sharedWith);
         return segmentEntity;
     }
 
 
-    private List<Long> getSharedWithByDocumentId(Long documentId) {
-        return documentPermissionService.getSharedWithByDocumentId(documentId).stream().toList();
+    private List<Long> getUserIdsByDocumentShared(Long documentId) {
+        return documentPermissionService.getUserIdsByDocumentShared(documentId).stream().toList();
     }
 
     private List<String> extractDocxByChunk(InputStream inputStream, int wordsPerChunk) {

@@ -20,6 +20,7 @@ import vn.kltn.entity.Tag;
 import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
+import vn.kltn.index.DocumentSegmentEntity;
 import vn.kltn.map.DocumentMapper;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
@@ -47,8 +48,9 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     private int documentRetentionDays;
     private final FolderCommonService folderCommonService;
     private final IDocumentIndexService documentIndexService;
+    private final IDocumentPermissionService documentPermissionService;
 
-    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService) {
+    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, IDocumentPermissionService documentPermissionService1) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
         this.documentRepo = documentRepo;
         this.documentMapper = documentMapper;
@@ -56,6 +58,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         this.documentHasTagService = documentHasTagService;
         this.folderCommonService = folderCommonService;
         this.documentIndexService = documentIndexService;
+        this.documentPermissionService = documentPermissionService1;
     }
 
     @Override
@@ -114,7 +117,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         }
         return PaginationUtils.convertToPageResponse(documentRepo.findAll(pageable), pageable, this::mapToDocumentResponse);
     }
-
     @Override
     protected void hardDeleteResource(Document resource) {
         log.info("hard delete document with id {}", resource.getId());
@@ -254,6 +256,15 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         documentRepo.setDeleteDocument(folderIds, null, null);
         List<Long> documentIdsToMarkDelete = documentRepo.findDocumentIdsWithParentIds(folderIds);
         markDeletedIndexByDocumentIds(documentIdsToMarkDelete, false);
+    }
+
+    @Override
+    public List<DocumentSegmentEntity> searchMetadata(String query, Pageable pageable) {
+        log.info("search document by me");
+        // Lấy danh sách documentId mà người dùng có quyền truy cập
+        User currentUser = authenticationService.getCurrentUser();
+        Set<Long> listDocShardedWithMe = documentPermissionService.getDocumentIdsByUser(currentUser.getId());
+        return documentIndexService.getDocumentByMe(listDocShardedWithMe,query,pageable.getPageNumber(),pageable.getPageSize());
     }
 
     private void markDeletedIndexByDocumentIds(List<Long> documentIds, boolean value) {

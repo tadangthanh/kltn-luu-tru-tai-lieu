@@ -32,8 +32,23 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
         return documentCommonService.getDocumentByIdOrThrow(resourceId);
     }
 
+    /***
+     *  lay danh sach id user ma document nay chia se
+     * @param documentId id document
+     * @return danh sach id user mà document này chia sẻ
+     */
     @Override
-    public Set<Long> getSharedWithByDocumentId(Long documentId) {
+    public Set<Long> getUserIdsByDocumentShared(Long documentId) {
         return permissionRepo.findIdsUserSharedWithByResourceId(documentId);
+    }
+
+    /***
+     *  lay danh sach document duoc chia se cho user nay
+     * @param userId : id user
+     * @return lay danh sach document duoc chia se cho user nay
+     */
+    @Override
+    public Set<Long> getDocumentIdsByUser(Long userId) {
+        return permissionRepo.findIdsDocumentByUserId(userId);
     }
 }
