@@ -1,7 +1,6 @@
 package vn.kltn.service;
 
 import vn.kltn.entity.Document;
-import vn.kltn.index.DocumentSegmentEntity;
 
 import java.io.InputStream;
 import java.util.List;
@@ -11,11 +10,11 @@ public interface IDocumentIndexService {
 
     void deleteIndexByDocumentId(Long documentId);
 
-    void markDeleteByDocumentIds(List<Long> documentIds);
+    void deleteIndexByListDocumentId(List<Long> documentIds);
 
-    void deleteIndexByDocumentIds(List<Long> documentIds);
+    void markDeleteDocument(Long documentId, boolean value);
 
-    void markDeleteDocument(Long documentId,boolean value);
+    void markDeleteDocuments(List<Long> documentIds, boolean value);
 
     void updateDocument(Document document);
 }

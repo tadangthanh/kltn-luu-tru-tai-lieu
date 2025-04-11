@@ -39,10 +39,10 @@ public interface DocumentRepo extends JpaRepository<Document, Long>, JpaSpecific
             """, nativeQuery = true)
     List<Long> findDocumentChildIdsWithoutPermission(@Param("parentResourceIds") List<Long> parentResourceIds, @Param("recipientId") Long recipientId);
 
+    @Query("select d from Document d where d.parent.id in ?1")
+    List<Document> findDocumentsByParentIds(List<Long> folderIds);
+
     @Modifying
     @Query("select d.id from Document d where d.parent.id in ?1")
     List<Long> findDocumentIdsWithParentIds(List<Long> folderIds);
-
-    @Query("select d from Document d where d.parent.id in ?1")
-    List<Document> findDocumentsByParentIds(List<Long> folderIds);
 }

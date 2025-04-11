@@ -71,21 +71,22 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
 
     @Override
     @Async
-    public void markDeleteByDocumentIds(List<Long> documentIds) {
-        customDocumentSegmentRepo.markDeleteByDocumentIds(documentIds);
-    }
-
-    @Override
-    @Async
-    public void deleteIndexByDocumentIds(List<Long> documentIds) {
+    public void deleteIndexByListDocumentId(List<Long> documentIds) {
         documentSegmentRepo.deleteAllByDocumentIdIn(documentIds);
     }
 
     @Override
     @Async
-    public void markDeleteDocument(Long documentId,boolean value) {
+    public void markDeleteDocument(Long documentId, boolean value) {
         log.info("mark deleted documentId: {}", documentId);
-        customDocumentSegmentRepo.markDeletedByDocumentId(documentId,value);
+        customDocumentSegmentRepo.markDeletedByDocumentId(documentId, value);
+    }
+
+    @Override
+    @Async
+    public void markDeleteDocuments(List<Long> documentIds, boolean value) {
+        log.info("mark deleted list documentId: {}", documentIds);
+        customDocumentSegmentRepo.markDeletedByDocumentIds(documentIds, value);
     }
 
     @Override

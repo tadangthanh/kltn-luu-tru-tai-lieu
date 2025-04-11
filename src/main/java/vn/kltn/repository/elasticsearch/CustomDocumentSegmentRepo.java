@@ -9,5 +9,5 @@ public interface CustomDocumentSegmentRepo {
 
     void updateDocument(DocumentSegmentEntity documentUpdated);
 
-    void markDeleteByDocumentIds(List<Long> documentIds);
+    void markDeletedByDocumentIds(List<Long> documentIds, boolean value);
 }

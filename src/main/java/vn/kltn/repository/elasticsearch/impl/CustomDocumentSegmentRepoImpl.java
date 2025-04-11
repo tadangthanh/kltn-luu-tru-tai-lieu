@@ -68,8 +68,8 @@ public class CustomDocumentSegmentRepoImpl implements CustomDocumentSegmentRepo 
     }
 
     @Override
-    public void markDeleteByDocumentIds(List<Long> documentIds) {
-        log.info("Marking deleted documentIds: {}", documentIds);
+    public void markDeletedByDocumentIds(List<Long> documentIds, boolean value) {
+        log.info("Marking deleted documentIds: {},value {}", documentIds, value);
         try {
             elasticsearchClient.updateByQuery(UpdateByQueryRequest.of(b -> b
                     .index("document_segments")
@@ -84,7 +84,7 @@ public class CustomDocumentSegmentRepoImpl implements CustomDocumentSegmentRepo 
                             )
                     )
                     .script(s -> s
-                            .source("ctx._source.isDeleted = true")
+                            .source("ctx._source.isDeleted = " + value)
                             .lang("painless")
                     )
             ));
@@ -93,5 +93,4 @@ public class CustomDocumentSegmentRepoImpl implements CustomDocumentSegmentRepo 
             throw new CustomIOException("Failed to mark documents as deleted");
         }
     }
-
 }
