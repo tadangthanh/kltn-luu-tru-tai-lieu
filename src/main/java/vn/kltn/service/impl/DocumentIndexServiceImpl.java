@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.Tag;
 import vn.kltn.index.DocumentIndex;
@@ -59,7 +60,7 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     }
 
     @Override
-    public List<DocumentIndex> getDocumentByMe(Set<Long> listDocumentSharedWith, String query, int page, int size) {
+    public List<DocumentIndexResponse> getDocumentByMe(Set<Long> listDocumentSharedWith, String query, int page, int size) {
         return customDocumentIndexRepo.getDocumentByMe(listDocumentSharedWith, query, page, size);
     }
 

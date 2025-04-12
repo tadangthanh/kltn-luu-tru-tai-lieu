@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentDataResponse;
+import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Document;
@@ -20,7 +21,6 @@ import vn.kltn.entity.Tag;
 import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
-import vn.kltn.index.DocumentIndex;
 import vn.kltn.map.DocumentMapper;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
@@ -260,7 +260,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     }
 
     @Override
-    public List<DocumentIndex> searchMetadata(String query, Pageable pageable) {
+    public List<DocumentIndexResponse> searchMetadata(String query, Pageable pageable) {
         log.info("search document by me");
         // Lấy danh sách documentId mà người dùng có quyền truy cập
         User currentUser = authenticationService.getCurrentUser();

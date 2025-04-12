@@ -1,7 +1,7 @@
 package vn.kltn.service;
 
+import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.entity.Document;
-import vn.kltn.index.DocumentIndex;
 
 import java.io.InputStream;
 import java.util.List;
@@ -14,7 +14,7 @@ public interface IDocumentIndexService {
 
     void markDeleteDocument(String indexId, boolean value);
 
-    List<DocumentIndex> getDocumentByMe(Set<Long> listDocumentSharedWith, String query, int page, int size);
+    List<DocumentIndexResponse> getDocumentByMe(Set<Long> listDocumentSharedWith, String query, int page, int size);
 
     void updateDocument(Document document);
 

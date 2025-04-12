@@ -4,9 +4,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentDataResponse;
+import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.entity.Document;
-import vn.kltn.index.DocumentIndex;
 
 import java.util.List;
 
@@ -25,7 +25,7 @@ public interface IDocumentService extends IResourceService<Document, DocumentRes
 
     void restoreDocumentsByFolderIds(List<Long> folderIds);
 
-    List<DocumentIndex> searchMetadata(String query, Pageable pageable);
+    List<DocumentIndexResponse> searchMetadata(String query, Pageable pageable);
 
     DocumentDataResponse openDocumentById(Long documentId);
 }

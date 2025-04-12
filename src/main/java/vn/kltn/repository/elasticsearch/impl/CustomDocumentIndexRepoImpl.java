@@ -3,6 +3,7 @@ package vn.kltn.repository.elasticsearch.impl;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import co.elastic.clients.elasticsearch.core.*;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Repository;
+import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.exception.CustomIOException;
 import vn.kltn.index.DocumentIndex;
 import vn.kltn.repository.elasticsearch.CustomDocumentIndexRepo;
@@ -125,13 +127,58 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
 
 
     @Override
-    public List<DocumentIndex> getDocumentByMe(Set<Long> listDocumentSharedWith, String query, int page, int size) {
+    public List<DocumentIndexResponse> getDocumentByMe(Set<Long> listDocumentSharedWith, String query, int page, int size) {
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
 
         try {
-            SearchResponse<DocumentIndex> response = elasticsearchClient.search(s -> s.index("documents_index").from(page * size).size(size).query(q -> q.bool(b -> b.must(m -> m.multiMatch(mm -> mm.query(query).fields("name^3", "description^2", "content", "updatedBy", "createdBy"))).filter(f -> f.term(t -> t.field("isDeleted").value(false))).should(sh1 -> sh1.term(t -> t.field("createdBy").value(currentEmail))).should(sh2 -> sh2.terms(t -> t.field("sharedWith").terms(tq -> tq.value(listDocumentSharedWith.stream().map(String::valueOf).map(FieldValue::of).toList())))).minimumShouldMatch("1"))).highlight(h -> h.preTags("<mark>").postTags("</mark>").fields("content", f -> f.fragmentSize(150).numberOfFragments(3)).fields("name", f -> f).fields("description", f -> f).fields("updatedBy", f -> f).fields("createdBy", f -> f)), DocumentIndex.class);
+            SearchResponse<DocumentIndex> response = elasticsearchClient.search(s ->
+                    s.index("documents_index")
+                            .from(page * size)
+                            .size(size)
+                            .query(q -> q
+                                    .bool(b -> b
+                                            .must(m -> m
+                                                    .multiMatch(mm -> mm
+                                                            .query(query)
+                                                            .type(TextQueryType.Phrase)
+                                                            .fields("name^3",
+                                                                    "description^2",
+                                                                    "content",
+                                                                    "updatedBy",
+                                                                    "createdBy")))
+                                            .filter(f -> f.term(
+                                                    t -> t.field("isDeleted")
+                                                            .value(false)))
+                                            .should(sh1 -> sh1.term(t -> t
+                                                    .field("createdBy")
+                                                    .value(currentEmail)))
+                                            .should(sh2 -> sh2.terms(t -> t
+                                                    .field("sharedWith")
+                                                    .terms(tq -> tq.value(listDocumentSharedWith.stream()
+                                                            .map(String::valueOf).map(FieldValue::of)
+                                                            .toList())))).minimumShouldMatch("1")))
+                            .highlight(h -> h
+                                    .preTags("<mark>")
+                                    .postTags("</mark>")
+                                    .fields("content",
+                                            f -> f.fragmentSize(150)
+                                                    .numberOfFragments(3))
+                                    .fields("name", f -> f)
+                                    .fields("description", f -> f)
+                                    .fields("updatedBy", f -> f)
+                                    .fields("createdBy", f -> f)),
+                    DocumentIndex.class);
 
-            return response.hits().hits().stream().map(Hit::source).filter(Objects::nonNull).toList();
+            return response.hits().hits().stream()
+                    .filter(hit -> hit.source() != null)
+                    .map(hit -> {
+                        DocumentIndexResponse dto = new DocumentIndexResponse();
+                        dto.setDocument(hit.source());
+                        dto.setHighlights(hit.highlight()); // Map<String, List<String>>
+                        return dto;
+                    })
+                    .toList();
+
 
         } catch (IOException e) {
             log.error("Error searching documents: {}", e.getMessage(), e);

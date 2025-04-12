@@ -10,10 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.request.DocumentRequest;
-import vn.kltn.dto.response.DocumentDataResponse;
-import vn.kltn.dto.response.DocumentResponse;
-import vn.kltn.dto.response.PageResponse;
-import vn.kltn.dto.response.ResponseData;
+import vn.kltn.dto.response.*;
 import vn.kltn.index.DocumentIndex;
 import vn.kltn.service.IDocumentService;
 
@@ -74,7 +71,7 @@ public class DocumentRest {
     }
 
     @GetMapping("/search-metadata")
-    public ResponseData<List<DocumentIndex>> searchMetadata(@RequestParam(required = false, value = "query") String query, Pageable pageable) {
+    public ResponseData<List<DocumentIndexResponse>> searchMetadata(@RequestParam(required = false, value = "query") String query, Pageable pageable) {
         return new ResponseData<>(200, "Thành công", documentService.searchMetadata(query, pageable));
     }
 

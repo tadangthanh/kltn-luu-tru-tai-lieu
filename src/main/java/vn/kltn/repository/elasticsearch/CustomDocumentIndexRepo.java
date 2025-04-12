@@ -1,5 +1,6 @@
 package vn.kltn.repository.elasticsearch;
 
+import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.index.DocumentIndex;
 
 import java.util.List;
@@ -14,5 +15,5 @@ public interface CustomDocumentIndexRepo {
 
     void markDeleteDocumentsIndex(List<String> indexIds, boolean value);
 
-    List<DocumentIndex> getDocumentByMe(Set<Long> listDocumentSharedWith, String query, int page, int size);
+    List<DocumentIndexResponse> getDocumentByMe(Set<Long> listDocumentSharedWith, String query, int page, int size);
 }
