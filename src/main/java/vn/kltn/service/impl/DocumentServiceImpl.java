@@ -20,7 +20,7 @@ import vn.kltn.entity.Tag;
 import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
-import vn.kltn.index.DocumentSegmentEntity;
+import vn.kltn.index.DocumentIndex;
 import vn.kltn.map.DocumentMapper;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
@@ -64,7 +64,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     @Override
     public DocumentResponse uploadDocumentWithoutParent(DocumentRequest documentRequest, MultipartFile file) {
         Document document = processValidDocument(documentRequest, file);
-        documentIndexService.indexDocument(document, azureStorageService.downloadBlobInputStream(document.getBlobName()));
+        documentIndexService.insertDoc(document, azureStorageService.downloadBlobInputStream(document.getBlobName()));
         return mapToDocumentResponse(document);
     }
 
@@ -76,7 +76,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         document = documentRepo.save(document);
         // document moi tao se thua ke cac quyen tu folder cha
         documentPermissionService.inheritPermissions(document);
-        documentIndexService.indexDocument(document, azureStorageService.downloadBlobInputStream(document.getBlobName()));
+        documentIndexService.insertDoc(document, azureStorageService.downloadBlobInputStream(document.getBlobName()));
         return mapToDocumentResponse(document);
     }
 
@@ -117,6 +117,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         }
         return PaginationUtils.convertToPageResponse(documentRepo.findAll(pageable), pageable, this::mapToDocumentResponse);
     }
+
     @Override
     protected void hardDeleteResource(Document resource) {
         log.info("hard delete document with id {}", resource.getId());
@@ -124,7 +125,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         documentHasTagService.deleteAllByDocumentId(resource.getId());
         documentPermissionService.deletePermissionByResourceId(resource.getId());
         documentRepo.delete(resource);
-        documentIndexService.deleteIndexByDocumentId(resource.getId());
+        documentIndexService.deleteIndex(resource.getId().toString());
     }
 
     @Override
@@ -149,7 +150,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         log.info("soft delete document with id {}", document.getId());
         document.setDeletedAt(LocalDateTime.now());
         document.setPermanentDeleteAt(LocalDateTime.now().plusDays(documentRetentionDays));
-        documentIndexService.markDeleteDocument(document.getId(), true);
+        documentIndexService.markDeleteDocument(document.getId().toString(), true);
     }
 
     @Override
@@ -160,7 +161,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         validateResourceDeleted(resource);
         resource.setDeletedAt(null);
         resource.setPermanentDeleteAt(null);
-        documentIndexService.markDeleteDocument(resourceId, false);
+        documentIndexService.markDeleteDocument(resourceId.toString(), false);
         return mapToR(resource);
     }
 
@@ -228,7 +229,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
     private void deleteDataElasticSearch(List<Long> documentIds) {
         if (!documentIds.isEmpty()) {
-            documentIndexService.deleteIndexByListDocumentId(documentIds);
+            documentIndexService.deleteIndexByIdList(documentIds);
         }
     }
 
@@ -259,16 +260,21 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     }
 
     @Override
-    public List<DocumentSegmentEntity> searchMetadata(String query, Pageable pageable) {
+    public List<DocumentIndex> searchMetadata(String query, Pageable pageable) {
         log.info("search document by me");
         // Lấy danh sách documentId mà người dùng có quyền truy cập
         User currentUser = authenticationService.getCurrentUser();
         Set<Long> listDocShardedWithMe = documentPermissionService.getDocumentIdsByUser(currentUser.getId());
-        return documentIndexService.getDocumentByMe(listDocShardedWithMe,query,pageable.getPageNumber(),pageable.getPageSize());
+        return documentIndexService.getDocumentByMe(listDocShardedWithMe, query, pageable.getPageNumber(), pageable.getPageSize());
     }
 
     private void markDeletedIndexByDocumentIds(List<Long> documentIds, boolean value) {
-        documentIndexService.markDeleteDocuments(documentIds, value);
+        if (documentIds.isEmpty()) {
+            return; // Không có document nào để đánh dấu, thoát sớm
+        }
+        // Chuyển đổi danh sách documentIds thành danh sách String
+        List<String> documentIdsAsString = documentIds.stream().map(String::valueOf).toList();
+        documentIndexService.markDeleteDocumentsIndex(documentIdsAsString, value);
     }
 
     @Override

@@ -26,7 +26,6 @@ public class Document extends FileSystemEntity {
     private LocalDateTime permanentDeleteAt; // thoi gian xoa vinh vien
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
-
     @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PreviewImage> previewImages = new ArrayList<>();
 }

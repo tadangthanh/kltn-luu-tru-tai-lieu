@@ -20,20 +20,19 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Document(indexName = "document_segments")
-public class DocumentSegmentEntity extends BaseSearchEntity {
+@Document(indexName = "documents_index")
+public class DocumentIndex extends BaseSearchEntity {
     private Long documentId; // ID của tài liệu gốc
     private String description; // Mô tả tài liệu
-    private String name;
-    private String type;
+    private String name; // tên tài liệu
+    private String type; // loại tài liệu
     @Field(type = FieldType.Text, analyzer = "folding_analyzer", searchAnalyzer = "folding_analyzer")
-    private String content;
+    private String content; // Full nội dung text của tài liệu
     @Field(type = FieldType.Keyword)
     private List<String> tags;
-    private int segmentNumber;
     private Long ownerId;
     @Field(type = FieldType.Keyword)
-    private List<Long> sharedWith;
+    private List<Long> sharedWith; // danh sách id user được truy cập tài liệu
     private boolean isDeleted = false;
 
     public Map<String, JsonData> toParamMap() {
@@ -43,7 +42,6 @@ public class DocumentSegmentEntity extends BaseSearchEntity {
         if (this.type != null) map.put("type", JsonData.of(this.type));
         if (this.content != null) map.put("content", JsonData.of(this.content));
         if (this.tags != null) map.put("tags", JsonData.of(this.tags));
-        if (this.segmentNumber != 0) map.put("segmentNumber", JsonData.of(this.segmentNumber));
         if (this.ownerId != null) map.put("ownerId", JsonData.of(this.ownerId));
         if (this.sharedWith != null) map.put("sharedWith", JsonData.of(this.sharedWith));
         map.put("isDeleted", JsonData.of(this.isDeleted)); // boolean mặc định là false nên luôn truyền
@@ -51,6 +49,4 @@ public class DocumentSegmentEntity extends BaseSearchEntity {
         if (this.getUpdatedBy() != null) map.put("updatedBy", JsonData.of(this.getUpdatedBy()));
         return map;
     }
-
-
 }

@@ -17,7 +17,6 @@ public interface IPermissionService {
 
     void deletePermissionById(Long permissionId);
 
-
     PageResponse<List<PermissionResponse>> getPagePermissionByResourceId(Long resourceId, Pageable pageable);
 
     void validateUserIsEditor(Long resourceId, Long userId);
