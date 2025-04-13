@@ -24,8 +24,9 @@ public class DocumentRest {
     private final IDocumentService documentService;
 
     @PostMapping
-    public ResponseData<DocumentResponse> upload(@RequestPart("file") MultipartFile file, @Valid @RequestPart("data") DocumentRequest documentRequest) {
-        return new ResponseData<>(201, "Thành công", documentService.uploadDocumentWithoutParent(documentRequest, file));
+    public ResponseData<Void> uploadWithoutParent(@RequestPart("files") MultipartFile[] files) {
+        documentService.uploadDocumentWithoutParent(files);
+        return new ResponseData<>(201, "Đang tải ....");
     }
 
     @PostMapping("/folder/{folderId}")

@@ -18,12 +18,16 @@ import vn.kltn.exception.CustomBlobStorageException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.service.IAzureStorageService;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -93,6 +97,37 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
             blockBlobClient.commitBlockList(blockIds);
 
             return blockBlobClient.getBlobName();
+        } catch (IOException | BlobStorageException e) {
+            log.error("Error uploading file from InputStream: {}", e.getMessage());
+            throw new CustomBlobStorageException("Lỗi upload file ");
+        }
+    }
+
+    @Override
+    public CompletableFuture<String> uploadChunkedWithContainerDefaultAsync(InputStream data, String originalFileName, long length, int chunkSize) {
+        try {
+            BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerNameDefault);
+            String newFileName = UUID.randomUUID() + "_" + originalFileName;
+            BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(newFileName).getBlockBlobClient();
+            List<String> blockIds = new ArrayList<>();
+            byte[] buffer = new byte[chunkSize];
+            int bytesRead;
+            int blockNumber = 0;
+
+            while ((bytesRead = data.read(buffer)) != -1) {
+                String blockId = Base64.getEncoder().encodeToString(String.format("%06d", blockNumber).getBytes()); // Tạo Block ID
+                blockBlobClient.stageBlock(blockId, new ByteArrayInputStream(buffer, 0, bytesRead), bytesRead);  // Upload từng phần
+                blockIds.add(blockId);
+                // 📌 In log để biết phần nào đã upload xong
+                // 📌 In log với số phần upload thành công
+                System.out.println("✅ Đã upload thành công phần " + (blockNumber + 1) + " trên tổng số " + ((length + chunkSize - 1) / chunkSize) + " phần");
+                blockNumber++;
+            }
+
+            // Ghép các phần lại
+            blockBlobClient.commitBlockList(blockIds);
+
+            return CompletableFuture.completedFuture(blockBlobClient.getBlobName());
         } catch (IOException | BlobStorageException e) {
             log.error("Error uploading file from InputStream: {}", e.getMessage());
             throw new CustomBlobStorageException("Lỗi upload file ");
@@ -214,6 +249,11 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     @Override
     public InputStream downloadBlobInputStream(String blobName) {
         return getInputStreamBlob(containerNameDefault, blobName);
+    }
+
+    @Override
+    public CompletableFuture<InputStream> downloadBlobInputStreamAsync(String blobName) {
+        return CompletableFuture.completedFuture(getInputStreamBlob(containerNameDefault, blobName));
     }
 
     @Override

@@ -21,4 +21,6 @@ public interface IDocumentIndexService {
     void deleteIndexByIdList(List<Long> indexIds);
 
     void markDeleteDocumentsIndex(List<String> indexIds, boolean value);
+
+    void insertAllDoc(List<Document> documents);
 }

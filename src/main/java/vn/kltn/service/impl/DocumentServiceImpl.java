@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,6 +20,7 @@ import vn.kltn.entity.Document;
 import vn.kltn.entity.Folder;
 import vn.kltn.entity.Tag;
 import vn.kltn.entity.User;
+import vn.kltn.exception.CustomIOException;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.DocumentMapper;
@@ -31,10 +33,11 @@ import vn.kltn.service.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -62,45 +65,69 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     }
 
     @Override
-    public DocumentResponse uploadDocumentWithoutParent(DocumentRequest documentRequest, MultipartFile file) {
-        Document document = processValidDocument(documentRequest, file);
-        documentIndexService.insertDoc(document, azureStorageService.downloadBlobInputStream(document.getBlobName()));
-        return mapToDocumentResponse(document);
+    @Async("taskExecutor")
+    public void uploadDocumentWithoutParent(MultipartFile[] files) {
+        List<Document> documents = saveDocuments(files);
+        // upload file to cloud
+        List<String> blobNames = uploadDocumentToCloud(files);
+        for (int i = 0; i < documents.size(); i++) {
+            Document document = documents.get(i);
+            String blobName = blobNames.get(i);
+            document.setBlobName(blobName);
+        }
+        documentIndexService.insertAllDoc(documents);
+        // thong bao bang websocket
+//        return mapToDocumentResponse(documents);
     }
 
     @Override
     public DocumentResponse uploadDocumentWithParent(Long parentId, DocumentRequest documentRequest, MultipartFile file) {
-        Document document = processValidDocument(documentRequest, file);
-        Folder folder = folderCommonService.getFolderByIdOrThrow(parentId);
-        document.setParent(folder);
-        document = documentRepo.save(document);
-        // document moi tao se thua ke cac quyen tu folder cha
-        documentPermissionService.inheritPermissions(document);
-        documentIndexService.insertDoc(document, azureStorageService.downloadBlobInputStream(document.getBlobName()));
-        return mapToDocumentResponse(document);
+//        List<Document> documents = saveDocuments(files);
+//        Folder folder = folderCommonService.getFolderByIdOrThrow(parentId);
+//        documents.setParent(folder);
+//        documents = documentRepo.save(documents);
+//        // document moi tao se thua ke cac quyen tu folder cha
+//        documentPermissionService.inheritPermissions(documents);
+//        documentIndexService.insertDoc(documents, azureStorageService.downloadBlobInputStream(documents.getBlobName()));
+//        return mapToDocumentResponse(documents);
+        return null;
     }
 
 
-    private Document processValidDocument(DocumentRequest documentRequest, MultipartFile file) {
-        Document document = mapToDocument(documentRequest, file);
-        document.setVersion(1);
-        User uploader = authenticationService.getCurrentUser();
-        document.setOwner(uploader);
-        document = documentRepo.save(document);
-        documentHasTagService.addDocumentToTag(document, documentRequest.getTags());
-        // upload file to cloud
-        String blobName = uploadDocumentToCloud(file);
-        document.setBlobName(blobName);
-        return document;
+    private List<Document> saveDocuments(MultipartFile[] files) {
+        List<Document> documents = mapListFileToListDocument(files);
+        documents = documentRepo.saveAll(documents);
+//        // upload file to cloud
+//        String blobName = uploadDocumentToCloud(file);
+//        document.setBlobName(blobName);
+        return documents;
     }
 
-    private String uploadDocumentToCloud(MultipartFile file) {
-        try (InputStream inputStream = file.getInputStream()) {
-            return azureStorageService.uploadChunkedWithContainerDefault(inputStream, file.getOriginalFilename(), file.getSize(), 10 * 1024 * 1024);
-        } catch (IOException e) {
-            throw new InvalidDataException(e.getMessage());
+    private List<String> uploadDocumentToCloud(MultipartFile[] files) {
+        List<CompletableFuture<String>> futures = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+            try (InputStream inputStream = file.getInputStream()) {
+                CompletableFuture<String> future = azureStorageService
+                        .uploadChunkedWithContainerDefaultAsync(inputStream, file.getOriginalFilename(), file.getSize(), 10 * 1024 * 1024);
+                futures.add(future);
+            } catch (IOException e) {
+                log.error("Error reading file: {}", e.getMessage());
+                throw new CustomIOException("Có lỗi xảy ra khi đọc file");
+            }
         }
+
+        // Gộp tất cả future lại
+        CompletableFuture<Void> allDoneFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+
+        // Đợi tất cả hoàn tất rồi collect kết quả
+        CompletableFuture<List<String>> resultsFuture = allDoneFuture.thenApply(v ->
+                futures.stream().map(CompletableFuture::join).toList()
+        );
+
+        return resultsFuture.join(); // ✅ chỉ block 1 lần ở đây khi đã xong hết
     }
+
 
     @Override
     public PageResponse<List<DocumentResponse>> searchByCurrentUser(Pageable pageable, String[] documents) {
@@ -179,6 +206,43 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         return documentRepo.save(resource);
     }
 
+    private List<Document> mapListFileToListDocument(MultipartFile[] files) {
+        List<Document> documents = new ArrayList<>();
+        User uploader = authenticationService.getCurrentUser();
+        // Lấy tên file upload
+        List<String> listFileName = Arrays.stream(files)
+                .map(MultipartFile::getOriginalFilename)
+                .toList();
+
+        // Tìm các document đã tồn tại theo tên
+        List<Document> existingDocuments = documentRepo.findAllByListName(listFileName);
+
+        // Map tên -> Document đã tồn tại, để tra nhanh
+        Map<String, Document> existingMap = existingDocuments.stream()
+                .collect(Collectors.toMap(Document::getName, Function.identity()));
+
+        // Duyệt từng file
+        for (MultipartFile file : files) {
+            String fileName = file.getOriginalFilename();
+            Document document = new Document();
+            document.setSize(file.getSize());
+            document.setType(file.getContentType());
+            document.setName(fileName);
+            document.setOwner(uploader);
+            // Nếu file trùng tên với file cũ → tăng version
+            if (existingMap.containsKey(fileName)) {
+                int oldVersion = existingMap.get(fileName).getVersion();
+                document.setVersion(oldVersion + 1);
+            } else {
+                document.setVersion(1); // File mới hoàn toàn
+            }
+
+            documents.add(document);
+        }
+
+        return documents;
+    }
+
 
     private Document mapToDocument(DocumentRequest documentRequest, MultipartFile file) {
         Document document = documentMapper.toDocument(documentRequest);
@@ -186,6 +250,12 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         document.setType(file.getContentType());
         document.setName(file.getOriginalFilename());
         return document;
+    }
+
+    private List<DocumentResponse> mapToDocumentResponse(List<Document> documents) {
+        return documents.stream()
+                .map(this::mapToDocumentResponse)
+                .toList();
     }
 
     private DocumentResponse mapToDocumentResponse(Document document) {

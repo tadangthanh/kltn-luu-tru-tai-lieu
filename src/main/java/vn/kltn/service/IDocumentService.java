@@ -11,7 +11,7 @@ import vn.kltn.entity.Document;
 import java.util.List;
 
 public interface IDocumentService extends IResourceService<Document, DocumentResponse> {
-    DocumentResponse uploadDocumentWithoutParent(DocumentRequest documentRequest, MultipartFile file);
+    void uploadDocumentWithoutParent(MultipartFile[] files);
 
     DocumentResponse uploadDocumentWithParent(Long folderId, DocumentRequest documentRequest, MultipartFile file);
 
