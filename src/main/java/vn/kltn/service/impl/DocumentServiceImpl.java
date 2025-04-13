@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentIndexResponse;
@@ -30,12 +31,12 @@ import vn.kltn.repository.specification.SpecificationUtil;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -67,45 +68,90 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     @Override
     @Async("taskExecutor")
     public void uploadDocumentWithoutParent(MultipartFile[] files) {
+        // sao luu du lieu tu thread chinh
+        List<FileBuffer> bufferedFiles = bufferFiles(files);
+        // luu db
         List<Document> documents = saveDocuments(files);
         // upload file to cloud
-        List<String> blobNames = uploadDocumentToCloud(files);
-        for (int i = 0; i < documents.size(); i++) {
-            Document document = documents.get(i);
-            String blobName = blobNames.get(i);
-            document.setBlobName(blobName);
-        }
+        List<String> blobNames = uploadBufferedFilesToCloud(bufferedFiles);
+        mapBlobNamesToDocuments(documents, blobNames);
         documentIndexService.insertAllDoc(documents);
         // thong bao bang websocket
-//        return mapToDocumentResponse(documents);
     }
 
     @Override
-    public DocumentResponse uploadDocumentWithParent(Long parentId, DocumentRequest documentRequest, MultipartFile file) {
-//        List<Document> documents = saveDocuments(files);
-//        Folder folder = folderCommonService.getFolderByIdOrThrow(parentId);
-//        documents.setParent(folder);
-//        documents = documentRepo.save(documents);
-//        // document moi tao se thua ke cac quyen tu folder cha
-//        documentPermissionService.inheritPermissions(documents);
-//        documentIndexService.insertDoc(documents, azureStorageService.downloadBlobInputStream(documents.getBlobName()));
-//        return mapToDocumentResponse(documents);
-        return null;
+    @Async("taskExecutor")
+    public void uploadDocumentWithParent(Long parentId, MultipartFile[] files) {
+        // sao luu du lieu tu thread chinh
+        List<FileBuffer> bufferedFiles = bufferFiles(files);
+        // luu db
+        List<Document> documents = saveDocumentsWithFolder(files,parentId);
+        // thua ke quyen cua parent
+        documentPermissionService.inheritPermissions(documents);
+        // upload file to cloud
+        List<String> blobNames = uploadBufferedFilesToCloud(bufferedFiles);
+        mapBlobNamesToDocuments(documents, blobNames);
+        // lưu vào elasticsearch
+        documentIndexService.insertAllDoc(documents);
+        // thong bao bang websocket
     }
 
+
+    private void mapBlobNamesToDocuments(List<Document> documents, List<String> blobNames) {
+        for (int i = 0; i < documents.size(); i++) {
+            documents.get(i).setBlobName(blobNames.get(i));
+        }
+    }
+    private List<FileBuffer> bufferFiles(MultipartFile[] files) {
+        List<FileBuffer> list = new ArrayList<>();
+        for (MultipartFile file : files) {
+            try {
+                list.add(new FileBuffer(file.getOriginalFilename(), file.getBytes(),file.getSize(), file.getContentType()));
+            } catch (IOException e) {
+                throw new CustomIOException("Không đọc được file");
+            }
+        }
+        return list;
+    }
 
     private List<Document> saveDocuments(MultipartFile[] files) {
         List<Document> documents = mapListFileToListDocument(files);
         documents = documentRepo.saveAll(documents);
-//        // upload file to cloud
-//        String blobName = uploadDocumentToCloud(file);
-//        document.setBlobName(blobName);
+        return documents;
+    }
+    private List<Document> saveDocumentsWithFolder(MultipartFile[] files, Long folderId) {
+        // Lưu tài liệu vào cơ sở dữ liệu
+        List<Document> documents = mapListFileToListDocument(files);
+        Folder folder =getFolderByIdOrThrow(folderId);
+        documents.forEach(document -> document.setParent(folder));
+        documents = documentRepo.saveAll(documents);
         return documents;
     }
 
+    private List<String> uploadBufferedFilesToCloud(List<FileBuffer> files) {
+        List<CompletableFuture<String>> futures = new ArrayList<>();
+        List<String> blobNames = new ArrayList<>();
+        for (FileBuffer file : files) {
+            try (InputStream inputStream = new ByteArrayInputStream(file.getData())) {
+                CompletableFuture<String> future = azureStorageService
+                        .uploadChunkedWithContainerDefaultAsync(inputStream, file.getFileName(), file.getSize(), 10 * 1024 * 1024);
+                futures.add(future);
+            } catch (Exception e) {
+                throw new CustomIOException("Có lỗi xảy ra khi đọc file");
+            }
+        }
+        // Gộp tất cả future lại
+        CompletableFuture<Void> allDoneFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+
+        // Đợi tất cả hoàn tất rồi collect kết quả
+        CompletableFuture<List<String>> resultsFuture = allDoneFuture.thenApply(v ->
+                futures.stream().map(CompletableFuture::join).toList()
+        );
+
+        return resultsFuture.join(); // chỉ block 1 lần ở đây khi đã xong hết
+    }
     private List<String> uploadDocumentToCloud(MultipartFile[] files) {
         List<CompletableFuture<String>> futures = new ArrayList<>();
-
         for (MultipartFile file : files) {
             try (InputStream inputStream = file.getInputStream()) {
                 CompletableFuture<String> future = azureStorageService
@@ -125,7 +171,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
                 futures.stream().map(CompletableFuture::join).toList()
         );
 
-        return resultsFuture.join(); // ✅ chỉ block 1 lần ở đây khi đã xong hết
+        return resultsFuture.join(); // chỉ block 1 lần ở đây khi đã xong hết
     }
 
 

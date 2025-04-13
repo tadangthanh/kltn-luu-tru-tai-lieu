@@ -13,7 +13,7 @@ import java.util.List;
 public interface IDocumentService extends IResourceService<Document, DocumentResponse> {
     void uploadDocumentWithoutParent(MultipartFile[] files);
 
-    DocumentResponse uploadDocumentWithParent(Long folderId, DocumentRequest documentRequest, MultipartFile file);
+    void uploadDocumentWithParent(Long folderId, MultipartFile[] files);
 
     void softDeleteDocumentsByFolderIds(List<Long> folderIds); // xóa document theo danh sach folder id nhưng chưa xóa vĩnh viễn
 

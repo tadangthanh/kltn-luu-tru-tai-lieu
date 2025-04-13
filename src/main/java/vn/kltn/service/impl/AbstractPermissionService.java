@@ -136,11 +136,11 @@ public abstract class AbstractPermissionService implements IPermissionService {
         }
     }
 
-    private void inheritPermissionsForOwnerCreatedResource(Resource resource) {
+    protected void inheritPermissionsForOwnerCreatedResource(Resource resource) {
         inheritPermission(resource, null);
     }
 
-    private void inheritPermissionsForEditorCreatedResource(Resource resource, Long ownerParentId) {
+    protected void inheritPermissionsForEditorCreatedResource(Resource resource, Long ownerParentId) {
         inheritPermission(resource, ownerParentId);
     }
 
@@ -150,6 +150,7 @@ public abstract class AbstractPermissionService implements IPermissionService {
      * @param ownerParentId : id của chủ sở hữu folder cha
      */
     private void inheritPermission(Resource resource, Long ownerParentId) {
+        if (resource == null || resource.getParent() == null) return;
         // Validate nếu resource bị xóa hoặc không có parent thì dừng lại
         resourceCommonService.validateResourceNotDeleted(resource);
         if (resource.getParent() == null) return;

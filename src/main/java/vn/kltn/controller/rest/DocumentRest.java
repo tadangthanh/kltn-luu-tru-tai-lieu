@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.*;
-import vn.kltn.index.DocumentIndex;
 import vn.kltn.service.IDocumentService;
 
 import java.io.ByteArrayInputStream;
@@ -30,8 +29,9 @@ public class DocumentRest {
     }
 
     @PostMapping("/folder/{folderId}")
-    public ResponseData<DocumentResponse> upload(@PathVariable Long folderId, @RequestPart("file") MultipartFile file, @Valid @RequestPart("data") DocumentRequest documentRequest) {
-        return new ResponseData<>(201, "Thành công", documentService.uploadDocumentWithParent(folderId, documentRequest, file));
+    public ResponseData<Void> upload(@PathVariable Long folderId, @RequestPart("files") MultipartFile[] files) {
+        documentService.uploadDocumentWithParent(folderId, files);
+        return new ResponseData<>(201, "Thành công");
     }
 
     @DeleteMapping("/{documentId}")
