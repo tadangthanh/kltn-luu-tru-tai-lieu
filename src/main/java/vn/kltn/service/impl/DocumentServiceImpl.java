@@ -50,19 +50,17 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     private final IDocumentHasTagService documentHasTagService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
-    private final FolderCommonService folderCommonService;
     private final IDocumentIndexService documentIndexService;
     private final IDocumentPermissionService documentPermissionService;
 
-    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, IDocumentPermissionService documentPermissionService1) {
+    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
         this.documentRepo = documentRepo;
         this.documentMapper = documentMapper;
         this.azureStorageService = azureStorageService;
         this.documentHasTagService = documentHasTagService;
-        this.folderCommonService = folderCommonService;
         this.documentIndexService = documentIndexService;
-        this.documentPermissionService = documentPermissionService1;
+        this.documentPermissionService = documentPermissionService;
     }
 
     @Override
@@ -85,7 +83,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         // sao luu du lieu tu thread chinh
         List<FileBuffer> bufferedFiles = bufferFiles(files);
         // luu db
-        List<Document> documents = saveDocumentsWithFolder(files,parentId);
+        List<Document> documents = saveDocumentsWithFolder(files, parentId);
         // thua ke quyen cua parent
         documentPermissionService.inheritPermissions(documents);
         // upload file to cloud
@@ -102,11 +100,12 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
             documents.get(i).setBlobName(blobNames.get(i));
         }
     }
+
     private List<FileBuffer> bufferFiles(MultipartFile[] files) {
         List<FileBuffer> list = new ArrayList<>();
         for (MultipartFile file : files) {
             try {
-                list.add(new FileBuffer(file.getOriginalFilename(), file.getBytes(),file.getSize(), file.getContentType()));
+                list.add(new FileBuffer(file.getOriginalFilename(), file.getBytes(), file.getSize(), file.getContentType()));
             } catch (IOException e) {
                 throw new CustomIOException("Không đọc được file");
             }
@@ -119,10 +118,11 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         documents = documentRepo.saveAll(documents);
         return documents;
     }
+
     private List<Document> saveDocumentsWithFolder(MultipartFile[] files, Long folderId) {
         // Lưu tài liệu vào cơ sở dữ liệu
         List<Document> documents = mapListFileToListDocument(files);
-        Folder folder =getFolderByIdOrThrow(folderId);
+        Folder folder = getFolderByIdOrThrow(folderId);
         documents.forEach(document -> document.setParent(folder));
         documents = documentRepo.saveAll(documents);
         return documents;
@@ -130,7 +130,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
     private List<String> uploadBufferedFilesToCloud(List<FileBuffer> files) {
         List<CompletableFuture<String>> futures = new ArrayList<>();
-        List<String> blobNames = new ArrayList<>();
         for (FileBuffer file : files) {
             try (InputStream inputStream = new ByteArrayInputStream(file.getData())) {
                 CompletableFuture<String> future = azureStorageService
@@ -150,6 +149,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
         return resultsFuture.join(); // chỉ block 1 lần ở đây khi đã xong hết
     }
+
     private List<String> uploadDocumentToCloud(MultipartFile[] files) {
         List<CompletableFuture<String>> futures = new ArrayList<>();
         for (MultipartFile file : files) {

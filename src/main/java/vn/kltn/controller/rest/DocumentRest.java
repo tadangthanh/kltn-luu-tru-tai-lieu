@@ -31,7 +31,7 @@ public class DocumentRest {
     @PostMapping("/folder/{folderId}")
     public ResponseData<Void> upload(@PathVariable Long folderId, @RequestPart("files") MultipartFile[] files) {
         documentService.uploadDocumentWithParent(folderId, files);
-        return new ResponseData<>(201, "Thành công");
+        return new ResponseData<>(201, "Đang tải lên...");
     }
 
     @DeleteMapping("/{documentId}")
