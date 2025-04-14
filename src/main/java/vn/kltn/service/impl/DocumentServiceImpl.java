@@ -68,23 +68,41 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
     @Override
     @Async("taskExecutor")
-    public void uploadDocumentWithoutParent(MultipartFile[] files, CancellationToken token) {
-        // sao luu du lieu tu thread chinh
-        List<FileBuffer> bufferedFiles = bufferFiles(files);
+    public void uploadDocumentWithoutParent(List<FileBuffer> bufferedFiles, CancellationToken token) {
         // luu db
-        List<Document> documents = saveDocuments(files);
-        if (token.isCancelled()) {
-            documentRepo.deleteAll(documents);
-            return;
-        }
+        List<Document> documents = saveDocuments(bufferedFiles);
         // upload file to cloud
+        processUpload(token, bufferedFiles, documents);
+        // thong bao bang websocket
+    }
+
+    @Override
+    @Async("taskExecutor")
+    public void uploadDocumentWithParent(Long parentId, List<FileBuffer> bufferedFiles, CancellationToken token) {
+        // luu db
+        List<Document> documents = saveDocumentsWithFolder(bufferedFiles, parentId);
+        // thua ke quyen cua parent
+        documentPermissionService.inheritPermissions(documents);
+        // upload file to cloud
+        processUpload(token, bufferedFiles, documents);
+        // thong bao bang websocket
+    }
+
+    private void handleUploadBufferedFiles(CancellationToken token, List<FileBuffer> bufferedFiles, List<Document> documents) {
         List<String> blobNames = uploadBufferedFilesToCloud(bufferedFiles, token);
         mapBlobNamesToDocuments(documents, blobNames);
+        if (token.isCancelled()) {
+            log.info("Upload was cancelled");
+            uploadFinalizerService.finalizeUpload(token, documents, null, blobNames);
+        }
+    }
+
+    private void handleIndexDocuments(CancellationToken token, List<Document> documents) {
         documentIndexService.insertAllDoc(documents, token).whenComplete((documentIndices, ex) -> {
             try {
                 if (token.isCancelled()) {
                     log.info("Upload was cancelled");
-                    uploadFinalizerService.finalizeUpload(token, documents, documentIndices, blobNames);
+                    uploadFinalizerService.finalizeUpload(token, documents, documentIndices, null);
                 }
             } finally {
                 // Xóa token khỏi registry bất kể thành công hay thất bại
@@ -92,25 +110,11 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
                 log.info("Token đã được remove khỏi registry: {}", token.getUploadId());
             }
         });
-
-        // thong bao bang websocket
     }
 
-    @Override
-    @Async("taskExecutor")
-    public void uploadDocumentWithParent(Long parentId, MultipartFile[] files) {
-        // sao luu du lieu tu thread chinh
-        List<FileBuffer> bufferedFiles = bufferFiles(files);
-        // luu db
-        List<Document> documents = saveDocumentsWithFolder(files, parentId);
-        // thua ke quyen cua parent
-        documentPermissionService.inheritPermissions(documents);
-        // upload file to cloud
-        List<String> blobNames = uploadBufferedFilesToCloud(bufferedFiles);
-        mapBlobNamesToDocuments(documents, blobNames);
-        // lưu vào elasticsearch
-        documentIndexService.insertAllDoc(documents);
-        // thong bao bang websocket
+    private void processUpload(CancellationToken token, List<FileBuffer> bufferedFiles, List<Document> documents) {
+        handleUploadBufferedFiles(token, bufferedFiles, documents);
+        handleIndexDocuments(token, documents);
     }
 
 
@@ -120,27 +124,15 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         }
     }
 
-    private List<FileBuffer> bufferFiles(MultipartFile[] files) {
-        List<FileBuffer> list = new ArrayList<>();
-        for (MultipartFile file : files) {
-            try {
-                list.add(new FileBuffer(file.getOriginalFilename(), file.getBytes(), file.getSize(), file.getContentType()));
-            } catch (IOException e) {
-                throw new CustomIOException("Không đọc được file");
-            }
-        }
-        return list;
-    }
-
-    private List<Document> saveDocuments(MultipartFile[] files) {
-        List<Document> documents = mapListFileToListDocument(files);
+    private List<Document> saveDocuments(List<FileBuffer> fileBuffers) {
+        List<Document> documents = mapFilesBufferToListDocument(fileBuffers);
         documents = documentRepo.saveAll(documents);
         return documents;
     }
 
-    private List<Document> saveDocumentsWithFolder(MultipartFile[] files, Long folderId) {
+    private List<Document> saveDocumentsWithFolder(List<FileBuffer> fileBuffers, Long folderId) {
         // Lưu tài liệu vào cơ sở dữ liệu
-        List<Document> documents = mapListFileToListDocument(files);
+        List<Document> documents = mapFilesBufferToListDocument(fileBuffers);
         Folder folder = getFolderByIdOrThrow(folderId);
         documents.forEach(document -> document.setParent(folder));
         documents = documentRepo.saveAll(documents);
@@ -152,7 +144,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         for (FileBuffer file : files) {
             try (InputStream inputStream = new ByteArrayInputStream(file.getData())) {
                 CompletableFuture<String> future = azureStorageService.uploadChunkedWithContainerDefaultAsync(inputStream,
-                        file.getFileName(), file.getSize(), 10 * 1024 * 1024, token);
+                        file.getFileName(), file.getSize(), 10 * 1024 * 1024);
                 futures.add(future);
             } catch (Exception e) {
                 throw new CustomIOException("Có lỗi xảy ra khi đọc file");
@@ -162,8 +154,19 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         CompletableFuture<Void> allDoneFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 
         // Đợi tất cả hoàn tất rồi collect kết quả
-        CompletableFuture<List<String>> resultsFuture = allDoneFuture.thenApply(v -> futures.stream().map(CompletableFuture::join).toList());
-
+        CompletableFuture<List<String>> resultsFuture = allDoneFuture.thenApply(v -> futures.stream().map(CompletableFuture::join).toList())
+                .whenComplete((blobNames, ex) -> {
+                    try {
+                        if (token.isCancelled()) {
+                            log.info("Upload was cancelled");
+                            uploadFinalizerService.finalizeUpload(token, null, null, blobNames);
+                        }
+                    } finally {
+                        // Xóa token khỏi registry bất kể thành công hay thất bại
+                        uploadFinalizerService.finalizeUpload(token);
+                        log.info("Token đã được remove khỏi registry: {}", token.getUploadId());
+                    }
+                });
         return resultsFuture.join(); // chỉ block 1 lần ở đây khi đã xong hết
     }
 
@@ -285,11 +288,11 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         return documentRepo.save(resource);
     }
 
-    private List<Document> mapListFileToListDocument(MultipartFile[] files) {
+    private List<Document> mapFilesBufferToListDocument(List<FileBuffer> bufferList) {
         List<Document> documents = new ArrayList<>();
         User uploader = authenticationService.getCurrentUser();
         // Lấy tên file upload
-        List<String> listFileName = Arrays.stream(files).map(MultipartFile::getOriginalFilename).toList();
+        List<String> listFileName = bufferList.stream().map(FileBuffer::getFileName).toList();
 
         // Tìm các document đã tồn tại theo tên
         List<Document> existingDocuments = documentRepo.findAllByListName(listFileName);
@@ -300,12 +303,9 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
 
         // Duyệt từng file
-        for (MultipartFile file : files) {
-            String fileName = file.getOriginalFilename();
-            Document document = new Document();
-            document.setSize(file.getSize());
-            document.setType(file.getContentType());
-            document.setName(fileName);
+        for (FileBuffer buffer : bufferList) {
+            String fileName = buffer.getFileName();
+            Document document = documentMapper.mapFileBufferToDocument(buffer);
             document.setOwner(uploader);
             // Nếu file trùng tên với file cũ → tăng version
             if (existingMap.containsKey(fileName)) {

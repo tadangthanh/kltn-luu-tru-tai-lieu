@@ -21,6 +21,8 @@ import org.apache.poi.xslf.usermodel.XSLFTextShape;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.springframework.web.multipart.MultipartFile;
+import vn.kltn.dto.FileBuffer;
 import vn.kltn.exception.CustomIOException;
 
 import java.io.BufferedReader;
@@ -28,6 +30,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j(topic = "FILE_UTIL")
 public class FileUtil {
@@ -213,4 +217,15 @@ public class FileUtil {
         }
     }
 
+    public static List<FileBuffer> getFileBufferList(MultipartFile[] files) {
+        List<FileBuffer> list = new ArrayList<>();
+        for (MultipartFile file : files) {
+            try {
+                list.add(new FileBuffer(file.getOriginalFilename(), file.getBytes(), file.getSize(), file.getContentType()));
+            } catch (IOException e) {
+                throw new CustomIOException("Không đọc được file");
+            }
+        }
+        return list;
+    }
 }

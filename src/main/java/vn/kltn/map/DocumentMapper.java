@@ -3,6 +3,7 @@ package vn.kltn.map;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.entity.Document;
@@ -20,6 +21,10 @@ public interface DocumentMapper {
 
     @Mapping(target = "id", ignore = true)
     Document copyDocument(Document document);
+
+    @Mapping(target = "name",source = "fileName")
+    @Mapping(target = "type",source = "contentType")
+    Document mapFileBufferToDocument(FileBuffer fileBuffer);
 
     void updateDocument(@MappingTarget Document document, DocumentRequest documentRequest);
 

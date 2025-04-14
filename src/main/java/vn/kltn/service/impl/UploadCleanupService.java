@@ -27,17 +27,28 @@ public class UploadCleanupService {
         log.info("Bắt đầu dọn dẹp tài liệu bị hủy");
         try {
             // Xoá document trong MySQL
-            documentRepo.deleteAll(documents);
-            log.info(" Đã xoá document trong MySQL");
-
+            deleteDocuments(documents);
             // Xoá document trong Elasticsearch
-            documentIndexRepo.deleteAll(documentIndices);
-            log.info(" Đã xoá document trong Elasticsearch");
+            deleteDocumentsIndex(documentIndices);
             // Xoá blob trên Azure
             azureStorageService.deleteBLobs(blobNames);
         } catch (Exception e) {
             log.error(" Lỗi khi dọn dẹp sau khi huỷ upload: {}", e.getMessage());
-            throw new CancellationException("Lỗi khi huỷ upload: ");
+            throw new CancellationException("Lỗi khi huỷ upload");
+        }
+    }
+
+    private void deleteDocuments(List<Document> documents) {
+        if (documents != null && !documents.isEmpty()) {
+            documentRepo.deleteAll(documents);
+            log.info("Đã xoá {} tài liệu trong MySQL", documents.size());
+        }
+    }
+
+    private void deleteDocumentsIndex(List<DocumentIndex> documentIndices) {
+        if (documentIndices != null && !documentIndices.isEmpty()) {
+            documentIndexRepo.deleteAll(documentIndices);
+            log.info("Đã xoá {} tài liệu trong Elasticsearch", documentIndices.size());
         }
     }
 }

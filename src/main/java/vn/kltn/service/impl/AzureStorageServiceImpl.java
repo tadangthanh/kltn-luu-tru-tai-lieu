@@ -150,7 +150,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
             while ((bytesRead = data.read(buffer)) != -1) {
                 // Kiểm tra trạng thái hủy từ token
                 if (token.isCancelled()) {
-                    throw new CancellationException("Upload bị hủy bỏ bởi người dùng");
+                   return CompletableFuture.completedFuture(blockBlobClient.getBlobName());
                 }
 
                 String blockId = Base64.getEncoder().encodeToString(String.format("%06d", blockNumber).getBytes()); // Tạo Block ID

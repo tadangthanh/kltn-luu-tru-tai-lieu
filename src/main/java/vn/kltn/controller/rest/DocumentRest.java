@@ -12,9 +12,9 @@ import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.*;
+import vn.kltn.repository.util.FileUtil;
 import vn.kltn.service.IDocumentService;
 import vn.kltn.service.impl.UploadTokenManager;
-import vn.kltn.service.impl.UploadTokenRegistry;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
@@ -36,7 +36,7 @@ public class DocumentRest {
         String uploadId = UUID.randomUUID().toString();
         uploadTokenManager.registerToken(uploadId, token);
         token.setUploadId(uploadId);
-        documentService.uploadDocumentWithoutParent(files, token);
+        documentService.uploadDocumentWithoutParent(FileUtil.getFileBufferList(files), token);
         return new ResponseData<>(201, "Đang tải ....", uploadId);
     }
 
@@ -54,9 +54,15 @@ public class DocumentRest {
     }
 
     @PostMapping("/folder/{folderId}")
-    public ResponseData<Void> upload(@PathVariable Long folderId, @RequestPart("files") MultipartFile[] files) {
-        documentService.uploadDocumentWithParent(folderId, files);
-        return new ResponseData<>(201, "Đang tải lên...");
+    public ResponseData<String> upload(@PathVariable Long folderId, @RequestPart("files") MultipartFile[] files) {
+        // Tạo token mới cho mỗi yêu cầu upload
+        CancellationToken token = new CancellationToken();
+        // Đăng ký token vào registry và lấy uploadId
+        String uploadId = UUID.randomUUID().toString();
+        uploadTokenManager.registerToken(uploadId, token);
+        token.setUploadId(uploadId);
+        documentService.uploadDocumentWithParent(folderId, FileUtil.getFileBufferList(files), token);
+        return new ResponseData<>(201, "Đang tải lên...", uploadId);
     }
 
     @DeleteMapping("/{documentId}")
