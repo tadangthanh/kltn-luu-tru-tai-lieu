@@ -6,11 +6,9 @@ import lombok.Setter;
 @Getter
 @Setter
 public class CancellationToken {
+    @Getter
     private volatile boolean cancelled = false;
-
-    public boolean isCancelled() {
-        return cancelled;
-    }
+    private String uploadId;
 
     public void cancel() {
         this.cancelled = true;

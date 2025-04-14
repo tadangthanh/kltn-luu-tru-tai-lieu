@@ -193,6 +193,12 @@
             <artifactId>poi-scratchpad</artifactId>
             <version>5.4.1</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>33.4.7-jre</version>
+        </dependency>
     </dependencies>
     <profiles>
         <profile>

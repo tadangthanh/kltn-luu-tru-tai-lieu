@@ -13,38 +13,46 @@ import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.*;
 import vn.kltn.service.IDocumentService;
+import vn.kltn.service.impl.UploadTokenManager;
 import vn.kltn.service.impl.UploadTokenRegistry;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/documents")
 @RestController
 public class DocumentRest {
     private final IDocumentService documentService;
-    private final UploadTokenRegistry tokenRegistry;
+    private final UploadTokenManager uploadTokenManager;
+
     @PostMapping
     public ResponseData<String> uploadWithoutParent(@RequestPart("files") MultipartFile[] files) {
         // Tạo token mới cho mỗi yêu cầu upload
         CancellationToken token = new CancellationToken();
         // Đăng ký token vào registry và lấy uploadId
-        String uploadId = tokenRegistry.register(token);
-        documentService.uploadDocumentWithoutParent(files,token);
-        return new ResponseData<>(201, "Đang tải ....",uploadId);
+        String uploadId = UUID.randomUUID().toString();
+        uploadTokenManager.registerToken(uploadId, token);
+        token.setUploadId(uploadId);
+        documentService.uploadDocumentWithoutParent(files, token);
+        return new ResponseData<>(201, "Đang tải ....", uploadId);
     }
+
     @PostMapping("/cancel")
     public ResponseEntity<?> cancelUpload(@RequestParam("uploadId") String uploadId) {
-        CancellationToken token = tokenRegistry.getToken(uploadId);
-        if (token != null) {
-            token.cancel();
+        Optional<CancellationToken> token = uploadTokenManager.getToken(uploadId);
+        if (token.isPresent()) {
+            token.get().cancel();
             // Sau khi hủy, bạn có thể xóa token khỏi registry nếu không cần thiết nữa
-            tokenRegistry.removeToken(uploadId);
+            uploadTokenManager.removeToken(uploadId);
             return ResponseEntity.ok("Upload với uploadId " + uploadId + " đã bị hủy.");
         } else {
             return ResponseEntity.badRequest().body("Không tìm thấy upload với id: " + uploadId);
         }
     }
+
     @PostMapping("/folder/{folderId}")
     public ResponseData<Void> upload(@PathVariable Long folderId, @RequestPart("files") MultipartFile[] files) {
         documentService.uploadDocumentWithParent(folderId, files);

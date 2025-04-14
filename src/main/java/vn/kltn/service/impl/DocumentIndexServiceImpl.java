@@ -136,19 +136,20 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     }
 
     @Override
-    public void insertAllDoc(List<Document> documents, CancellationToken token) {
+    @Async("taskExecutor") // Optional: gọi từ nơi khác để async toàn bộ
+    public CompletableFuture<List<DocumentIndex>> insertAllDoc(List<Document> documents, CancellationToken token) {
         log.info("insert all document");
 
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         List<DocumentIndex> documentIndices = Collections.synchronizedList(new ArrayList<>());
         if (token.isCancelled()) {
             log.info("Task was cancelled");
-            return;
+            return CompletableFuture.completedFuture(Collections.emptyList());
         }
         for (Document document : documents) {
             if (token.isCancelled()) {
                 log.info("Task was cancelled");
-                return;
+                return CompletableFuture.completedFuture(documentIndices);
             }
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 try (InputStream inputStream = azureStorageService.downloadBlobInputStream(document.getBlobName())) {
@@ -178,7 +179,7 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
         try {
             if (token.isCancelled()) {
                 log.info("Task was cancelled");
-                return;
+                return CompletableFuture.completedFuture(documentIndices);
             }
             documentIndexRepo.saveAll(documentIndices);
             log.info(" All documents inserted successfully");
@@ -186,6 +187,13 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
             log.error(" Error saving all documents: {}", e.getMessage());
             throw new CustomIOException("Có lỗi xảy ra khi upload tài liệu lên hệ thống");
         }
+        return CompletableFuture.completedFuture(documentIndices);
+    }
+
+    @Override
+    @Async("taskExecutor") // Optional: gọi từ nơi khác để async toàn bộ
+    public void deleteAll(List<DocumentIndex> documentIndices) {
+        documentIndexRepo.deleteAll(documentIndices);
     }
 
 

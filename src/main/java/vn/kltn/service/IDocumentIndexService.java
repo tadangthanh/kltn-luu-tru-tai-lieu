@@ -3,10 +3,12 @@ package vn.kltn.service;
 import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.entity.Document;
+import vn.kltn.index.DocumentIndex;
 
 import java.io.InputStream;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 public interface IDocumentIndexService {
     void insertDoc(Document document, InputStream inputStream);
@@ -24,5 +26,8 @@ public interface IDocumentIndexService {
     void markDeleteDocumentsIndex(List<String> indexIds, boolean value);
 
     void insertAllDoc(List<Document> documents);
-    void insertAllDoc(List<Document> documents, CancellationToken token);
+
+    CompletableFuture<List<DocumentIndex>> insertAllDoc(List<Document> documents, CancellationToken token);
+
+    void deleteAll(List<DocumentIndex> documentIndices);
 }

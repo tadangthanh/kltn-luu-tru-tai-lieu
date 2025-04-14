@@ -53,8 +53,9 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     private int documentRetentionDays;
     private final IDocumentIndexService documentIndexService;
     private final IDocumentPermissionService documentPermissionService;
+    private final UploadFinalizerService uploadFinalizerService;
 
-    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService) {
+    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, UploadFinalizerService uploadFinalizerService) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
         this.documentRepo = documentRepo;
         this.documentMapper = documentMapper;
@@ -62,6 +63,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         this.documentHasTagService = documentHasTagService;
         this.documentIndexService = documentIndexService;
         this.documentPermissionService = documentPermissionService;
+        this.uploadFinalizerService = uploadFinalizerService;
     }
 
     @Override
@@ -71,10 +73,26 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         List<FileBuffer> bufferedFiles = bufferFiles(files);
         // luu db
         List<Document> documents = saveDocuments(files);
+        if (token.isCancelled()) {
+            documentRepo.deleteAll(documents);
+            return;
+        }
         // upload file to cloud
-        List<String> blobNames = uploadBufferedFilesToCloud(bufferedFiles,token);
+        List<String> blobNames = uploadBufferedFilesToCloud(bufferedFiles, token);
         mapBlobNamesToDocuments(documents, blobNames);
-        documentIndexService.insertAllDoc(documents,token);
+        documentIndexService.insertAllDoc(documents, token).whenComplete((documentIndices, ex) -> {
+            try {
+                if (token.isCancelled()) {
+                    log.info("Upload was cancelled");
+                    uploadFinalizerService.finalizeUpload(token, documents, documentIndices, blobNames);
+                }
+            } finally {
+                // Xóa token khỏi registry bất kể thành công hay thất bại
+                uploadFinalizerService.finalizeUpload(token);
+                log.info("Token đã được remove khỏi registry: {}", token.getUploadId());
+            }
+        });
+
         // thong bao bang websocket
     }
 
@@ -128,12 +146,13 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         documents = documentRepo.saveAll(documents);
         return documents;
     }
-    private List<String> uploadBufferedFilesToCloud(List<FileBuffer> files,CancellationToken token) {
+
+    private List<String> uploadBufferedFilesToCloud(List<FileBuffer> files, CancellationToken token) {
         List<CompletableFuture<String>> futures = new ArrayList<>();
         for (FileBuffer file : files) {
             try (InputStream inputStream = new ByteArrayInputStream(file.getData())) {
-                CompletableFuture<String> future = azureStorageService
-                        .uploadChunkedWithContainerDefaultAsync(inputStream, file.getFileName(), file.getSize(), 10 * 1024 * 1024,token);
+                CompletableFuture<String> future = azureStorageService.uploadChunkedWithContainerDefaultAsync(inputStream,
+                        file.getFileName(), file.getSize(), 10 * 1024 * 1024, token);
                 futures.add(future);
             } catch (Exception e) {
                 throw new CustomIOException("Có lỗi xảy ra khi đọc file");
@@ -143,18 +162,16 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         CompletableFuture<Void> allDoneFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 
         // Đợi tất cả hoàn tất rồi collect kết quả
-        CompletableFuture<List<String>> resultsFuture = allDoneFuture.thenApply(v ->
-                futures.stream().map(CompletableFuture::join).toList()
-        );
+        CompletableFuture<List<String>> resultsFuture = allDoneFuture.thenApply(v -> futures.stream().map(CompletableFuture::join).toList());
 
         return resultsFuture.join(); // chỉ block 1 lần ở đây khi đã xong hết
     }
+
     private List<String> uploadBufferedFilesToCloud(List<FileBuffer> files) {
         List<CompletableFuture<String>> futures = new ArrayList<>();
         for (FileBuffer file : files) {
             try (InputStream inputStream = new ByteArrayInputStream(file.getData())) {
-                CompletableFuture<String> future = azureStorageService
-                        .uploadChunkedWithContainerDefaultAsync(inputStream, file.getFileName(), file.getSize(), 10 * 1024 * 1024);
+                CompletableFuture<String> future = azureStorageService.uploadChunkedWithContainerDefaultAsync(inputStream, file.getFileName(), file.getSize(), 10 * 1024 * 1024);
                 futures.add(future);
             } catch (Exception e) {
                 throw new CustomIOException("Có lỗi xảy ra khi đọc file");
@@ -164,9 +181,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         CompletableFuture<Void> allDoneFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 
         // Đợi tất cả hoàn tất rồi collect kết quả
-        CompletableFuture<List<String>> resultsFuture = allDoneFuture.thenApply(v ->
-                futures.stream().map(CompletableFuture::join).toList()
-        );
+        CompletableFuture<List<String>> resultsFuture = allDoneFuture.thenApply(v -> futures.stream().map(CompletableFuture::join).toList());
 
         return resultsFuture.join(); // chỉ block 1 lần ở đây khi đã xong hết
     }
@@ -175,8 +190,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         List<CompletableFuture<String>> futures = new ArrayList<>();
         for (MultipartFile file : files) {
             try (InputStream inputStream = file.getInputStream()) {
-                CompletableFuture<String> future = azureStorageService
-                        .uploadChunkedWithContainerDefaultAsync(inputStream, file.getOriginalFilename(), file.getSize(), 10 * 1024 * 1024);
+                CompletableFuture<String> future = azureStorageService.uploadChunkedWithContainerDefaultAsync(inputStream, file.getOriginalFilename(), file.getSize(), 10 * 1024 * 1024);
                 futures.add(future);
             } catch (IOException e) {
                 log.error("Error reading file: {}", e.getMessage());
@@ -188,9 +202,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         CompletableFuture<Void> allDoneFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 
         // Đợi tất cả hoàn tất rồi collect kết quả
-        CompletableFuture<List<String>> resultsFuture = allDoneFuture.thenApply(v ->
-                futures.stream().map(CompletableFuture::join).toList()
-        );
+        CompletableFuture<List<String>> resultsFuture = allDoneFuture.thenApply(v -> futures.stream().map(CompletableFuture::join).toList());
 
         return resultsFuture.join(); // chỉ block 1 lần ở đây khi đã xong hết
     }
@@ -277,20 +289,14 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         List<Document> documents = new ArrayList<>();
         User uploader = authenticationService.getCurrentUser();
         // Lấy tên file upload
-        List<String> listFileName = Arrays.stream(files)
-                .map(MultipartFile::getOriginalFilename)
-                .toList();
+        List<String> listFileName = Arrays.stream(files).map(MultipartFile::getOriginalFilename).toList();
 
         // Tìm các document đã tồn tại theo tên
         List<Document> existingDocuments = documentRepo.findAllByListName(listFileName);
 
         // Map tên -> Document đã tồn tại, để tra nhanh
-        Map<String, Document> existingMap = existingDocuments.stream()
-                .collect(Collectors.toMap(
-                        Document::getName,
-                        Function.identity(),
-                        (d1, d2) -> d1.getVersion() >= d2.getVersion() ? d1 : d2 // giữ document có version cao hơn
-                ));
+        Map<String, Document> existingMap = existingDocuments.stream().collect(Collectors.toMap(Document::getName, Function.identity(), (d1, d2) -> d1.getVersion() >= d2.getVersion() ? d1 : d2 // giữ document có version cao hơn
+        ));
 
 
         // Duyệt từng file
@@ -325,9 +331,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     }
 
     private List<DocumentResponse> mapToDocumentResponse(List<Document> documents) {
-        return documents.stream()
-                .map(this::mapToDocumentResponse)
-                .toList();
+        return documents.stream().map(this::mapToDocumentResponse).toList();
     }
 
     private DocumentResponse mapToDocumentResponse(Document document) {
