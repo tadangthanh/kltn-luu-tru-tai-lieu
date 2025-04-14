@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentDataResponse;
@@ -65,15 +66,15 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
     @Override
     @Async("taskExecutor")
-    public void uploadDocumentWithoutParent(MultipartFile[] files) {
+    public void uploadDocumentWithoutParent(MultipartFile[] files, CancellationToken token) {
         // sao luu du lieu tu thread chinh
         List<FileBuffer> bufferedFiles = bufferFiles(files);
         // luu db
         List<Document> documents = saveDocuments(files);
         // upload file to cloud
-        List<String> blobNames = uploadBufferedFilesToCloud(bufferedFiles);
+        List<String> blobNames = uploadBufferedFilesToCloud(bufferedFiles,token);
         mapBlobNamesToDocuments(documents, blobNames);
-        documentIndexService.insertAllDoc(documents);
+        documentIndexService.insertAllDoc(documents,token);
         // thong bao bang websocket
     }
 
@@ -127,7 +128,27 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         documents = documentRepo.saveAll(documents);
         return documents;
     }
+    private List<String> uploadBufferedFilesToCloud(List<FileBuffer> files,CancellationToken token) {
+        List<CompletableFuture<String>> futures = new ArrayList<>();
+        for (FileBuffer file : files) {
+            try (InputStream inputStream = new ByteArrayInputStream(file.getData())) {
+                CompletableFuture<String> future = azureStorageService
+                        .uploadChunkedWithContainerDefaultAsync(inputStream, file.getFileName(), file.getSize(), 10 * 1024 * 1024,token);
+                futures.add(future);
+            } catch (Exception e) {
+                throw new CustomIOException("Có lỗi xảy ra khi đọc file");
+            }
+        }
+        // Gộp tất cả future lại
+        CompletableFuture<Void> allDoneFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 
+        // Đợi tất cả hoàn tất rồi collect kết quả
+        CompletableFuture<List<String>> resultsFuture = allDoneFuture.thenApply(v ->
+                futures.stream().map(CompletableFuture::join).toList()
+        );
+
+        return resultsFuture.join(); // chỉ block 1 lần ở đây khi đã xong hết
+    }
     private List<String> uploadBufferedFilesToCloud(List<FileBuffer> files) {
         List<CompletableFuture<String>> futures = new ArrayList<>();
         for (FileBuffer file : files) {
@@ -265,7 +286,12 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
         // Map tên -> Document đã tồn tại, để tra nhanh
         Map<String, Document> existingMap = existingDocuments.stream()
-                .collect(Collectors.toMap(Document::getName, Function.identity()));
+                .collect(Collectors.toMap(
+                        Document::getName,
+                        Function.identity(),
+                        (d1, d2) -> d1.getVersion() >= d2.getVersion() ? d1 : d2 // giữ document có version cao hơn
+                ));
+
 
         // Duyệt từng file
         for (MultipartFile file : files) {

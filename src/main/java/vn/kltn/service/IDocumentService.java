@@ -2,6 +2,7 @@ package vn.kltn.service;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
+import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentIndexResponse;
@@ -11,7 +12,7 @@ import vn.kltn.entity.Document;
 import java.util.List;
 
 public interface IDocumentService extends IResourceService<Document, DocumentResponse> {
-    void uploadDocumentWithoutParent(MultipartFile[] files);
+    void uploadDocumentWithoutParent(MultipartFile[] files, CancellationToken token);
 
     void uploadDocumentWithParent(Long folderId, MultipartFile[] files);
 

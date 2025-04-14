@@ -1,5 +1,6 @@
 package vn.kltn.service;
 
+import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.entity.Document;
 
@@ -23,4 +24,5 @@ public interface IDocumentIndexService {
     void markDeleteDocumentsIndex(List<String> indexIds, boolean value);
 
     void insertAllDoc(List<Document> documents);
+    void insertAllDoc(List<Document> documents, CancellationToken token);
 }
