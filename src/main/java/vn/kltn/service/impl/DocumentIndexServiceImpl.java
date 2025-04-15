@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.Tag;
@@ -137,20 +136,13 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
 
     @Override
     @Async("taskExecutor") // Optional: gọi từ nơi khác để async toàn bộ
-    public CompletableFuture<List<DocumentIndex>> insertAllDoc(List<Document> documents, CancellationToken token) {
-        log.info("insert all document");
+    public CompletableFuture<List<DocumentIndex>> insertAllDocAsync(List<Document> documents) {
+        log.info(" insertAllDocAsync started");
 
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         List<DocumentIndex> documentIndices = Collections.synchronizedList(new ArrayList<>());
-        if (token.isCancelled()) {
-            log.info("Task was cancelled");
-            return CompletableFuture.completedFuture(Collections.emptyList());
-        }
+
         for (Document document : documents) {
-            if (token.isCancelled()) {
-                log.info("Task was cancelled");
-                return CompletableFuture.completedFuture(documentIndices);
-            }
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 try (InputStream inputStream = azureStorageService.downloadBlobInputStream(document.getBlobName())) {
 
@@ -159,12 +151,12 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
                     documentIndex.setContent(content);
                     documentIndices.add(documentIndex);
 
-                    log.info("Inserted document Id: {}", document.getId());
+                    log.info(" Inserted document Id: {}", document.getId());
 
                 } catch (IllegalArgumentException e) {
-                    log.error(" Error downloading blob: {}", e.getMessage());
+                    log.error(" Error downloading blob for document {}: {}", document.getId(), e.getMessage());
                 } catch (Exception e) {
-                    log.error(" Error inserting document: {}", e.getMessage());
+                    log.error(" Error processing document {}: {}", document.getId(), e.getMessage());
                 }
             }, taskExecutor);
 
@@ -173,22 +165,20 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
 
         // Chờ tất cả task xong
         CompletableFuture<Void> allDoneFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-        allDoneFuture.join();
 
-        // Lưu vào Elasticsearch
-        try {
-            if (token.isCancelled()) {
-                log.info("Task was cancelled");
-                return CompletableFuture.completedFuture(documentIndices);
+        return allDoneFuture.thenApplyAsync(v -> {
+            try {
+                documentIndexRepo.saveAll(documentIndices);
+                log.info(" All documents inserted into Elasticsearch successfully");
+            } catch (Exception e) {
+                log.error(" Error saving documents to Elasticsearch: {}", e.getMessage());
+                throw new CustomIOException("Có lỗi xảy ra khi lưu tài liệu vào Elasticsearch");
             }
-            documentIndexRepo.saveAll(documentIndices);
-            log.info(" All documents inserted successfully");
-        } catch (Exception e) {
-            log.error(" Error saving all documents: {}", e.getMessage());
-            throw new CustomIOException("Có lỗi xảy ra khi upload tài liệu lên hệ thống");
-        }
-        return CompletableFuture.completedFuture(documentIndices);
+
+            return documentIndices;
+        }, taskExecutor);
     }
+
 
     @Override
     @Async("taskExecutor") // Optional: gọi từ nơi khác để async toàn bộ

@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import vn.kltn.common.CancellationToken;
 import vn.kltn.entity.MemberRole;
 import vn.kltn.exception.CustomBlobStorageException;
 import vn.kltn.exception.ResourceNotFoundException;
@@ -28,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -136,43 +134,6 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
         }
     }
 
-    @Override
-    public CompletableFuture<String> uploadChunkedWithContainerDefaultAsync(InputStream data, String originalFileName, long length, int chunkSize, CancellationToken token) {
-        try {
-            BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerNameDefault);
-            String newFileName = UUID.randomUUID() + "_" + originalFileName;
-            BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(newFileName).getBlockBlobClient();
-            List<String> blockIds = new ArrayList<>();
-            byte[] buffer = new byte[chunkSize];
-            int bytesRead;
-            int blockNumber = 0;
-
-            while ((bytesRead = data.read(buffer)) != -1) {
-                // Kiểm tra trạng thái hủy từ token
-                if (token.isCancelled()) {
-                    log.info("Upload bị hủy giữa chừng, dừng tại phần {}", blockNumber);
-                    throw new CancellationException("Upload bị hủy giữa chừng");
-                }
-
-                String blockId = Base64.getEncoder().encodeToString(String.format("%06d", blockNumber).getBytes()); // Tạo Block ID
-                blockBlobClient.stageBlock(blockId, new ByteArrayInputStream(buffer, 0, bytesRead), bytesRead);  // Upload từng phần
-                blockIds.add(blockId);
-                // 📌 In log để biết phần nào đã upload xong
-                // 📌 In log với số phần upload thành công
-                System.out.println("✅ Đã upload thành công phần " + (blockNumber + 1) + " trên tổng số " + ((length + chunkSize - 1) / chunkSize) + " phần");
-                blockNumber++;
-            }
-
-            // Ghép các phần lại
-            blockBlobClient.commitBlockList(blockIds);
-
-            return CompletableFuture.completedFuture(blockBlobClient.getBlobName());
-        } catch (IOException | BlobStorageException | CancellationException e) {
-            log.error("Error uploading file from InputStream: {}", e.getMessage());
-            throw new CustomBlobStorageException("Lỗi upload file ");
-        }
-    }
-
 
     @Override
     public String copyBlob(String sourceBlobName, String destinationBlobName) {
@@ -274,7 +235,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
 
     @Override
     public void deleteBLobs(List<String> blobNames) {
-        if(blobNames == null || blobNames.isEmpty()) {
+        if (blobNames == null || blobNames.isEmpty()) {
             log.warn("No blobs to delete");
             return;
         }
@@ -292,11 +253,6 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     @Override
     public InputStream downloadBlobInputStream(String blobName) {
         return getInputStreamBlob(containerNameDefault, blobName);
-    }
-
-    @Override
-    public CompletableFuture<InputStream> downloadBlobInputStreamAsync(String blobName) {
-        return CompletableFuture.completedFuture(getInputStreamBlob(containerNameDefault, blobName));
     }
 
     @Override

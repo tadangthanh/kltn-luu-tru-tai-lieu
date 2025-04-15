@@ -27,7 +27,7 @@ public interface IDocumentIndexService {
 
     void insertAllDoc(List<Document> documents);
 
-    CompletableFuture<List<DocumentIndex>> insertAllDoc(List<Document> documents, CancellationToken token);
+    CompletableFuture<List<DocumentIndex>> insertAllDocAsync(List<Document> documents);
 
     void deleteAll(List<DocumentIndex> documentIndices);
 }

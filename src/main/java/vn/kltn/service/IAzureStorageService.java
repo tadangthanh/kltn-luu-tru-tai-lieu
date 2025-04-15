@@ -15,8 +15,6 @@ public interface IAzureStorageService {
 
     CompletableFuture<String> uploadChunkedWithContainerDefaultAsync(InputStream data, String originalFileName, long length, int chunkSize);
 
-    CompletableFuture<String> uploadChunkedWithContainerDefaultAsync(InputStream data, String originalFileName, long length, int chunkSize, CancellationToken token);
-
     String copyBlob(String sourceBlobName, String destinationBlobName);
 
     void createContainerForRepository(String repoName);
@@ -34,8 +32,6 @@ public interface IAzureStorageService {
     InputStream downloadBlobInputStream(String containerName, String blobName); // Tải blob về
 
     InputStream downloadBlobInputStream(String blobName); // Tải blob về
-
-    CompletableFuture<InputStream> downloadBlobInputStreamAsync(String blobName); // Tải blob về
 
     File downloadToFile(String blobName, String tempDirPath);
 

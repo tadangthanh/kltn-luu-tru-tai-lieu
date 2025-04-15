@@ -35,4 +35,14 @@ public class UploadFinalizerService {
         uploadTokenManager.removeToken(token.getUploadId());
         log.info("Token [{}] đã được remove", token.getUploadId());
     }
+    public boolean checkCancelledAndFinalize(CancellationToken token, List<Document> documents,
+                                              List<DocumentIndex> indices, List<String> blobNames) {
+        if (token.isCancelled()) {
+            log.info("Upload was cancelled");
+            finalizeUpload(token, documents, indices, blobNames);
+            return true;
+        }
+        return false;
+    }
+
 }

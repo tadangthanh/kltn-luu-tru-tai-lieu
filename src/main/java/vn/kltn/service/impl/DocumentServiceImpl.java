@@ -22,9 +22,9 @@ import vn.kltn.entity.Document;
 import vn.kltn.entity.Folder;
 import vn.kltn.entity.Tag;
 import vn.kltn.entity.User;
-import vn.kltn.exception.CustomIOException;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
+import vn.kltn.index.DocumentIndex;
 import vn.kltn.map.DocumentMapper;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
@@ -32,12 +32,10 @@ import vn.kltn.repository.specification.SpecificationUtil;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -90,36 +88,23 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         // thong bao bang websocket
     }
 
-    private void handleUploadBufferedFiles(CancellationToken token, List<FileBuffer> bufferedFiles, List<Document> documents) {
-        List<String> blobNames = uploadBufferedFilesToCloud(bufferedFiles, token);
-        mapBlobNamesToDocuments(documents, blobNames);
-        if (token.isCancelled()) {
-            log.info("Upload was cancelled");
-            uploadFinalizerService.finalizeUpload(token, documents, null, blobNames);
-        }
+
+    private List<DocumentIndex> handleIndexDocuments(List<Document> documents) {
+        List<DocumentIndex> result = documentIndexService.insertAllDocAsync(documents).join();
+        log.info("Document indexing completed with {} items", result.size());
+        return result;
     }
 
-    private void handleIndexDocuments(CancellationToken token, List<Document> documents) {
-        documentIndexService.insertAllDoc(documents, token).whenComplete((documentIndices, ex) -> {
-            try {
-                if (token.isCancelled()) {
-                    log.info("Upload was cancelled");
-                    uploadFinalizerService.finalizeUpload(token, documents, documentIndices, null);
-                }
-            } finally {
-                // Xóa token khỏi registry bất kể thành công hay thất bại
-                uploadFinalizerService.finalizeUpload(token);
-                log.info("Token đã được remove khỏi registry: {}", token.getUploadId());
-            }
-        });
-    }
 
     private void processUpload(CancellationToken token, List<FileBuffer> bufferedFiles, List<Document> documents) {
-//        handleUploadBufferedFiles(token, bufferedFiles, documents);
-//        handleIndexDocuments(token, documents);
-        List<String> blobNames = uploadProcessor.process(token, bufferedFiles);
+        if (uploadFinalizerService.checkCancelledAndFinalize(token, documents, null, null)) return;
+        List<String> blobNames = uploadProcessor.process(bufferedFiles);
+        if (uploadFinalizerService.checkCancelledAndFinalize(token, documents, null, blobNames)) return;
         mapBlobNamesToDocuments(documents, blobNames);
-        handleIndexDocuments(token, documents);
+        if (uploadFinalizerService.checkCancelledAndFinalize(token, documents, null, blobNames)) return;
+        List<DocumentIndex> documentIndices = handleIndexDocuments(documents);
+        if (uploadFinalizerService.checkCancelledAndFinalize(token, documents, documentIndices, blobNames)) return;
+        uploadFinalizerService.finalizeUpload(token);
     }
 
 
@@ -143,78 +128,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         documents = documentRepo.saveAll(documents);
         return documents;
     }
-
-    private List<String> uploadBufferedFilesToCloud(List<FileBuffer> files, CancellationToken token) {
-        List<CompletableFuture<String>> futures = new ArrayList<>();
-        for (FileBuffer file : files) {
-            try (InputStream inputStream = new ByteArrayInputStream(file.getData())) {
-                CompletableFuture<String> future = azureStorageService.uploadChunkedWithContainerDefaultAsync(inputStream,
-                        file.getFileName(), file.getSize(), 10 * 1024 * 1024);
-                futures.add(future);
-            } catch (Exception e) {
-                throw new CustomIOException("Có lỗi xảy ra khi đọc file");
-            }
-        }
-        // Gộp tất cả future lại
-        CompletableFuture<Void> allDoneFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-
-        // Đợi tất cả hoàn tất rồi collect kết quả
-        CompletableFuture<List<String>> resultsFuture = allDoneFuture.thenApply(v -> futures.stream().map(CompletableFuture::join).toList())
-                .whenComplete((blobNames, ex) -> {
-                    try {
-                        if (token.isCancelled()) {
-                            log.info("Upload was cancelled");
-                            uploadFinalizerService.finalizeUpload(token, null, null, blobNames);
-                        }
-                    } finally {
-                        // Xóa token khỏi registry bất kể thành công hay thất bại
-                        uploadFinalizerService.finalizeUpload(token);
-                        log.info("Token đã được remove khỏi registry: {}", token.getUploadId());
-                    }
-                });
-        return resultsFuture.join(); // chỉ block 1 lần ở đây khi đã xong hết
-    }
-
-    private List<String> uploadBufferedFilesToCloud(List<FileBuffer> files) {
-        List<CompletableFuture<String>> futures = new ArrayList<>();
-        for (FileBuffer file : files) {
-            try (InputStream inputStream = new ByteArrayInputStream(file.getData())) {
-                CompletableFuture<String> future = azureStorageService.uploadChunkedWithContainerDefaultAsync(inputStream, file.getFileName(), file.getSize(), 10 * 1024 * 1024);
-                futures.add(future);
-            } catch (Exception e) {
-                throw new CustomIOException("Có lỗi xảy ra khi đọc file");
-            }
-        }
-        // Gộp tất cả future lại
-        CompletableFuture<Void> allDoneFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-
-        // Đợi tất cả hoàn tất rồi collect kết quả
-        CompletableFuture<List<String>> resultsFuture = allDoneFuture.thenApply(v -> futures.stream().map(CompletableFuture::join).toList());
-
-        return resultsFuture.join(); // chỉ block 1 lần ở đây khi đã xong hết
-    }
-
-    private List<String> uploadDocumentToCloud(MultipartFile[] files) {
-        List<CompletableFuture<String>> futures = new ArrayList<>();
-        for (MultipartFile file : files) {
-            try (InputStream inputStream = file.getInputStream()) {
-                CompletableFuture<String> future = azureStorageService.uploadChunkedWithContainerDefaultAsync(inputStream, file.getOriginalFilename(), file.getSize(), 10 * 1024 * 1024);
-                futures.add(future);
-            } catch (IOException e) {
-                log.error("Error reading file: {}", e.getMessage());
-                throw new CustomIOException("Có lỗi xảy ra khi đọc file");
-            }
-        }
-
-        // Gộp tất cả future lại
-        CompletableFuture<Void> allDoneFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-
-        // Đợi tất cả hoàn tất rồi collect kết quả
-        CompletableFuture<List<String>> resultsFuture = allDoneFuture.thenApply(v -> futures.stream().map(CompletableFuture::join).toList());
-
-        return resultsFuture.join(); // chỉ block 1 lần ở đây khi đã xong hết
-    }
-
 
     @Override
     public PageResponse<List<DocumentResponse>> searchByCurrentUser(Pageable pageable, String[] documents) {
