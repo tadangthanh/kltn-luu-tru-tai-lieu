@@ -54,8 +54,9 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     private final IDocumentIndexService documentIndexService;
     private final IDocumentPermissionService documentPermissionService;
     private final UploadFinalizerService uploadFinalizerService;
+    private final IUploadProcessor uploadProcessor;
 
-    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, UploadFinalizerService uploadFinalizerService) {
+    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, UploadFinalizerService uploadFinalizerService, IUploadProcessor uploadProcessor) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
         this.documentRepo = documentRepo;
         this.documentMapper = documentMapper;
@@ -64,6 +65,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         this.documentIndexService = documentIndexService;
         this.documentPermissionService = documentPermissionService;
         this.uploadFinalizerService = uploadFinalizerService;
+        this.uploadProcessor = uploadProcessor;
     }
 
     @Override
@@ -113,7 +115,10 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     }
 
     private void processUpload(CancellationToken token, List<FileBuffer> bufferedFiles, List<Document> documents) {
-        handleUploadBufferedFiles(token, bufferedFiles, documents);
+//        handleUploadBufferedFiles(token, bufferedFiles, documents);
+//        handleIndexDocuments(token, documents);
+        List<String> blobNames = uploadProcessor.process(token, bufferedFiles);
+        mapBlobNamesToDocuments(documents, blobNames);
         handleIndexDocuments(token, documents);
     }
 

@@ -120,8 +120,8 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
                 String blockId = Base64.getEncoder().encodeToString(String.format("%06d", blockNumber).getBytes()); // Tạo Block ID
                 blockBlobClient.stageBlock(blockId, new ByteArrayInputStream(buffer, 0, bytesRead), bytesRead);  // Upload từng phần
                 blockIds.add(blockId);
-                // 📌 In log để biết phần nào đã upload xong
-                // 📌 In log với số phần upload thành công
+                //  In log để biết phần nào đã upload xong
+                //  In log với số phần upload thành công
                 System.out.println("✅ Đã upload thành công phần " + (blockNumber + 1) + " trên tổng số " + ((length + chunkSize - 1) / chunkSize) + " phần");
                 blockNumber++;
             }
@@ -150,7 +150,8 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
             while ((bytesRead = data.read(buffer)) != -1) {
                 // Kiểm tra trạng thái hủy từ token
                 if (token.isCancelled()) {
-                   return CompletableFuture.completedFuture(blockBlobClient.getBlobName());
+                    log.info("Upload bị hủy giữa chừng, dừng tại phần {}", blockNumber);
+                    throw new CancellationException("Upload bị hủy giữa chừng");
                 }
 
                 String blockId = Base64.getEncoder().encodeToString(String.format("%06d", blockNumber).getBytes()); // Tạo Block ID
@@ -166,7 +167,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
             blockBlobClient.commitBlockList(blockIds);
 
             return CompletableFuture.completedFuture(blockBlobClient.getBlobName());
-        } catch (IOException | BlobStorageException |CancellationException e) {
+        } catch (IOException | BlobStorageException | CancellationException e) {
             log.error("Error uploading file from InputStream: {}", e.getMessage());
             throw new CustomBlobStorageException("Lỗi upload file ");
         }
@@ -273,6 +274,10 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
 
     @Override
     public void deleteBLobs(List<String> blobNames) {
+        if(blobNames == null || blobNames.isEmpty()) {
+            log.warn("No blobs to delete");
+            return;
+        }
         log.info("Deleting blobs {}", blobNames);
         for (String blobName : blobNames) {
             deleteBlobByContainerAndBlob(containerNameDefault, blobName);
@@ -316,7 +321,6 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
             throw new CustomBlobStorageException("Không thể tải file từ Azure Blob: " + e.getMessage());
         }
     }
-
 
 
     private InputStream getInputStreamBlob(String containerName, String blobName) {
