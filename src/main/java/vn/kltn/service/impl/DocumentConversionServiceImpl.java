@@ -7,9 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.DocumentFormat;
 import vn.kltn.entity.Document;
-import vn.kltn.exception.BadRequestException;
-import vn.kltn.exception.ConversionException;
-import vn.kltn.exception.InvalidDataException;
+import vn.kltn.exception.*;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IDocumentConversionService;
 
@@ -42,9 +40,9 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
 
     private void validateExtension(File file, String targetFormat) {
         String originalExt = getFileExtension(Objects.requireNonNull(file.getName()));
-        DocumentFormat sourceFormat = DocumentFormat.fromExtension(originalExt).orElseThrow(() -> new BadRequestException("Định dạng gốc không được hỗ trợ"));
+        DocumentFormat sourceFormat = DocumentFormat.fromExtension(originalExt).orElseThrow(() -> new UnsupportedFileFormatException("Định dạng gốc không được hỗ trợ"));
 
-        DocumentFormat target = DocumentFormat.fromExtension(targetFormat).orElseThrow(() -> new BadRequestException("Định dạng đích không được hỗ trợ"));
+        DocumentFormat target = DocumentFormat.fromExtension(targetFormat).orElseThrow(() -> new UnsupportedFileFormatException("Định dạng đích không được hỗ trợ"));
         if (sourceFormat.getExtension().equals(target.getExtension())) {
             log.warn("Định dạng phải khác nhau");
             throw new InvalidDataException("Không hỗ trợ chuyển đổi từ PDF sang WORD");
@@ -58,7 +56,7 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
     public String convertFile(MultipartFile file, String targetFormat) {
         if (file.isEmpty()) {
             log.warn("file is empty");
-            throw new InvalidDataException("Không tìm thấy file");
+            throw new ResourceNotFoundException("Không tìm thấy file");
         }
 
         File tempFile = null;
@@ -251,7 +249,6 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
             deleteFileIfExists(tempFile);       //  XÓA file gốc
         }
     }
-
 
 
     /**

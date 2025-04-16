@@ -1,7 +1,6 @@
 package vn.kltn.exception;
 
 import lombok.NonNull;
-import org.hibernate.query.sqm.PathElementException;
 import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -81,6 +80,17 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         errorResponse.setTimestamp(LocalDateTime.now());
         errorResponse.setStatus(HttpStatus.CONFLICT.value());
         errorResponse.setError(HttpStatus.CONFLICT.getReasonPhrase());
+        errorResponse.setMessage(ex.getMessage());
+        errorResponse.setPath(request.getDescription(false));
+        return new ResponseEntity<>(errorResponse, HttpStatus.OK);
+    }
+
+    @ExceptionHandler({UnsupportedFileFormatException.class})
+    public final ResponseEntity<ErrorResponse> handleUnsupported(Exception ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(LocalDateTime.now());
+        errorResponse.setStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value());
+        errorResponse.setError(HttpStatus.UNSUPPORTED_MEDIA_TYPE.getReasonPhrase());
         errorResponse.setMessage(ex.getMessage());
         errorResponse.setPath(request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.OK);
