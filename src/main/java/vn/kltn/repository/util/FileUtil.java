@@ -24,6 +24,7 @@ import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.FileBuffer;
 import vn.kltn.exception.CustomIOException;
+import vn.kltn.exception.ResourceNotFoundException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -218,10 +219,16 @@ public class FileUtil {
     }
 
     public static List<FileBuffer> getFileBufferList(MultipartFile[] files) {
+        if (files == null || files.length == 0) {
+            throw new ResourceNotFoundException("Không có file nào được gửi lên");
+        }
         List<FileBuffer> list = new ArrayList<>();
-        for (MultipartFile file : files) {
+        for (int i = 0; i < files.length; i++) {
+            if (files[i].isEmpty()) {
+                throw new ResourceNotFoundException(String.format("File %s bị trống", ++i));
+            }
             try {
-                list.add(new FileBuffer(file.getOriginalFilename(), file.getBytes(), file.getSize(), file.getContentType()));
+                list.add(new FileBuffer(files[i].getOriginalFilename(), files[i].getBytes(), files[i].getSize(), files[i].getContentType()));
             } catch (IOException e) {
                 throw new CustomIOException("Không đọc được file");
             }

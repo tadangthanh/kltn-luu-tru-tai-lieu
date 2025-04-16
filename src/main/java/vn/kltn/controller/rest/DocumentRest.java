@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.CancellationToken;
@@ -15,6 +16,7 @@ import vn.kltn.dto.response.*;
 import vn.kltn.repository.util.FileUtil;
 import vn.kltn.service.IDocumentService;
 import vn.kltn.service.impl.UploadTokenManager;
+import vn.kltn.validation.ValidFiles;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
@@ -24,12 +26,13 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/documents")
 @RestController
+@Validated
 public class DocumentRest {
     private final IDocumentService documentService;
     private final UploadTokenManager uploadTokenManager;
 
     @PostMapping
-    public ResponseData<String> uploadWithoutParent(@RequestPart("files") MultipartFile[] files) {
+    public ResponseData<String> uploadWithoutParent(@ValidFiles @RequestPart("files") MultipartFile[] files) {
         // Tạo token mới cho mỗi yêu cầu upload
         CancellationToken token = new CancellationToken();
         // Đăng ký token vào registry và lấy uploadId
@@ -54,7 +57,7 @@ public class DocumentRest {
     }
 
     @PostMapping("/folder/{folderId}")
-    public ResponseData<String> upload(@PathVariable Long folderId, @RequestPart("files") MultipartFile[] files) {
+    public ResponseData<String> upload(@PathVariable Long folderId,@ValidFiles  @RequestPart("files") MultipartFile[] files) {
         // Tạo token mới cho mỗi yêu cầu upload
         CancellationToken token = new CancellationToken();
         // Đăng ký token vào registry và lấy uploadId

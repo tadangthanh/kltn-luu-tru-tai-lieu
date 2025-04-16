@@ -2,6 +2,7 @@ package vn.kltn.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,10 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 import static com.google.common.io.Files.getFileExtension;
 import static vn.kltn.common.DocumentFormat.SUPPORTED_CONVERSIONS;
@@ -36,7 +34,8 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
     @Value("${app.conversion.temp-dir}")
     private String tempDir;
     private final IAzureStorageService azureStorageService;
-    private final ExecutorService executor = Executors.newFixedThreadPool(5); // Tùy chỉnh số luồng
+    @Qualifier("taskExecutor")
+    private final Executor taskExecutor;
 
     private void validateExtension(File file, String targetFormat) {
         String originalExt = getFileExtension(Objects.requireNonNull(file.getName()));
@@ -185,7 +184,7 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
                             log.info("finish convert file");
                             deleteFileIfExists(imageFile);
                         }
-                    }, executor))
+                    }, taskExecutor))
                     .toList();
 
             // 4. Chờ tất cả upload hoàn tất
