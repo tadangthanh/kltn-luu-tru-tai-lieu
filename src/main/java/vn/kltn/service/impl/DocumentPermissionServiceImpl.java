@@ -37,21 +37,10 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
 
     @Override
     public PermissionResponse setPermissionResource(Long resourceId, PermissionRequest permissionRequest) {
-        log.info("set permission for resourceId: {}, permissionRequest: {}", resourceId, permissionRequest);
-        // kiem tra quyen da ton tai hay chua
-        validatePermissionNotExists(permissionRequest.getRecipientId(), resourceId);
-        FileSystemEntity resource = getResourceById(resourceId);
-        // validate đã thêm quyền này cho người này hay chưa ?
-        resourceCommonService.validateCurrentUserIsOwnerResource(resource);
-        // validate xem resource co bi xoa hay chua
-        resourceCommonService.validateResourceNotDeleted(resource);
-        // validate xem người dùng có quyền tạo permission hay không
-        validateEditorOrOwner(resource);
-        Permission permission = mapToPermission(permissionRequest);
-        permission.setResource(getResourceById(resourceId));
+        PermissionResponse response=super.setPermissionResource(resourceId, permissionRequest);
         // update data trong elasticsearch
         updateIndexDocument(resourceId);
-        return mapToPermissionResponse(savePermission(permission));
+        return response;
     }
 
     @Override
@@ -97,6 +86,8 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
         return mapToPermissionResponse(permission);
     }
 
+
+
     private void updateIndexDocument(Long resourceId) {
         Document document = documentCommonService.getDocumentByIdOrThrow(resourceId);
         documentIndexService.updateDocument(document);
@@ -135,6 +126,13 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
                 inheritPermissionsForEditorCreatedResource(document, parent.getOwner().getId());
             }
         }
+    }
+
+    @Override
+    protected void inheritPermission(Resource resource, Long ownerParentId) {
+        super.inheritPermission(resource, ownerParentId);
+        //update data trong elasticsearch
+        updateIndexDocument(resource.getId());
     }
 
     /***

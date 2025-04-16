@@ -52,12 +52,11 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
     @Override
     public void updateDocument(DocumentIndex documentUpdated) {
         try {
-            elasticsearchClient.update(u -> u.index("documents_index").id(documentUpdated.getId()) // dùng index Id
-                    .script(s -> s.source("ctx._source.name = params.name; "
-                                          + "ctx._source.description = params.description; "
-                                          + "ctx._source.updatedAt = params.updatedAt;"
-                                          + "ctx._source.updatedBy = params.updatedBy;")
-                            .lang("painless").params(documentUpdated.toParamMap())), DocumentIndex.class);
+            elasticsearchClient.update(u -> u
+                            .index("documents_index")
+                            .id(documentUpdated.getId())
+                            .doc(documentUpdated), // chỉ định object thay thế
+                    DocumentIndex.class);
         } catch (IOException e) {
             log.error("Error updating document: {}", e.getMessage(), e);
             throw new CustomIOException("Failed to update document");

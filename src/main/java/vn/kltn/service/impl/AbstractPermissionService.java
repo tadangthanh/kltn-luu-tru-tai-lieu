@@ -49,7 +49,7 @@ public abstract class AbstractPermissionService implements IPermissionService {
 
     @Override
     public PermissionResponse setPermissionResource(Long resourceId, PermissionRequest permissionRequest) {
-        log.info("set permission for resourceId: {}, permissionRequest: {}", resourceId, permissionRequest);
+        log.info("set permission for resourceId: {}, permission: {}, recipient id {}", resourceId, permissionRequest.getPermission(),permissionRequest.getRecipientId());
         // kiem tra quyen da ton tai hay chua
         validatePermissionNotExists(permissionRequest.getRecipientId(), resourceId);
         FileSystemEntity resource = getResourceById(resourceId);
@@ -60,7 +60,7 @@ public abstract class AbstractPermissionService implements IPermissionService {
         // validate xem người dùng có quyền tạo permission hay không
         validateEditorOrOwner(resource);
         Permission permission = mapToPermission(permissionRequest);
-        permission.setResource(getResourceById(resourceId));
+        permission.setResource(resource);
         return mapToPermissionResponse(savePermission(permission));
     }
 
@@ -149,7 +149,7 @@ public abstract class AbstractPermissionService implements IPermissionService {
      * @param resource: resource tạo mới
      * @param ownerParentId : id của chủ sở hữu folder cha
      */
-    private void inheritPermission(Resource resource, Long ownerParentId) {
+    protected void inheritPermission(Resource resource, Long ownerParentId) {
         if (resource == null || resource.getParent() == null) return;
         // Validate nếu resource bị xóa hoặc không có parent thì dừng lại
         resourceCommonService.validateResourceNotDeleted(resource);

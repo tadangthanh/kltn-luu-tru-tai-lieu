@@ -1,5 +1,6 @@
 package vn.kltn.service.impl;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -48,4 +49,6 @@ public class FolderCommonService {
         log.info("Find all folder child inherited permission: folderId={}", folderId);
         return folderRepo.findAllFolderChildInheritedPermission(folderId, userId);
     }
+
+
 }

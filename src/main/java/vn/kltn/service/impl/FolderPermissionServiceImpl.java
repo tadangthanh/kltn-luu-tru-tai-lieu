@@ -5,7 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.response.PermissionResponse;
+import vn.kltn.entity.Document;
 import vn.kltn.entity.FileSystemEntity;
+import vn.kltn.entity.Folder;
 import vn.kltn.entity.Permission;
 import vn.kltn.map.PermissionMapper;
 import vn.kltn.repository.PermissionRepo;
@@ -14,6 +16,7 @@ import vn.kltn.service.IUserService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,37 +42,29 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
     @Override
     // tạo permision cho folder thì các folder con và document con sẽ tự động được tạo permission
     public PermissionResponse setPermissionResource(Long resourceId, PermissionRequest permissionRequest) {
-        // validate quyền đã tồn tại hay chưa
-        validatePermissionNotExists(permissionRequest.getRecipientId(), resourceId);
-        FileSystemEntity resource = getResourceById(resourceId);
-        // validate đã thêm quyền này cho người này hay chưa ?
-        resourceCommonService.validateCurrentUserIsOwnerResource(resource);
-        // validate xem resource co bi xoa hay chua
-        resourceCommonService.validateResourceNotDeleted(resource);
-        // validate xem người dùng có quyền tạo permission hay không
-        validateEditorOrOwner(resource);
-        Permission permission = mapToPermission(permissionRequest);
-        permission.setResource(resource);
-        permission = permissionRepo.save(permission);
+        PermissionResponse response = super.setPermissionResource(resourceId, permissionRequest);
         // insert permission cho cả các folder con
         insertPermissionForChild(resourceId, permissionRequest);
-        return mapToPermissionResponse(permission);
+        return response;
+    }
+
+    private List<Permission> createPermissionForChild(List<Long> resourceIds, PermissionRequest permissionRequest, Function<Long, FileSystemEntity> getResourceByIdFunc) {
+        return resourceIds.stream()
+                .map(resourceId -> {
+                    FileSystemEntity resource = getResourceByIdFunc.apply(resourceId);
+                    Permission permissionChild = mapToPermission(permissionRequest);
+                    permissionChild.setResource(resource);
+                    return permissionChild;
+                })
+                .collect(Collectors.toList());
     }
 
     private void insertPermissionForChild(Long parentResourceId, PermissionRequest permissionRequest) {
         // Lấy danh sách các folder con (loại trừ folder cha) mà user chưa có permission
-        List<Long> folderChildIds = permissionRepo.findSubFolderIdsWithoutPermission(
+        List<Long> folderChildIds = permissionRepo.findSubFolderIdsEmptyPermission(
                 parentResourceId, permissionRequest.getRecipientId());
-
         // Tạo danh sách Permission cho các folder con
-        List<Permission> permissionsForFolder = folderChildIds.stream()
-                .map(folderId -> {
-                    FileSystemEntity resourceChild = getResourceById(folderId);
-                    Permission permissionChild = mapToPermission(permissionRequest);
-                    permissionChild.setResource(resourceChild);
-                    return permissionChild;
-                })
-                .collect(Collectors.toList());
+        List<Permission> permissionsForFolder = createPermissionForChild(folderChildIds, permissionRequest, this::getResourceById);
 
         // Batch insert cho folder (nếu có)
         if (!permissionsForFolder.isEmpty()) {
@@ -81,18 +76,10 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
         folderIdsForDocument.add(parentResourceId);
 
         // Lấy danh sách các document con mà user chưa có permission
-        List<Long> documentChildIds = documentCommonService.getDocumentChildIdsWithoutPermission(
+        List<Long> documentChildIds = documentCommonService.getDocumentChildIdsEmptyPermission(
                 folderIdsForDocument, permissionRequest.getRecipientId());
-
         // Tạo danh sách Permission cho các document con
-        List<Permission> permissionsForDocument = documentChildIds.stream()
-                .map(documentId -> {
-                    FileSystemEntity resourceChild = documentCommonService.getDocumentByIdOrThrow(documentId);
-                    Permission permissionChild = mapToPermission(permissionRequest);
-                    permissionChild.setResource(resourceChild);
-                    return permissionChild;
-                })
-                .collect(Collectors.toList());
+        List<Permission> permissionsForDocument = createPermissionForChild(documentChildIds, permissionRequest,documentCommonService::getDocumentByIdOrThrow);
 
         // Batch insert cho document (nếu có)
         if (!permissionsForDocument.isEmpty()) {

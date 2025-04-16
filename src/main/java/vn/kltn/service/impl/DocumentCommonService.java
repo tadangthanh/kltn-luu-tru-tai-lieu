@@ -1,6 +1,5 @@
 package vn.kltn.service.impl;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -37,8 +36,9 @@ public class DocumentCommonService {
         return documentMapper.toDocumentResponse(document);
     }
 
-    public List<Long> getDocumentChildIdsWithoutPermission(List<Long> parentResourceIds, Long recipientId) {
+    public List<Long> getDocumentChildIdsEmptyPermission(List<Long> parentResourceIds, Long recipientId) {
         log.info("Get document child ids without permission: parentResourceIds={}, recipientId={}", parentResourceIds, recipientId);
-        return documentRepo.findDocumentChildIdsWithoutPermission(parentResourceIds, recipientId);
+        return documentRepo.findDocumentChildIdsEmptyPermission(parentResourceIds, recipientId);
     }
+
 }

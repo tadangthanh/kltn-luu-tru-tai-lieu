@@ -62,7 +62,7 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
                 log.error("Attempt failed for document {}: {}", document.getId(), e.getMessage());
                 throw new InsertIndexException("Có lỗi xảy ra khi tải tài liệu lên Elasticsearch");
             }
-        }, 3, 1000, IOException.class, BlobStorageException.class, TimeoutException.class),taskExecutor);
+        }, 3, 1000, IOException.class, BlobStorageException.class, TimeoutException.class), taskExecutor);
 
         try {
             future.join();
@@ -103,6 +103,29 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     public void updateDocument(Document document) {
         log.info("update documentId: {}", document.getId());
         customDocumentIndexRepo.updateDocument(mapDocumentIndex(document));
+    }
+
+    @Override
+    public void updateAllDocument(List<Document> documents) {
+        log.info("Bắt đầu cập nhật toàn bộ documents song song...");
+        List<CompletableFuture<Void>> futures = documents.stream()
+                .map(doc -> CompletableFuture.runAsync(() -> {
+                    RetryUtil.runWithRetry(() -> {
+                        try {
+                            DocumentIndex index = mapDocumentIndex(doc);
+                            customDocumentIndexRepo.updateDocument(index);
+                            log.info("Đã cập nhật documentId: {}", doc.getId());
+                        } catch (Exception e) {
+                            log.warn("Retry lỗi documentId {}: {}", doc.getId(), e.getMessage());
+                            throw e; // throw để retry tiếp
+                        }
+                    }, 3, 1000, IOException.class, TimeoutException.class); // Retry tối đa 3 lần, delay 1s
+                }, taskExecutor))
+                .toList();
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        log.info("Hoàn tất cập nhật documents song song.");
     }
 
     @Override

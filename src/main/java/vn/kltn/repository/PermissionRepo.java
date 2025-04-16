@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import vn.kltn.entity.Folder;
 import vn.kltn.entity.Permission;
 
 import java.util.List;
@@ -42,7 +43,8 @@ public interface PermissionRepo extends JpaRepository<Permission, Long> {
             SELECT id FROM sub_folders where id != :folderId;
             """, nativeQuery = true)
         // lấy danh sách các id của folder con  (ko bao gom cac folder da bi xoa và folder hiện tại)
-    List<Long> findSubFolderIdsWithoutPermission(@Param("folderId") Long folderId, @Param("recipientId") Long recipientId);
+    List<Long> findSubFolderIdsEmptyPermission(@Param("folderId") Long folderId, @Param("recipientId") Long recipientId);
+
 
     void deleteByResourceId(Long resourceId);
 
