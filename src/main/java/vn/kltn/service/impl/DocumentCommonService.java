@@ -41,4 +41,7 @@ public class DocumentCommonService {
         return documentRepo.findDocumentChildIdsEmptyPermission(parentResourceIds, recipientId);
     }
 
+    public List<Document> getDocuments(List<Long> documentChildIds) {
+        return documentRepo.findAllById(documentChildIds);
+    }
 }

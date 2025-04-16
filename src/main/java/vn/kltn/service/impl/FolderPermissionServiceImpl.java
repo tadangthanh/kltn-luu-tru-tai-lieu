@@ -3,19 +3,23 @@ package vn.kltn.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.response.PermissionResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.FileSystemEntity;
-import vn.kltn.entity.Folder;
 import vn.kltn.entity.Permission;
 import vn.kltn.map.PermissionMapper;
 import vn.kltn.repository.PermissionRepo;
 import vn.kltn.service.IAuthenticationService;
+import vn.kltn.service.IDocumentIndexService;
 import vn.kltn.service.IUserService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -25,11 +29,14 @@ import java.util.stream.Collectors;
 public class FolderPermissionServiceImpl extends AbstractPermissionService implements IFolderPermissionService {
     private final FolderCommonService folderCommonService;
     private final DocumentCommonService documentCommonService;
+    private final IDocumentIndexService documentIndexService;
 
-    protected FolderPermissionServiceImpl(PermissionRepo permissionRepo, IUserService userService, PermissionMapper permissionMapper, IAuthenticationService authenticationService, FolderCommonService folderCommonService, ResourceCommonService resourceCommonService, DocumentCommonService documentCommonService) {
+
+    protected FolderPermissionServiceImpl(PermissionRepo permissionRepo, IUserService userService, PermissionMapper permissionMapper, IAuthenticationService authenticationService, FolderCommonService folderCommonService, ResourceCommonService resourceCommonService, DocumentCommonService documentCommonService, IDocumentIndexService documentIndexService ) {
         super(permissionRepo, userService, permissionMapper, resourceCommonService, authenticationService);
         this.folderCommonService = folderCommonService;
         this.documentCommonService = documentCommonService;
+        this.documentIndexService = documentIndexService;
     }
 
 
@@ -79,12 +86,24 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
         List<Long> documentChildIds = documentCommonService.getDocumentChildIdsEmptyPermission(
                 folderIdsForDocument, permissionRequest.getRecipientId());
         // Tạo danh sách Permission cho các document con
-        List<Permission> permissionsForDocument = createPermissionForChild(documentChildIds, permissionRequest,documentCommonService::getDocumentByIdOrThrow);
+        List<Permission> permissionsForDocument = createPermissionForChild(documentChildIds, permissionRequest, documentCommonService::getDocumentByIdOrThrow);
 
         // Batch insert cho document (nếu có)
         if (!permissionsForDocument.isEmpty()) {
-            permissionRepo.saveAll(permissionsForDocument);
+            permissionRepo.saveAllAndFlush(permissionsForDocument);
+            // update lai tron elasticsearch
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        // Transaction đã commit, giờ mới gọi update elasticsearch
+                        List<Document> documents = documentCommonService.getDocuments(documentChildIds);
+                        documentIndexService.updateAllDocument(documents);
+                    }
+                });
+            }
         }
+
     }
 
 

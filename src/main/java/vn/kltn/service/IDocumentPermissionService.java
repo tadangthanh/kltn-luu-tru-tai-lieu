@@ -10,4 +10,5 @@ public interface IDocumentPermissionService extends IPermissionService {
 
     void inheritPermissions(List<Document> documents);
     Set<Long> getDocumentIdsByUser(Long userId);
+
 }

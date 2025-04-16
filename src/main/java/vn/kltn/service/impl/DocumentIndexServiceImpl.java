@@ -8,6 +8,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.entity.Document;
+import vn.kltn.entity.Permission;
 import vn.kltn.entity.Tag;
 import vn.kltn.exception.CustomIOException;
 import vn.kltn.exception.InsertIndexException;

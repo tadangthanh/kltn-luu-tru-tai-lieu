@@ -144,4 +144,5 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
     public Set<Long> getDocumentIdsByUser(Long userId) {
         return permissionRepo.findIdsDocumentByUserId(userId);
     }
+
 }
