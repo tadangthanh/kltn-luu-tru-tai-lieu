@@ -368,6 +368,9 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
     private Document copyDocument(Document document) {
         Document copied = documentMapper.copyDocument(document);
+        String nameCopy= document.getName().substring(0,document.getName().lastIndexOf(".")-1)+"_copy"+
+                document.getName().substring(document.getName().lastIndexOf("."));
+        copied.setName(nameCopy);
         documentRepo.save(copied);
         copied.setDeletedAt(null);
         copied.setPermanentDeleteAt(null);

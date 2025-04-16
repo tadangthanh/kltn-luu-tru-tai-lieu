@@ -1,7 +1,6 @@
 package vn.kltn.service;
 
 import org.springframework.data.domain.Pageable;
-import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.request.DocumentRequest;
@@ -15,7 +14,7 @@ import java.util.List;
 public interface IDocumentService extends IResourceService<Document, DocumentResponse> {
     void uploadDocumentWithoutParent(List<FileBuffer> bufferedFiles, CancellationToken token);
 
-    void uploadDocumentWithParent(Long folderId,List<FileBuffer> bufferedFiles,CancellationToken token);
+    void uploadDocumentWithParent(Long folderId, List<FileBuffer> bufferedFiles, CancellationToken token);
 
     void softDeleteDocumentsByFolderIds(List<Long> folderIds); // xóa document theo danh sach folder id nhưng chưa xóa vĩnh viễn
 
