@@ -66,4 +66,9 @@ public interface PermissionRepo extends JpaRepository<Permission, Long> {
 
     @Query("SELECT p.resource.id FROM Permission p WHERE p.recipient.id = ?1")
     Set<Long> findIdsDocumentByUserId(Long userId);
+
+    @Modifying
+    @Transactional
+    @Query("delete from Permission p where p.resource.id in ?1 and p.recipient.id = ?2")
+    void deleteAllByResourceIdInAndRecipientId(List<Long> folderChildIds, Long recipientId);
 }

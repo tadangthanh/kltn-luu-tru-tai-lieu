@@ -48,4 +48,8 @@ public class DocumentCommonService {
     public List<Document> getDocumentsByResourceAndRecipient(Long resourceId, Long recipientId) {
         return documentRepo.findAllDocumentByResourceAndRecipient(resourceId, recipientId);
     }
+
+    public List<Long> getDocumentChildIdsByFolderIds(List<Long> folderChildIds) {
+        return documentRepo.findDocumentIdsWithParentIds(folderChildIds);
+    }
 }

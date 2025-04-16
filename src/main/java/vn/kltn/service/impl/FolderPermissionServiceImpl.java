@@ -10,7 +10,9 @@ import vn.kltn.dto.response.PermissionResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.FileSystemEntity;
 import vn.kltn.entity.Permission;
+import vn.kltn.entity.User;
 import vn.kltn.map.PermissionMapper;
+import vn.kltn.repository.FolderRepo;
 import vn.kltn.repository.PermissionRepo;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IDocumentIndexService;
@@ -28,13 +30,15 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
     private final FolderCommonService folderCommonService;
     private final DocumentCommonService documentCommonService;
     private final IDocumentIndexService documentIndexService;
+    private final FolderRepo folderRepo;
 
 
-    protected FolderPermissionServiceImpl(PermissionRepo permissionRepo, IUserService userService, PermissionMapper permissionMapper, IAuthenticationService authenticationService, FolderCommonService folderCommonService, ResourceCommonService resourceCommonService, DocumentCommonService documentCommonService, IDocumentIndexService documentIndexService ) {
+    protected FolderPermissionServiceImpl(PermissionRepo permissionRepo, IUserService userService, PermissionMapper permissionMapper, IAuthenticationService authenticationService, FolderCommonService folderCommonService, ResourceCommonService resourceCommonService, DocumentCommonService documentCommonService, IDocumentIndexService documentIndexService, FolderRepo folderRepo) {
         super(permissionRepo, userService, permissionMapper, resourceCommonService, authenticationService);
         this.folderCommonService = folderCommonService;
         this.documentCommonService = documentCommonService;
         this.documentIndexService = documentIndexService;
+        this.folderRepo = folderRepo;
     }
 
 
@@ -63,6 +67,35 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
                 })
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public void deletePermissionById(Long permissionId) {
+        Permission existingPermission = getPermissionByIdOrThrow(permissionId);
+        Long parentId = existingPermission.getResource().getId();
+        Long recipientId = existingPermission.getRecipient().getId();
+
+        // Lấy tất cả folder con và document con liên quan
+        List<Long> folderIds = folderRepo.findCurrentAndChildFolderIdsByFolderId(parentId);
+        List<Long> documentIds = documentCommonService.getDocumentChildIdsByFolderIds(folderIds);
+
+        // Gộp tất cả resourceId để xóa permission
+        List<Long> resourceIdsToDelete = new ArrayList<>(folderIds);
+        resourceIdsToDelete.addAll(documentIds);
+        // Xóa chính permission gốc
+        super.deletePermissionById(permissionId);
+
+        // Xóa các permission liên quan đến user này cho các resource con
+        permissionRepo.deleteAllByResourceIdInAndRecipientId(resourceIdsToDelete, recipientId);
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                // Transaction đã commit, giờ mới gọi update elasticsearch
+                List<Document> documents = documentCommonService.getDocuments(documentIds);
+                documentIndexService.updateAllDocument(documents);
+            }
+        });
+    }
+
 
     private void insertPermissionForChild(Long parentResourceId, PermissionRequest permissionRequest) {
         // Lấy danh sách các folder con (loại trừ folder cha) mà user chưa có permission
