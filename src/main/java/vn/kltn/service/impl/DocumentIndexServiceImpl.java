@@ -50,21 +50,19 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     @Async("taskExecutor")
     public void insertDoc(Document document) {
         log.info("insert document Id: {}", document.getId());
-        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-            RetryUtil.runWithRetry(() -> {
-                try (InputStream inputStream = azureStorageService.downloadBlobInputStream(document.getBlobName())) {
-                    String content = FileUtil.extractTextByType(document.getType(), inputStream);
-                    DocumentIndex documentIndex = mapDocumentIndex(document);
-                    documentIndex.setContent(content);
-                    // Gửi content đến Elasticsearch hoặc xử lý tiếp ở đây
-                    documentIndexRepo.save(documentIndex);
-                    log.info("Inserted document Id: {}", document.getId());
-                } catch (Exception e) {
-                    log.error("Attempt failed for document {}: {}", document.getId(), e.getMessage());
-                    throw new InsertIndexException("Có lỗi xảy ra khi tải tài liệu lên Elasticsearch");
-                }
-            }, 3, 1000, IOException.class, BlobStorageException.class, TimeoutException.class);
-        });
+        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> RetryUtil.runWithRetry(() -> {
+            try (InputStream inputStream = azureStorageService.downloadBlobInputStream(document.getBlobName())) {
+                String content = FileUtil.extractTextByType(document.getType(), inputStream);
+                DocumentIndex documentIndex = mapDocumentIndex(document);
+                documentIndex.setContent(content);
+                // Gửi content đến Elasticsearch hoặc xử lý tiếp ở đây
+                documentIndexRepo.save(documentIndex);
+                log.info("Inserted document Id: {}", document.getId());
+            } catch (Exception e) {
+                log.error("Attempt failed for document {}: {}", document.getId(), e.getMessage());
+                throw new InsertIndexException("Có lỗi xảy ra khi tải tài liệu lên Elasticsearch");
+            }
+        }, 3, 1000, IOException.class, BlobStorageException.class, TimeoutException.class),taskExecutor);
 
         try {
             future.join();
