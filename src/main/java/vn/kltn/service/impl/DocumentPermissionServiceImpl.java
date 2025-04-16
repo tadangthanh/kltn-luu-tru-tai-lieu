@@ -81,8 +81,6 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
         Permission permission = getPermissionByIdOrThrow(permissionId);
         permission.setPermission(permissionRequest.getPermission());
         permission = permissionRepo.save(permission);
-        // update data trong elasticsearch
-        updateIndexDocument(permission.getResource().getId());
         return mapToPermissionResponse(permission);
     }
 

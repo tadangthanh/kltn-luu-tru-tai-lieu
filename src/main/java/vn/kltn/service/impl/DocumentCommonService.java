@@ -44,4 +44,8 @@ public class DocumentCommonService {
     public List<Document> getDocuments(List<Long> documentChildIds) {
         return documentRepo.findAllById(documentChildIds);
     }
+
+    public List<Document> getDocumentsByResourceAndRecipient(Long resourceId, Long recipientId) {
+        return documentRepo.findAllDocumentByResourceAndRecipient(resourceId, recipientId);
+    }
 }
