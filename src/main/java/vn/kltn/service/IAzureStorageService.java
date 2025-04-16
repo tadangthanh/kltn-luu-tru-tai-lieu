@@ -15,7 +15,7 @@ public interface IAzureStorageService {
 
     CompletableFuture<String> uploadChunkedWithContainerDefaultAsync(InputStream data, String originalFileName, long length, int chunkSize);
 
-    String copyBlob(String sourceBlobName, String destinationBlobName);
+    String copyBlob(String sourceBlobName);
 
     void createContainerForRepository(String repoName);
 

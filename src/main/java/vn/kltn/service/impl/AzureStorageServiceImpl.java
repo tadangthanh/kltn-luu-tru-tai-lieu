@@ -136,13 +136,14 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
 
 
     @Override
-    public String copyBlob(String sourceBlobName, String destinationBlobName) {
+    public String copyBlob(String sourceBlobName) {
         try {
             // Lấy client của container
             BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerNameDefault);
 
             // Tạo client cho blob nguồn và blob đích
             BlobClient sourceBlobClient = blobContainerClient.getBlobClient(sourceBlobName);
+            String destinationBlobName = UUID.randomUUID() + "_" + sourceBlobName.substring(sourceBlobName.indexOf("_")+1, sourceBlobName.lastIndexOf(".") - 1) +"_copy"+ sourceBlobName.substring(sourceBlobName.lastIndexOf("."));
             BlobClient destinationBlobClient = blobContainerClient.getBlobClient(destinationBlobName);
 
             // Kiểm tra xem file nguồn có tồn tại không

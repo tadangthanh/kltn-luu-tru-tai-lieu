@@ -359,6 +359,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
     @Override
     public DocumentResponse copyDocumentById(Long documentId) {
+        log.info("copy document by id: {}", documentId);
         Document document = getResourceByIdOrThrow(documentId);
         Document copied = copyDocument(document);
         return mapToDocumentResponse(copied);
@@ -371,17 +372,13 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         copied.setDeletedAt(null);
         copied.setPermanentDeleteAt(null);
         copyDocumentHasTag(document, copied);
-        String blobDestinationCopied = azureStorageService.copyBlob(document.getBlobName(), generateBlobDestinationFromDocSource(document));
+        String blobDestinationCopied = azureStorageService.copyBlob(document.getBlobName());
         copied.setBlobName(blobDestinationCopied);
-        return copied;
+        // Lưu vào elasticsearch
+        documentIndexService.insertDoc(copied);
+        return documentRepo.save(copied);
     }
 
-    private String generateBlobDestinationFromDocSource(Document documentSource) {
-        String uuid = UUID.randomUUID().toString();
-        String name = documentSource.getName();
-        String extension = documentSource.getBlobName().substring(documentSource.getBlobName().lastIndexOf("."));
-        return uuid + "_" + name + "." + extension;
-    }
 
     private void copyDocumentHasTag(Document document, Document docCopy) {
         Set<Tag> tags = documentHasTagService.getTagsByDocumentId(document.getId());

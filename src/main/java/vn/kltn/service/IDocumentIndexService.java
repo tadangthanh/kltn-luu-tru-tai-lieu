@@ -4,13 +4,12 @@ import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.index.DocumentIndex;
 
-import java.io.InputStream;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public interface IDocumentIndexService {
-    void insertDoc(Document document, InputStream inputStream);
+    void insertDoc(Document document);
 
     void deleteIndex(String indexId);
 
