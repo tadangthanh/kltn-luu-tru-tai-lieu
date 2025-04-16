@@ -90,8 +90,8 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
                 throw new BadRequestException("Có lỗi xảy ra trong quá trình chuyển đổi định dạng");
             }
             // Upload lên Azure
-            try (InputStream outputStream = new FileInputStream(outputFile)) {
-                return azureStorageService.uploadChunkedWithContainerDefault(outputStream, outputFile.getName(), outputFile.length(), 10 * 1024 * 1024);
+            try (InputStream inputStream = new FileInputStream(outputFile)) {
+                return azureStorageService.uploadChunkedWithContainerDefault(inputStream, outputFile.getName(), outputFile.length(), 10 * 1024 * 1024);
             }
 
         } catch (IOException | InterruptedException e) {

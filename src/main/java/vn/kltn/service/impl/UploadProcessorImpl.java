@@ -40,7 +40,7 @@ public class UploadProcessorImpl implements IUploadProcessor {
                             }
                             log.info("Upload thành công file: {}", file.getFileName());
                             return blobName;
-                        });;
+                        });
                 futures.add(future);
             } catch (IOException e) {
                 log.error("IOException khi đọc file {}: {}", file.getFileName(), e.getMessage());
