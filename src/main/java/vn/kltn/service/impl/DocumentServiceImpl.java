@@ -90,7 +90,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
 
     private List<DocumentIndex> handleIndexDocuments(List<Document> documents) {
-        List<DocumentIndex> result = documentIndexService.insertAllDocAsync(documents).join();
+        List<DocumentIndex> result = documentIndexService.insertAllDoc(documents).join();
         log.info("Document indexing completed with {} items", result.size());
         return result;
     }

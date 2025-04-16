@@ -9,6 +9,7 @@ import vn.kltn.index.DocumentIndex;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.repository.elasticsearch.DocumentIndexRepo;
 import vn.kltn.service.IAzureStorageService;
+import vn.kltn.service.IDocumentIndexService;
 
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -19,7 +20,7 @@ import java.util.concurrent.CancellationException;
 @Slf4j(topic = "UPLOAD_CLEANUP_SERVICE")
 public class UploadCleanupService {
     private final DocumentRepo documentRepo;
-    private final DocumentIndexRepo documentIndexRepo;
+    private final IDocumentIndexService documentIndexService;
     private final IAzureStorageService azureStorageService;
 
 
@@ -47,7 +48,7 @@ public class UploadCleanupService {
 
     private void deleteDocumentsIndex(List<DocumentIndex> documentIndices) {
         if (documentIndices != null && !documentIndices.isEmpty()) {
-            documentIndexRepo.deleteAll(documentIndices);
+            documentIndexService.deleteAll(documentIndices);
             log.info("Đã xoá {} tài liệu trong Elasticsearch", documentIndices.size());
         }
     }

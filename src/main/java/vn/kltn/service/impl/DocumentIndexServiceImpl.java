@@ -93,50 +93,7 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
 
     @Override
     @Async("taskExecutor") // Optional: gọi từ nơi khác để async toàn bộ
-    public void insertAllDoc(List<Document> documents) {
-        log.info("insert all document");
-
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-        List<DocumentIndex> documentIndices = Collections.synchronizedList(new ArrayList<>());
-
-        for (Document document : documents) {
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                try (InputStream inputStream = azureStorageService.downloadBlobInputStream(document.getBlobName())) {
-
-                    String content = FileUtil.extractTextByType(document.getType(), inputStream);
-                    DocumentIndex documentIndex = mapDocumentIndex(document);
-                    documentIndex.setContent(content);
-                    documentIndices.add(documentIndex);
-
-                    log.info("Inserted document Id: {}", document.getId());
-
-                } catch (IllegalArgumentException e) {
-                    log.error(" Error downloading blob: {}", e.getMessage());
-                } catch (Exception e) {
-                    log.error(" Error inserting document: {}", e.getMessage());
-                }
-            }, taskExecutor);
-
-            futures.add(future);
-        }
-
-        // Chờ tất cả task xong
-        CompletableFuture<Void> allDoneFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-        allDoneFuture.join();
-
-        // Lưu vào Elasticsearch
-        try {
-            documentIndexRepo.saveAll(documentIndices);
-            log.info(" All documents inserted successfully");
-        } catch (Exception e) {
-            log.error(" Error saving all documents: {}", e.getMessage());
-            throw new CustomIOException("Có lỗi xảy ra khi upload tài liệu lên hệ thống");
-        }
-    }
-
-    @Override
-    @Async("taskExecutor") // Optional: gọi từ nơi khác để async toàn bộ
-    public CompletableFuture<List<DocumentIndex>> insertAllDocAsync(List<Document> documents) {
+    public CompletableFuture<List<DocumentIndex>> insertAllDoc(List<Document> documents) {
         log.info(" insertAllDocAsync started");
 
         List<CompletableFuture<Void>> futures = new ArrayList<>();
