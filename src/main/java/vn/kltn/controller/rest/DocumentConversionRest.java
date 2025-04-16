@@ -2,10 +2,12 @@ package vn.kltn.controller.rest;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.dto.response.ResponseData;
 import vn.kltn.service.IDocumentConversionService;
+import vn.kltn.validation.ValidFile;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,6 +16,7 @@ import java.nio.file.Path;
 @RequestMapping("/api/v1/document-conversion")
 @RequiredArgsConstructor
 @Slf4j(topic = "DOCUMENT_CONVERSION_REST")
+@Validated
 public class DocumentConversionRest {
     private final IDocumentConversionService documentConversionService;
     // Đường dẫn nơi lưu trữ file tạm thời trên server
@@ -61,7 +64,8 @@ public class DocumentConversionRest {
     }
 
     @PostMapping("/convert")
-    public ResponseData<String> convert(@RequestParam("file") MultipartFile file, @RequestParam("format") String format) {
+    public ResponseData<String> convert(
+            @ValidFile @RequestParam("file") MultipartFile file, @RequestParam("format") String format) {
         return new ResponseData<>(200, "thành công", documentConversionService.convertFile(file, format));
     }
 
