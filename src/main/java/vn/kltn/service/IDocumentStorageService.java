@@ -18,4 +18,6 @@ public interface IDocumentStorageService {
 
     List<Document> saveDocumentsWithFolder(List<FileBuffer> fileBuffers, Long folderId);
     String copyBlob(String blobName);
+
+    List<Document> saveDocuments(List<FileBuffer> bufferedFiles);
 }

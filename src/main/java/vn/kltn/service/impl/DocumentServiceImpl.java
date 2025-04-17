@@ -17,12 +17,10 @@ import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.entity.Document;
-import vn.kltn.entity.Folder;
 import vn.kltn.entity.Tag;
 import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
-import vn.kltn.index.DocumentIndex;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.service.*;
 import vn.kltn.service.event.DocumentUpdatedEvent;
@@ -30,9 +28,9 @@ import vn.kltn.service.event.DocumentUpdatedEvent;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -44,20 +42,16 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     private int documentRetentionDays;
     private final IDocumentIndexService documentIndexService;
     private final IDocumentPermissionService documentPermissionService;
-    private final UploadFinalizerService uploadFinalizerService;
-    private final IUploadProcessor uploadProcessor;
     private final ApplicationEventPublisher eventPublisher;
     private final IDocumentStorageService documentStorageService;
     private final IDocumentMapperService documentMapperService;
 
-    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo  , IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, UploadFinalizerService uploadFinalizerService, IUploadProcessor uploadProcessor, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService) {
+    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo  , IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
         this.documentRepo = documentRepo;
         this.documentHasTagService = documentHasTagService;
         this.documentIndexService = documentIndexService;
         this.documentPermissionService = documentPermissionService;
-        this.uploadFinalizerService = uploadFinalizerService;
-        this.uploadProcessor = uploadProcessor;
         this.eventPublisher = eventPublisher;
         this.documentStorageService = documentStorageService;
         this.documentMapperService = documentMapperService;
@@ -67,9 +61,9 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     @Async("taskExecutor")
     public void uploadDocumentWithoutParent(List<FileBuffer> bufferedFiles, CancellationToken token) {
         // luu db
-        List<Document> documents = saveDocuments(bufferedFiles);
+        List<Document> documents = documentStorageService.saveDocuments(bufferedFiles);
         // upload file to cloud
-        processUpload(token, bufferedFiles, documents);
+        documentStorageService.store(token,bufferedFiles,documents);
         // thong bao bang websocket
     }
 
@@ -84,47 +78,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         documentPermissionService.inheritPermissions(documents);
         // thong bao bang websocket
 
-    }
-
-
-    private List<DocumentIndex> handleIndexDocuments(List<Document> documents) {
-        List<DocumentIndex> result = documentIndexService.insertAllDoc(documents).join();
-        log.info("Document indexing completed with {} items", result.size());
-        return result;
-    }
-
-
-    private void processUpload(CancellationToken token, List<FileBuffer> bufferedFiles, List<Document> documents) {
-        if (uploadFinalizerService.checkCancelledAndFinalize(token, documents, null, null)) return;
-        List<String> blobNames = uploadProcessor.process(bufferedFiles);
-        if (uploadFinalizerService.checkCancelledAndFinalize(token, documents, null, blobNames)) return;
-        mapBlobNamesToDocuments(documents, blobNames);
-        if (uploadFinalizerService.checkCancelledAndFinalize(token, documents, null, blobNames)) return;
-        List<DocumentIndex> documentIndices = handleIndexDocuments(documents);
-        if (uploadFinalizerService.checkCancelledAndFinalize(token, documents, documentIndices, blobNames)) return;
-        uploadFinalizerService.finalizeUpload(token);
-    }
-
-
-    private void mapBlobNamesToDocuments(List<Document> documents, List<String> blobNames) {
-        for (int i = 0; i < documents.size(); i++) {
-            documents.get(i).setBlobName(blobNames.get(i));
-        }
-    }
-
-    private List<Document> saveDocuments(List<FileBuffer> fileBuffers) {
-        List<Document> documents = mapFilesBufferToListDocument(fileBuffers);
-        documents = documentRepo.saveAll(documents);
-        return documents;
-    }
-
-    private List<Document> saveDocumentsWithFolder(List<FileBuffer> fileBuffers, Long folderId) {
-        // Lưu tài liệu vào cơ sở dữ liệu
-        List<Document> documents = mapFilesBufferToListDocument(fileBuffers);
-        Folder folder = getFolderByIdOrThrow(folderId);
-        documents.forEach(document -> document.setParent(folder));
-        documents = documentRepo.saveAll(documents);
-        return documents;
     }
 
     @Override
@@ -187,40 +140,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     protected Document saveResource(Document resource) {
         return documentRepo.save(resource);
     }
-
-    private List<Document> mapFilesBufferToListDocument(List<FileBuffer> bufferList) {
-        List<Document> documents = new ArrayList<>();
-        User uploader = authenticationService.getCurrentUser();
-        // Lấy tên file upload
-        List<String> listFileName = bufferList.stream().map(FileBuffer::getFileName).toList();
-
-        // Tìm các document đã tồn tại theo tên
-        List<Document> existingDocuments = documentRepo.findAllByListName(listFileName);
-
-        // Map tên -> Document đã tồn tại, để tra nhanh
-        Map<String, Document> existingMap = existingDocuments.stream().collect(Collectors.toMap(Document::getName, Function.identity(), (d1, d2) -> d1.getVersion() >= d2.getVersion() ? d1 : d2 // giữ document có version cao hơn
-        ));
-
-
-        // Duyệt từng file
-        for (FileBuffer buffer : bufferList) {
-            String fileName = buffer.getFileName();
-            Document document = documentMapperService.mapFileBufferToDocument(buffer);
-            document.setOwner(uploader);
-            // Nếu file trùng tên với file cũ → tăng version
-            if (existingMap.containsKey(fileName)) {
-                int oldVersion = existingMap.get(fileName).getVersion();
-                document.setVersion(oldVersion + 1);
-            } else {
-                document.setVersion(1); // File mới hoàn toàn
-            }
-
-            documents.add(document);
-        }
-
-        return documents;
-    }
-
 
     @Override
     public void softDeleteDocumentsByFolderIds(List<Long> folderIds) {

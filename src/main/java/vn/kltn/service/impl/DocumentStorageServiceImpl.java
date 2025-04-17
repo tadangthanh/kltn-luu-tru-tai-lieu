@@ -75,4 +75,11 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
         return azureStorageService.copyBlob(blobName);
     }
 
+    @Override
+    public List<Document> saveDocuments(List<FileBuffer> bufferedFiles) {
+        List<Document> documents = documentMapperService.mapFilesBufferToListDocument(bufferedFiles);
+        documents = documentRepo.saveAll(documents);
+        return documents;
+    }
+
 }
