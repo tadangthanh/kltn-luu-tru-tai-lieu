@@ -8,7 +8,7 @@ import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.PermissionResponse;
 import vn.kltn.dto.response.ResponseData;
-import vn.kltn.service.impl.IFolderPermissionService;
+import vn.kltn.service.IFolderPermissionService;
 import vn.kltn.validation.Create;
 import vn.kltn.validation.Update;
 

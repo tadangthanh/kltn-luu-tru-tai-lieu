@@ -18,7 +18,6 @@ import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.Tag;
-import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.repository.DocumentRepo;
@@ -45,8 +44,9 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     private final ApplicationEventPublisher eventPublisher;
     private final IDocumentStorageService documentStorageService;
     private final IDocumentMapperService documentMapperService;
+    private final IDocumentSearchService documentSearchService;
 
-    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo  , IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService) {
+    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
         this.documentRepo = documentRepo;
         this.documentHasTagService = documentHasTagService;
@@ -55,6 +55,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         this.eventPublisher = eventPublisher;
         this.documentStorageService = documentStorageService;
         this.documentMapperService = documentMapperService;
+        this.documentSearchService = documentSearchService;
     }
 
     @Override
@@ -63,7 +64,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         // luu db
         List<Document> documents = documentStorageService.saveDocuments(bufferedFiles);
         // upload file to cloud
-        documentStorageService.store(token,bufferedFiles,documents);
+        documentStorageService.store(token, bufferedFiles, documents);
         // thong bao bang websocket
     }
 
@@ -73,7 +74,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         // luu db
         List<Document> documents = documentStorageService.saveDocumentsWithFolder(bufferedFiles, parentId);
         // storage file to cloud
-        documentStorageService.store(token,bufferedFiles,documents);
+        documentStorageService.store(token, bufferedFiles, documents);
         // thua ke quyen cua parent
         documentPermissionService.inheritPermissions(documents);
         // thong bao bang websocket
@@ -87,7 +88,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         documentHasTagService.deleteAllByDocumentId(resource.getId());
         documentPermissionService.deletePermissionByResourceId(resource.getId());
         documentRepo.delete(resource);
-        documentIndexService.deleteIndex(resource.getId().toString());
+        documentIndexService.deleteDocById(resource.getId());
     }
 
     @Override
@@ -112,7 +113,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         log.info("soft delete document with id {}", document.getId());
         document.setDeletedAt(LocalDateTime.now());
         document.setPermanentDeleteAt(LocalDateTime.now().plusDays(documentRetentionDays));
-        documentIndexService.markDeleteDocument(document.getId().toString(), true);
+        documentIndexService.markDeleteDocument(document.getId(), true);
     }
 
     @Override
@@ -123,7 +124,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         validateResourceDeleted(resource);
         resource.setDeletedAt(null);
         resource.setPermanentDeleteAt(null);
-        documentIndexService.markDeleteDocument(resourceId.toString(), false);
+        documentIndexService.markDeleteDocument(resourceId, false);
         return mapToR(resource);
     }
 
@@ -147,7 +148,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         documentRepo.setDeleteDocument(folderIds, LocalDateTime.now(), LocalDateTime.now().plusDays(documentRetentionDays));
         List<Long> documentsMarkDeleted = documentRepo.findDocumentIdsWithParentIds(folderIds);
         // danh dau isDeleted o elasticsearch
-        markDeletedIndexByDocumentIds(documentsMarkDeleted, true);
+        documentIndexService.markDeleteDocuments(documentsMarkDeleted, true);
     }
 
     @Override
@@ -200,25 +201,12 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     public void restoreDocumentsByFolderIds(List<Long> folderIds) {
         documentRepo.setDeleteDocument(folderIds, null, null);
         List<Long> documentIdsToMarkDelete = documentRepo.findDocumentIdsWithParentIds(folderIds);
-        markDeletedIndexByDocumentIds(documentIdsToMarkDelete, false);
+        documentIndexService.markDeleteDocuments(documentIdsToMarkDelete, false);
     }
 
     @Override
     public List<DocumentIndexResponse> searchMetadata(String query, Pageable pageable) {
-        log.info("search document by me");
-        // Lấy danh sách documentId mà người dùng có quyền truy cập
-        User currentUser = authenticationService.getCurrentUser();
-        Set<Long> listDocShardedWithMe = documentPermissionService.getDocumentIdsByUser(currentUser.getId());
-        return documentIndexService.getDocumentByMe(listDocShardedWithMe, query, pageable.getPageNumber(), pageable.getPageSize());
-    }
-
-    private void markDeletedIndexByDocumentIds(List<Long> documentIds, boolean value) {
-        if (documentIds.isEmpty()) {
-            return; // Không có document nào để đánh dấu, thoát sớm
-        }
-        // Chuyển đổi danh sách documentIds thành danh sách String
-        List<String> documentIdsAsString = documentIds.stream().map(String::valueOf).toList();
-        documentIndexService.markDeleteDocumentsIndex(documentIdsAsString, value);
+        return documentSearchService.getDocumentByMe(query, pageable.getPageNumber(), pageable.getPageSize());
     }
 
     @Override
@@ -248,8 +236,8 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
     private Document copyDocument(Document document) {
         Document copied = documentMapperService.copyDocument(document);
-        String nameCopy= document.getName().substring(0,document.getName().lastIndexOf(".")-1)+"_copy"+
-                document.getName().substring(document.getName().lastIndexOf("."));
+        String nameCopy = document.getName().substring(0, document.getName().lastIndexOf(".") - 1) + "_copy" +
+                          document.getName().substring(document.getName().lastIndexOf("."));
         copied.setName(nameCopy);
         documentRepo.save(copied);
         copied.setDeletedAt(null);
@@ -274,7 +262,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         Document docExists = getResourceByIdOrThrow(documentId);
         documentMapperService.updateDocument(docExists, documentRequest);
         docExists = documentRepo.save(docExists);
-        eventPublisher.publishEvent(new DocumentUpdatedEvent(this,documentId));
+        eventPublisher.publishEvent(new DocumentUpdatedEvent(this, documentId));
         return documentMapperService.mapToDocumentResponse(docExists);
     }
 }

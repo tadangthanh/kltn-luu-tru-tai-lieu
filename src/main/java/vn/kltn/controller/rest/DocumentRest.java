@@ -30,7 +30,6 @@ import java.util.UUID;
 @Validated
 public class DocumentRest {
     private final IDocumentService documentService;
-    private final IDocumentSearchService documentSearchService;
     private final UploadTokenManager uploadTokenManager;
 
     @PostMapping
@@ -104,7 +103,7 @@ public class DocumentRest {
 
     @GetMapping
     public ResponseData<PageResponse<List<DocumentResponse>>> search(Pageable pageable, @RequestParam(required = false, value = "documents") String[] documents) {
-        return new ResponseData<>(200, "Thành công", documentSearchService.searchByCurrentUser(pageable, documents));
+        return new ResponseData<>(200, "Thành công", documentService.searchByCurrentUser(pageable, documents));
     }
 
     @GetMapping("/search-metadata")

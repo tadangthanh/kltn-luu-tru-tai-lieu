@@ -76,9 +76,9 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
 
     @Override
     @Async("taskExecutor")
-    public void deleteIndex(String indexId) {
+    public void deleteDocById(Long indexId) {
         log.info("delete index Id: {}", indexId);
-        documentIndexRepo.deleteById(indexId);
+        documentIndexRepo.deleteById(indexId.toString());
     }
 
     /**
@@ -89,9 +89,9 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
      */
     @Override
     @Async("taskExecutor")
-    public void markDeleteDocument(String indexId, boolean value) {
+    public void markDeleteDocument(Long indexId, boolean value) {
         log.info("mark deleted indexId: {}", indexId);
-        customDocumentIndexRepo.markDeletedByIndexId(indexId, value);
+        customDocumentIndexRepo.markDeletedByIndexId(indexId.toString(), value);
     }
 
     @Override
@@ -102,13 +102,18 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     @Override
     @Async("taskExecutor")
     public void deleteIndexByIdList(List<Long> indexIds) {
+        log.info("delete indexIds: {}", indexIds);
+        if(indexIds == null || indexIds.isEmpty()) return;
         customDocumentIndexRepo.deleteIndexByIdList(indexIds);
     }
 
     @Override
     @Async("taskExecutor")
-    public void markDeleteDocumentsIndex(List<String> indexIds, boolean value) {
-        customDocumentIndexRepo.markDeleteDocumentsIndex(indexIds, value);
+    public void markDeleteDocuments(List<Long> indexIds, boolean value) {
+        log.info("mark deleted indexIds: {}, value {}", indexIds,value);
+        if(indexIds == null || indexIds.isEmpty()) return;
+        List<String> indexIdsString = indexIds.stream().map(String::valueOf).toList();
+        customDocumentIndexRepo.markDeleteDocumentsIndex(indexIdsString, value);
     }
 
     @Override

@@ -11,16 +11,15 @@ import java.util.concurrent.CompletableFuture;
 public interface IDocumentIndexService {
     void insertDoc(Document document);
 
-    void deleteIndex(String indexId);
+    void deleteDocById(Long indexId);
 
-    void markDeleteDocument(String indexId, boolean value);
+    void markDeleteDocument(Long indexId, boolean value);
 
     List<DocumentIndexResponse> getDocumentByMe(Set<Long> listDocumentSharedWith, String query, int page, int size);
 
-
     void deleteIndexByIdList(List<Long> indexIds);
 
-    void markDeleteDocumentsIndex(List<String> indexIds, boolean value);
+    void markDeleteDocuments(List<Long> indexIds, boolean value);
 
     CompletableFuture<List<DocumentIndex>> insertAllDoc(List<Document> documents);
 

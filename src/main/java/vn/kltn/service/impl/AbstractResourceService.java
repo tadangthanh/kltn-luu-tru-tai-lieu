@@ -18,6 +18,7 @@ import vn.kltn.repository.specification.SpecificationUtil;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IDocumentPermissionService;
+import vn.kltn.service.IFolderPermissionService;
 import vn.kltn.service.IResourceService;
 
 import java.util.List;

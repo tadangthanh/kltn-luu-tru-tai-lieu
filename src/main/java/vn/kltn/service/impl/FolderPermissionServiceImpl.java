@@ -12,6 +12,7 @@ import vn.kltn.map.PermissionMapper;
 import vn.kltn.repository.FolderRepo;
 import vn.kltn.repository.PermissionRepo;
 import vn.kltn.service.IAuthenticationService;
+import vn.kltn.service.IFolderPermissionService;
 import vn.kltn.service.IUserService;
 import vn.kltn.service.event.MultipleDocumentsUpdatedEvent;
 
