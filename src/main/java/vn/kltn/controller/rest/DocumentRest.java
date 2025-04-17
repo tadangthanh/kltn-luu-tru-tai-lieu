@@ -41,7 +41,7 @@ public class DocumentRest {
         String uploadId = UUID.randomUUID().toString();
         uploadTokenManager.registerToken(uploadId, token);
         token.setUploadId(uploadId);
-        documentService.uploadDocumentWithoutParent(FileUtil.getFileBufferList(files), token);
+        documentService.uploadDocumentEmptyParent(FileUtil.getFileBufferList(files), token);
         return new ResponseData<>(201, "Đang tải ....", uploadId);
     }
 

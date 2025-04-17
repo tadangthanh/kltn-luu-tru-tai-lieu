@@ -12,7 +12,7 @@ import vn.kltn.entity.Document;
 import java.util.List;
 
 public interface IDocumentService extends IResourceService<Document, DocumentResponse> {
-    void uploadDocumentWithoutParent(List<FileBuffer> bufferedFiles, CancellationToken token);
+    void uploadDocumentEmptyParent(List<FileBuffer> bufferedFiles, CancellationToken token);
 
     void uploadDocumentWithParent(Long folderId, List<FileBuffer> bufferedFiles, CancellationToken token);
 

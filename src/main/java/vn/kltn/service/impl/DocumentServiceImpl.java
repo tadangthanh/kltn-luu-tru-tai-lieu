@@ -59,7 +59,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
     @Override
     @Async("taskExecutor")
-    public void uploadDocumentWithoutParent(List<FileBuffer> bufferedFiles, CancellationToken token) {
+    public void uploadDocumentEmptyParent(List<FileBuffer> bufferedFiles, CancellationToken token) {
         // luu db
         List<Document> documents = documentStorageService.saveDocuments(bufferedFiles);
         // upload file to cloud
