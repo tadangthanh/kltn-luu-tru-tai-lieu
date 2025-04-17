@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.entity.Folder;
 import vn.kltn.entity.User;
+import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IFolderPermissionService;
@@ -31,6 +32,14 @@ public class FolderValidationImpl implements IFolderValidation {
         if (!folderParent.getOwner().getId().equals(currentUser.getId())) {
             // neu ko phai la chu so huu thi kiem tra xem co phai la editor hay khong
             folderPermissionService.validateUserIsEditor(folderParent.getId(), currentUser.getId());
+        }
+    }
+
+    @Override
+    public void validateFolderDeleted(Folder folder) {
+        if (folder.getDeletedAt() == null) {
+            log.warn("Folder with id {} is not deleted", folder.getId());
+            throw new ConflictResourceException("Thư mục chưa bị xóa");
         }
     }
 }
