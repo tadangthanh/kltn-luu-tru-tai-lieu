@@ -10,7 +10,6 @@ import vn.kltn.dto.response.PermissionResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.FileSystemEntity;
 import vn.kltn.entity.Permission;
-import vn.kltn.entity.User;
 import vn.kltn.map.PermissionMapper;
 import vn.kltn.repository.FolderRepo;
 import vn.kltn.repository.PermissionRepo;

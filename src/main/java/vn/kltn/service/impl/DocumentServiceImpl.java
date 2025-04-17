@@ -4,12 +4,15 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.FileBuffer;
@@ -31,6 +34,7 @@ import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.specification.SpecificationUtil;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
+import vn.kltn.service.event.DocumentUpdatedEvent;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,8 +57,9 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     private final IDocumentPermissionService documentPermissionService;
     private final UploadFinalizerService uploadFinalizerService;
     private final IUploadProcessor uploadProcessor;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, UploadFinalizerService uploadFinalizerService, IUploadProcessor uploadProcessor) {
+    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, UploadFinalizerService uploadFinalizerService, IUploadProcessor uploadProcessor, ApplicationEventPublisher eventPublisher) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
         this.documentRepo = documentRepo;
         this.documentMapper = documentMapper;
@@ -64,6 +69,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         this.documentPermissionService = documentPermissionService;
         this.uploadFinalizerService = uploadFinalizerService;
         this.uploadProcessor = uploadProcessor;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -394,7 +400,12 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         Document docExists = getResourceByIdOrThrow(documentId);
         documentMapper.updateDocument(docExists, documentRequest);
         docExists = documentRepo.save(docExists);
-        documentIndexService.updateDocument(docExists);
+//        documentIndexService.updateDocument(docExists);
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                eventPublisher.publishEvent(new DocumentUpdatedEvent(this,documentId));
+            }});
         return mapToDocumentResponse(docExists);
     }
 }

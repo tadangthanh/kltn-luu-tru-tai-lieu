@@ -28,4 +28,6 @@ public interface IDocumentIndexService {
     CompletableFuture<List<DocumentIndex>> insertAllDoc(List<Document> documents);
 
     void deleteAll(List<DocumentIndex> documentIndices);
+
+    void syncDocument(Long docId);
 }

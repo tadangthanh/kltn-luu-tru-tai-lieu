@@ -43,6 +43,7 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     private final DocumentPermissionCommonService documentPermissionCommonService;
     private final CustomDocumentIndexRepo customDocumentIndexRepo;
     private final IAzureStorageService azureStorageService;
+    private final DocumentCommonService documentCommonService;
     @Qualifier("taskExecutor")
     private final Executor taskExecutor;
 
@@ -191,6 +192,14 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     @Async("taskExecutor")
     public void deleteAll(List<DocumentIndex> documentIndices) {
         documentIndexRepo.deleteAll(documentIndices);
+    }
+
+    @Override
+    @Async("taskExecutor")
+    public void syncDocument(Long docId) {
+        log.info("sync documentId: {}", docId);
+        Document document = documentCommonService.getDocumentByIdOrThrow(docId);
+        customDocumentIndexRepo.updateDocument(mapDocumentIndex(document));
     }
 
 
