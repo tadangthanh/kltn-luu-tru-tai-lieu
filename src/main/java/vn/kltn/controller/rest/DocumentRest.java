@@ -14,6 +14,7 @@ import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.*;
 import vn.kltn.repository.util.FileUtil;
+import vn.kltn.service.IDocumentSearchService;
 import vn.kltn.service.IDocumentService;
 import vn.kltn.service.impl.UploadTokenManager;
 import vn.kltn.validation.ValidFiles;
@@ -29,6 +30,7 @@ import java.util.UUID;
 @Validated
 public class DocumentRest {
     private final IDocumentService documentService;
+    private final IDocumentSearchService documentSearchService;
     private final UploadTokenManager uploadTokenManager;
 
     @PostMapping
@@ -102,7 +104,7 @@ public class DocumentRest {
 
     @GetMapping
     public ResponseData<PageResponse<List<DocumentResponse>>> search(Pageable pageable, @RequestParam(required = false, value = "documents") String[] documents) {
-        return new ResponseData<>(200, "Thành công", documentService.searchByCurrentUser(pageable, documents));
+        return new ResponseData<>(200, "Thành công", documentSearchService.searchByCurrentUser(pageable, documents));
     }
 
     @GetMapping("/search-metadata")

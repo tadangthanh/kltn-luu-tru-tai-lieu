@@ -46,7 +46,6 @@ import java.util.stream.Collectors;
 public class DocumentServiceImpl extends AbstractResourceService<Document, DocumentResponse> implements IDocumentService {
     private final DocumentRepo documentRepo;
     private final DocumentMapper documentMapper;
-    private final IAzureStorageService azureStorageService;
     private final IDocumentHasTagService documentHasTagService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
@@ -55,18 +54,22 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     private final UploadFinalizerService uploadFinalizerService;
     private final IUploadProcessor uploadProcessor;
     private final ApplicationEventPublisher eventPublisher;
-
-    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper, IAzureStorageService azureStorageService, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, UploadFinalizerService uploadFinalizerService, IUploadProcessor uploadProcessor, ApplicationEventPublisher eventPublisher) {
+    private final DocumentStorageService documentStorageService;
+    private final IDocumentSearchService documentSearchService;
+    private final IDocumentMapperService documentMapperService;
+    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper , IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, UploadFinalizerService uploadFinalizerService, IUploadProcessor uploadProcessor, ApplicationEventPublisher eventPublisher, DocumentStorageService documentStorageService, IDocumentSearchService documentSearchService, IDocumentMapperService documentMapperService) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
         this.documentRepo = documentRepo;
         this.documentMapper = documentMapper;
-        this.azureStorageService = azureStorageService;
         this.documentHasTagService = documentHasTagService;
         this.documentIndexService = documentIndexService;
         this.documentPermissionService = documentPermissionService;
         this.uploadFinalizerService = uploadFinalizerService;
         this.uploadProcessor = uploadProcessor;
         this.eventPublisher = eventPublisher;
+        this.documentStorageService = documentStorageService;
+        this.documentSearchService = documentSearchService;
+        this.documentMapperService = documentMapperService;
     }
 
     @Override
@@ -133,26 +136,26 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         return documents;
     }
 
-    @Override
-    public PageResponse<List<DocumentResponse>> searchByCurrentUser(Pageable pageable, String[] documents) {
-        log.info("search document by current user");
-        if (documents != null && documents.length > 0) {
-            EntitySpecificationsBuilder<Document> builder = new EntitySpecificationsBuilder<>();
-            Specification<Document> spec = SpecificationUtil.buildSpecificationFromFilters(documents, builder);
-            // nó trả trả về 1 spec mới
-            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
-            String email = SecurityContextHolder.getContext().getAuthentication().getName();
-            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdBy"), email));
-            Page<Document> docPage = documentRepo.findAll(spec, pageable);
-            return PaginationUtils.convertToPageResponse(docPage, pageable, this::mapToDocumentResponse);
-        }
-        return PaginationUtils.convertToPageResponse(documentRepo.findAll(pageable), pageable, this::mapToDocumentResponse);
-    }
+//    @Override
+//    public PageResponse<List<DocumentResponse>> searchByCurrentUser(Pageable pageable, String[] documents) {
+//        log.info("search document by current user");
+//        if (documents != null && documents.length > 0) {
+//            EntitySpecificationsBuilder<Document> builder = new EntitySpecificationsBuilder<>();
+//            Specification<Document> spec = SpecificationUtil.buildSpecificationFromFilters(documents, builder);
+//            // nó trả trả về 1 spec mới
+//            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
+//            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+//            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdBy"), email));
+//            Page<Document> docPage = documentRepo.findAll(spec, pageable);
+//            return PaginationUtils.convertToPageResponse(docPage, pageable, documentMapperService::mapToDocumentResponse);
+//        }
+//        return PaginationUtils.convertToPageResponse(documentRepo.findAll(pageable), pageable, this::mapToDocumentResponse);
+//    }
 
     @Override
     protected void hardDeleteResource(Document resource) {
         log.info("hard delete document with id {}", resource.getId());
-        azureStorageService.deleteBlob(resource.getBlobName());
+        documentStorageService.deleteBlob(resource.getBlobName());
         documentHasTagService.deleteAllByDocumentId(resource.getId());
         documentPermissionService.deletePermissionByResourceId(resource.getId());
         documentRepo.delete(resource);
@@ -243,9 +246,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         return documents;
     }
 
-    private DocumentResponse mapToDocumentResponse(Document document) {
-        return documentMapper.toDocumentResponse(document);
-    }
 
     @Override
     public void softDeleteDocumentsByFolderIds(List<Long> folderIds) {
@@ -272,7 +272,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         List<Long> documentIdsToDelete = documentsToDelete.stream().map(Document::getId).toList();
 
         // Xóa trên cloud
-        deleteBlobsFromCloud(blobNamesToDelete);
+        documentStorageService.deleteBlobsFromCloud(blobNamesToDelete);
         // Xóa tags liên quan đến documents
         deleteTags(documentIdsToDelete);
         // Xóa documents khỏi database
@@ -288,11 +288,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         }
     }
 
-    private void deleteBlobsFromCloud(List<String> blobNames) {
-        if (!blobNames.isEmpty()) {
-            azureStorageService.deleteBLobs(blobNames);
-        }
-    }
 
     private void deleteTags(List<Long> documentIds) {
         if (!documentIds.isEmpty()) {
@@ -340,7 +335,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
     private DocumentDataResponse mapDocToDocDataResponse(Document document) {
         String blobName = document.getBlobName();
-        try (InputStream inputStream = azureStorageService.downloadBlobInputStream(blobName)) {
+        try (InputStream inputStream = documentStorageService.downloadBlobInputStream(blobName)) {
             return DocumentDataResponse.builder().data(inputStream.readAllBytes()).name(document.getName() + document.getBlobName().substring(document.getBlobName().lastIndexOf('.'))).type(document.getType()).documentId(document.getId()).build();
         } catch (IOException e) {
             log.error("Error reading file from Azure Storage: {}", e.getMessage());
@@ -353,7 +348,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         log.info("copy document by id: {}", documentId);
         Document document = getResourceByIdOrThrow(documentId);
         Document copied = copyDocument(document);
-        return mapToDocumentResponse(copied);
+        return documentMapperService.mapToDocumentResponse(copied);
     }
 
 
@@ -366,7 +361,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         copied.setDeletedAt(null);
         copied.setPermanentDeleteAt(null);
         copyDocumentHasTag(document, copied);
-        String blobDestinationCopied = azureStorageService.copyBlob(document.getBlobName());
+        String blobDestinationCopied = documentStorageService.copyBlob(document.getBlobName());
         copied.setBlobName(blobDestinationCopied);
         // Lưu vào elasticsearch
         documentIndexService.insertDoc(copied);
@@ -386,6 +381,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         documentMapper.updateDocument(docExists, documentRequest);
         docExists = documentRepo.save(docExists);
         eventPublisher.publishEvent(new DocumentUpdatedEvent(this,documentId));
-        return mapToDocumentResponse(docExists);
+        return documentMapperService.mapToDocumentResponse(docExists);
     }
 }
