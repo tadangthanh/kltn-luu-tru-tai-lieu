@@ -13,13 +13,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
-import vn.kltn.common.TokenType;
-import vn.kltn.entity.*;
-import vn.kltn.service.IJwtService;
+import vn.kltn.entity.Document;
+import vn.kltn.entity.Folder;
+import vn.kltn.entity.User;
 import vn.kltn.service.IMailService;
 
 import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
 import java.util.Objects;
 
 @Service
@@ -32,10 +31,6 @@ public class GmailServiceImpl implements IMailService {
     private String emailFrom;
     @Value("${spring.mail.confirm-url}")
     private String confirmUrl;
-    @Value("${app.link.open-document}")
-    private String openDocLink;
-    @Value("${app.link.open-folder}")
-    private String openFolderLink;
     @Value("${app.link.accept-owner-document}")
     private String acceptOwnerDocumentLink;
     @Value("${app.link.accept-owner-folder}")
@@ -46,14 +41,8 @@ public class GmailServiceImpl implements IMailService {
     private String declineOwnerFolderLink;
     @Value("${app.link.oauth2.google}")
     private String oauth2GoogleLink;
-    @Value("${spring.mail.invitation-repo-url}")
-    private String invitationRepoUrl;
     @Value("${spring.mail.reset-password-url}")
     private String resetPasswordUrl;
-    @Value("${jwt.expirationDayInvitation}")
-    private long expiryDayInvitation;
-
-    private final IJwtService jwtService;
 
     @Override
     public String sendEmail(String recipients, String subject, String content, MultipartFile[] files) {
@@ -110,40 +99,6 @@ public class GmailServiceImpl implements IMailService {
         sendEmail("Ta dang thanh", email, subject, template, context);
     }
 
-//    @Override
-//    @Async
-//    public void sendEmailInviteDocumentAccess(String recipientEmail, DocumentAccess documentAccess, String message) {
-//        log.info("sending email invite to: {}", recipientEmail);
-//        Document document = documentAccess.getResource();
-//        User owner = document.getOwner();
-//        String subject = String.format("%s đã chia sẻ một tài liệu với bạn", owner.getFullName());
-//        String template = "email-invite-document.html";
-//        Context context = new Context();
-//        context.setVariable("openDocLink", openDocLink + document.getId());
-//        context.setVariable("ownerName", owner.getFullName());
-//        context.setVariable("documentName", document.getName());
-//        context.setVariable("permission", documentAccess.getPermission().getDescription());
-//        context.setVariable("message", message);
-//        sendEmail(owner.getFullName(), recipientEmail, subject, template, context);
-//    }
-
-//    @Override
-//    @Async
-//    public void sendEmailInviteFolderAccess(String recipientEmail, FolderAccess folderAccess, String message) {
-//        log.info("sending email invite to: {}", recipientEmail);
-//        Folder folder = folderAccess.getResource();
-//        User owner = folder.getOwner();
-//        String subject = String.format("%s đã chia sẻ một tài liệu với bạn", owner.getFullName());
-//        String template = "email-invite-folder.html";
-//        Context context = new Context();
-//        context.setVariable("openFolderLink", openFolderLink + folder.getId());
-//        context.setVariable("ownerName", owner.getFullName());
-//        context.setVariable("folderName", folder.getName());
-//        context.setVariable("message", message);
-//        context.setVariable("permission", folderAccess.getPermission().getDescription());
-//        sendEmail(owner.getFullName(), recipientEmail, subject, template, context);
-//    }
-
     @Override
     @Async
     public void sendEmailTransferOwnershipDocument(String recipientEmail, Document document) {
@@ -173,24 +128,6 @@ public class GmailServiceImpl implements IMailService {
         context.setVariable("declineLink", oauth2GoogleLink + "?redirectUrl=" + declineOwnerFolderLink + folder.getId());
         sendEmail(owner.getFullName(), recipientEmail, subject, template, context);
     }
-
-    @Override
-    @Async
-    public void sendInvitationMember(String email, Repo repo) {
-        log.info("Sending invitation repository to {}", email);
-        String subject = "Lời mời tham gia";
-        String template = "invitation-repo.html";
-        Context context = new Context();
-        String token = jwtService.generateToken(TokenType.INVITATION_TOKEN, new HashMap<>(), email);
-        context.setVariable("linkAccept", invitationRepoUrl + "/accept?repoId=" + repo.getId() + "&token=" + token);
-        context.setVariable("linkReject", invitationRepoUrl + "/reject?repoId=" + repo.getId() + "&email=" + email);
-        context.setVariable("repo", repo);
-        context.setVariable("owner", repo.getOwner());
-        context.setVariable("expiryDayInvitation", expiryDayInvitation);
-        sendEmail("Ta dang thanh", email, subject, template, context);
-
-    }
-
 
     private void sendEmail(String from, String recipient, String subject, String template, Context context) {
         try {

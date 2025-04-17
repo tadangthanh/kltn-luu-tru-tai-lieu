@@ -3,17 +3,12 @@ package vn.kltn.service.impl;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.models.BlobStorageException;
-import com.azure.storage.blob.sas.BlobContainerSasPermission;
-import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
 import com.azure.storage.blob.specialized.BlockBlobClient;
-import com.azure.storage.common.sas.SasProtocol;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import vn.kltn.entity.MemberRole;
 import vn.kltn.exception.CustomBlobStorageException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.service.IAzureStorageService;
@@ -22,7 +17,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -33,44 +27,9 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 @Slf4j
 public class AzureStorageServiceImpl implements IAzureStorageService {
-    @Value("${azure.blob-storage.account-name}")
-    private String accountName;
     private final BlobServiceClient blobServiceClient;
     @Value("${spring.cloud.azure.storage.blob.container-name}")
     private String containerNameDefault;
-
-    @Override
-    public String uploadChunkedWithContainerName(InputStream data, String originalFileName, String containerName, String sasToken, long length, int chunkSize) {
-        try {
-            String containerUrl = String.format("https://%s.blob.core.windows.net/%s?%s", accountName, containerName, sasToken);
-            BlobContainerClient blobContainerClient = new BlobServiceClientBuilder().endpoint(containerUrl).buildClient().getBlobContainerClient(containerName);
-            String newFileName = UUID.randomUUID() + "_" + originalFileName;
-            BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(newFileName).getBlockBlobClient();
-
-            List<String> blockIds = new ArrayList<>();
-            byte[] buffer = new byte[chunkSize];
-            int bytesRead;
-            int blockNumber = 0;
-
-            while ((bytesRead = data.read(buffer)) != -1) {
-                String blockId = Base64.getEncoder().encodeToString(String.format("%06d", blockNumber).getBytes()); // Tạo Block ID
-                blockBlobClient.stageBlock(blockId, new ByteArrayInputStream(buffer, 0, bytesRead), bytesRead);  // Upload từng phần
-                blockIds.add(blockId);
-                // 📌 In log để biết phần nào đã upload xong
-                // 📌 In log với số phần upload thành công
-                System.out.println("✅ Đã upload thành công phần " + (blockNumber + 1) + " trên tổng số " + ((length + chunkSize - 1) / chunkSize) + " phần");
-                blockNumber++;
-            }
-
-            // Ghép các phần lại
-            blockBlobClient.commitBlockList(blockIds);
-
-            return blockBlobClient.getBlobName();
-        } catch (IOException | BlobStorageException e) {
-            log.error("Error uploading file from InputStream: {}", e.getMessage());
-            throw new CustomBlobStorageException("Lỗi upload file ");
-        }
-    }
 
     @Override
     public String uploadChunkedWithContainerDefault(InputStream data, String originalFileName, long length, int chunkSize) {
@@ -143,7 +102,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
 
             // Tạo client cho blob nguồn và blob đích
             BlobClient sourceBlobClient = blobContainerClient.getBlobClient(sourceBlobName);
-            String destinationBlobName = UUID.randomUUID() + "_" + sourceBlobName.substring(sourceBlobName.indexOf("_")+1, sourceBlobName.lastIndexOf(".") - 1) +"_copy"+ sourceBlobName.substring(sourceBlobName.lastIndexOf("."));
+            String destinationBlobName = UUID.randomUUID() + "_" + sourceBlobName.substring(sourceBlobName.indexOf("_") + 1, sourceBlobName.lastIndexOf(".") - 1) + "_copy" + sourceBlobName.substring(sourceBlobName.lastIndexOf("."));
             BlobClient destinationBlobClient = blobContainerClient.getBlobClient(destinationBlobName);
 
             // Kiểm tra xem file nguồn có tồn tại không
@@ -164,53 +123,6 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
         }
     }
 
-    /**
-     * @param repoName : tên repository
-     */
-    @Override
-    public void createContainerForRepository(String repoName) {
-        // container k co ki tu dac biet, khoang trang va moi container la duy nhat
-        String containerName = repoName.toLowerCase().replaceAll("[^a-z0-9-]", "").replaceAll("^-|-$", "");
-        blobServiceClient.createBlobContainer(containerName);
-    }
-
-    // tạo quyền cho thành viên của repo tùy vào quyền của từng thành viên
-
-    /**
-     * @param containerName : tên container cần tạo SAS Token
-     * @param memberRole    : quyền hạn của từng thành viên
-     * @return : trả về SAS Token của thành viên với container này
-     */
-    @Override
-    public String generatePermissionRepoByMemberRole(String containerName, MemberRole memberRole) {
-        BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
-        // Thiết lập thời gian hết hạn cho SAS Token
-        OffsetDateTime expiryTime = OffsetDateTime.now().plusMinutes(1);
-        // Tạo SAS Token với quyền hạn tùy vào từng thành viên
-        BlobServiceSasSignatureValues sasValues = new BlobServiceSasSignatureValues(expiryTime, generatePermissionForMember(memberRole)).setProtocol(SasProtocol.HTTPS_HTTP);  //  cho phép truy cập qua HTTPS_HTTP
-        return blobContainerClient.generateSas(sasValues);
-    }
-
-    @Override
-    public void deleteContainer(String containerName) {
-        try {
-            log.info("Deleting container:  {}", containerName);
-            BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
-            if (containerClient.exists()) {
-                containerClient.delete();
-                log.info("Container {} delete success", containerName);
-            } else {
-                log.warn("Container {} not exist", containerName);
-            }
-        } catch (BlobStorageException e) {
-            log.error("error delete container name: {}: {}", containerName, e.getMessage());
-        }
-    }
-
-    @Override
-    public void deleteBlob(String containerName, String blobName) {
-        deleteBlobByContainerAndBlob(containerName, blobName);
-    }
 
     @Override
     public void deleteBlob(String blobName) {
@@ -244,11 +156,6 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
         for (String blobName : blobNames) {
             deleteBlobByContainerAndBlob(containerNameDefault, blobName);
         }
-    }
-
-    @Override
-    public InputStream downloadBlobInputStream(String containerName, String blobName) {
-        return getInputStreamBlob(containerName, blobName);
     }
 
     @Override
@@ -295,66 +202,11 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
         }
     }
 
-    @Override
-    public byte[] downloadBlobByteData(String containerName, String blobName) {
-        try (InputStream inputStream = downloadBlobInputStream(containerName, blobName)) {
-            BlockBlobClient blobClient = getBlockBlobClient(containerName, blobName);
-
-            if (!blobClient.exists()) {
-                log.error("Blob not found: {}", blobName);
-                throw new ResourceNotFoundException("File không tồn tại: " + blobName);
-            }
-            // Đọc file từ Azure Blob Storage
-            return inputStream.readAllBytes();
-        } catch (Exception e) {
-            log.error("Error downloading blob: {}", e.getMessage());
-            throw new ResourceNotFoundException("Lỗi khi tải blob: " + blobName);
-        }
-    }
-
-
     /**
      * Helper method to get BlockBlobClient
      */
     private BlockBlobClient getBlockBlobClient(String containerName, String blobName) {
         return blobServiceClient.getBlobContainerClient(containerName).getBlobClient(blobName).getBlockBlobClient();
-    }
-
-
-    /**
-     * Tạo quyền cho thành viên của container
-     *
-     * @param memberRole : quyen cua thành viên
-     * @return : trả về quyền hạn của thành viên
-     */
-    private BlobContainerSasPermission generatePermissionForMember(MemberRole memberRole) {
-        BlobContainerSasPermission permission = new BlobContainerSasPermission();
-        switch (memberRole.getName()) {
-            case ADMIN -> {
-                permission.setCreatePermission(true);
-                permission.setWritePermission(true);  // Cho phép ghi dữ liệu
-                permission.setAddPermission(true);   // Cho phép thêm dữ liệu
-                permission.setReadPermission(true); // Đọc nội dung tệp
-                permission.setDeletePermission(true);
-                permission.setListPermission(true);
-            }
-            case VIEWER -> {
-                permission.setReadPermission(true);
-                permission.setListPermission(true);
-            } // Đọc nội dung tệp
-            case EDITOR -> {
-                permission.setCreatePermission(true);
-                permission.setWritePermission(true);
-                permission.setReadPermission(true);
-                permission.setAddPermission(true);   // Cho phép thêm dữ liệu
-                permission.setListPermission(true);
-            } // UPDATE thực chất là một phần của WRITE
-            default -> {
-                // Không làm gì nếu quyền không được xác định
-            }
-        }
-
-        return permission;
     }
 
 

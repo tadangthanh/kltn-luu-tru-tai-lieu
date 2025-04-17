@@ -28,17 +28,15 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
     private final FolderMapper folderMapper;
     private final FolderRepo folderRepo;
     private final IDocumentService documentService;
-    private final ResourceCommonService resourceCommonService;
     private final FolderCommonService folderCommonService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
 
-    public FolderServiceImpl(@Qualifier("folderPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IDocumentPermissionService documentPermissionService, FolderMapper folderMapper, FolderRepo folderRepo, IAuthenticationService authenticationService, IDocumentService documentService, ResourceCommonService resourceCommonService, FolderCommonService folderCommonService, IFolderPermissionService folderPermissionService) {
+    public FolderServiceImpl(@Qualifier("folderPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IDocumentPermissionService documentPermissionService, FolderMapper folderMapper, FolderRepo folderRepo, IAuthenticationService authenticationService, IDocumentService documentService , FolderCommonService folderCommonService, IFolderPermissionService folderPermissionService) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
         this.folderMapper = folderMapper;
         this.folderRepo = folderRepo;
         this.documentService = documentService;
-        this.resourceCommonService = resourceCommonService;
         this.folderCommonService = folderCommonService;
     }
 

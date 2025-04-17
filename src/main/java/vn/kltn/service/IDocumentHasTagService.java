@@ -2,7 +2,6 @@ package vn.kltn.service;
 
 import vn.kltn.dto.request.TagRequest;
 import vn.kltn.entity.Document;
-import vn.kltn.entity.File;
 import vn.kltn.entity.Tag;
 
 import java.util.List;
