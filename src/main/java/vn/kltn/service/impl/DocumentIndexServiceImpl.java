@@ -8,11 +8,9 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.entity.Document;
-import vn.kltn.entity.Permission;
 import vn.kltn.entity.Tag;
 import vn.kltn.exception.CustomIOException;
 import vn.kltn.exception.InsertIndexException;
-import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.index.DocumentIndex;
 import vn.kltn.map.DocumentIndexMapper;
 import vn.kltn.repository.elasticsearch.CustomDocumentIndexRepo;
@@ -168,13 +166,9 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     @Override
     @Async("taskExecutor")
     public void syncDocument(Long docId) {
-        try {
-            log.info("sync documentId: {}", docId);
-            Document document = documentCommonService.getDocumentByIdOrThrow(docId);
-            customDocumentIndexRepo.updateDocument(mapDocumentIndex(document));
-        } catch (ResourceNotFoundException e) {
-            log.warn("Document {} not found, skipping sync", docId);
-        }
+        log.info("sync documentId: {}", docId);
+        Document document = documentCommonService.getDocumentById(docId);
+        customDocumentIndexRepo.updateDocument(mapDocumentIndex(document));
     }
 
     @Override
@@ -182,7 +176,7 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     public void syncDocuments(Set<Long> documentIds) {
         log.info("sync list document");
         List<Document> documents = documentIds.stream()
-                .map(documentCommonService::getDocumentByIdOrThrow)
+                .map(documentCommonService::getDocumentById)
                 .toList();
 
         List<DocumentIndex> indices = documents.stream()

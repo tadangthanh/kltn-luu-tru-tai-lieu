@@ -12,7 +12,9 @@ import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.DocumentMapper;
 import vn.kltn.repository.DocumentRepo;
 
+import javax.print.Doc;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +28,15 @@ public class DocumentCommonService {
             log.warn("Document with id {} not found", documentId);
             return new ResourceNotFoundException("Không tìm thấy document");
         });
+    }
+    public Document getDocumentById(Long documentId) {
+        Optional<Document> documentOptional = documentRepo.findById(documentId);
+        if(documentOptional.isPresent()) {
+            return documentOptional.get();
+        } else {
+            log.warn("Document with id {} not found", documentId);
+            return null;
+        }
     }
 
     public Page<Document> getPageDocumentBySpec(Specification<Document> spec, Pageable pageable) {
