@@ -10,6 +10,8 @@ import java.util.List;
 public interface IDocumentStorageService {
     void deleteBlobsFromCloud(List<String> blobNames);
 
+    void deleteDocuments(List<Document> documents);
+
     void store(CancellationToken token, List<FileBuffer> bufferedFiles, List<Document> documents);
 
     void deleteBlob(String blobName);

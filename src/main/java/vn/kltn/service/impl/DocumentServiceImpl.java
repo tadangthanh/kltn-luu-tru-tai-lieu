@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -155,45 +154,10 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     public void hardDeleteDocumentByFolderIds(List<Long> folderIds) {
         // Lấy danh sách documents theo folderIds
         List<Document> documentsToDelete = documentRepo.findDocumentsByParentIds(folderIds);
-
         if (documentsToDelete.isEmpty()) {
             return; // Không có document nào để xóa, thoát sớm
         }
-
-        // Lấy danh sách blobName để xóa trên Azure
-        List<String> blobNamesToDelete = documentsToDelete.stream().map(Document::getBlobName).filter(Objects::nonNull).toList();
-
-        // Lấy danh sách documentId để xóa trong DB
-        List<Long> documentIdsToDelete = documentsToDelete.stream().map(Document::getId).toList();
-
-        // Xóa trên cloud
-        documentStorageService.deleteBlobsFromCloud(blobNamesToDelete);
-        // Xóa tags liên quan đến documents
-        deleteTags(documentIdsToDelete);
-        // Xóa documents khỏi database
-        // vì để cascade là ALL với permission nên ko cần xóa thủ công
-        deleteDocuments(documentIdsToDelete);
-        // xóa trong elasticsearch
-        deleteDataElasticSearch(documentIdsToDelete);
-    }
-
-    private void deleteDataElasticSearch(List<Long> documentIds) {
-        if (!documentIds.isEmpty()) {
-            documentIndexService.deleteIndexByIdList(documentIds);
-        }
-    }
-
-
-    private void deleteTags(List<Long> documentIds) {
-        if (!documentIds.isEmpty()) {
-            documentHasTagService.deleteAllByDocumentIds(documentIds);
-        }
-    }
-
-    private void deleteDocuments(List<Long> documentIds) {
-        if (!documentIds.isEmpty()) {
-            documentRepo.deleteAllById(documentIds);
-        }
+        documentStorageService.deleteDocuments(documentsToDelete);
     }
 
 
@@ -233,6 +197,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         return documentMapperService.mapToDocumentResponse(copied);
 
     }
+
     private Document createDocumentCopy(Document document) {
         Document copied = documentMapperService.copyDocument(document);
 

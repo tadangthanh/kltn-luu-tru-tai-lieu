@@ -56,6 +56,10 @@ public class DocumentHasTagServiceImpl implements IDocumentHasTagService {
 
     @Override
     public void deleteAllByDocumentIds(List<Long> documentIds) {
+        log.info("delete tags by document ids: " + documentIds);
+        if(documentIds==null || documentIds.isEmpty()){
+            return;
+        }
         documentHasTagRepo.deleteAllByDocumentIds(documentIds);
     }
 

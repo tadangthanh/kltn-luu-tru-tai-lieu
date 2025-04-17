@@ -11,13 +11,11 @@ import vn.kltn.dto.UploadContext;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.Folder;
 import vn.kltn.repository.DocumentRepo;
-import vn.kltn.service.IAzureStorageService;
-import vn.kltn.service.IDocumentMapperService;
-import vn.kltn.service.IDocumentStorageService;
-import vn.kltn.service.IUploadProcessor;
+import vn.kltn.service.*;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Transactional
@@ -29,6 +27,8 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
     private final DocumentRepo documentRepo;
     private final FolderCommonService folderCommonService;
     private final IUploadProcessor uploadProcessor;
+    private final IDocumentIndexService documentIndexService;
+    private final IDocumentHasTagService documentHasTagService;
 
     @Override
     public void deleteBlobsFromCloud(List<String> blobNames) {
@@ -36,6 +36,48 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
         if (!blobNames.isEmpty()) {
             azureStorageService.deleteBLobs(blobNames);
         }
+    }
+
+    @Override
+    public void deleteDocuments(List<Document> documents) {
+        log.info("delete documents");
+        //  xoa tren cloud
+        deleteBlobsFromStorage(documents);
+        //  xoa cac du lieu lien quan
+        deleteAssociatedData(documents);
+        // xoa trong database
+        deleteFromDatabase(documents);
+    }
+
+    private void deleteFromDatabase(List<Document> documents) {
+        if (!documents.isEmpty()) {
+            documentRepo.deleteAll(documents);
+        }
+    }
+
+    private void deleteAssociatedData(List<Document> documents) {
+        List<Long> documentIds = extractDocumentIds(documents);
+        if (!documentIds.isEmpty()) {
+            // Delete tags
+            documentHasTagService.deleteAllByDocumentIds(documentIds);
+            // Delete from search index
+            documentIndexService.deleteIndexByIdList(documentIds);
+        }
+    }
+
+    private List<Long> extractDocumentIds(List<Document> documents) {
+        return documents.stream().map(Document::getId).toList();
+    }
+
+    private void deleteBlobsFromStorage(List<Document> documents) {
+        List<String> blobNames = extractBlobNames(documents);
+        if (!blobNames.isEmpty()) {
+            deleteBlobsFromCloud(blobNames);
+        }
+    }
+
+    private List<String> extractBlobNames(List<Document> documents) {
+        return documents.stream().map(Document::getBlobName).filter(Objects::nonNull).toList();
     }
 
     @Override
