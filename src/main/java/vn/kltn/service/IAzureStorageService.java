@@ -1,6 +1,5 @@
 package vn.kltn.service;
 
-import vn.kltn.common.CancellationToken;
 import vn.kltn.entity.MemberRole;
 
 import java.io.File;
