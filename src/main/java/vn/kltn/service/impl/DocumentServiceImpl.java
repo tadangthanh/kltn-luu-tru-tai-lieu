@@ -229,32 +229,51 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     public DocumentResponse copyDocumentById(Long documentId) {
         log.info("copy document by id: {}", documentId);
         Document document = getResourceByIdOrThrow(documentId);
-        Document copied = copyDocument(document);
+        Document copied = createDocumentCopy(document);
         return documentMapperService.mapToDocumentResponse(copied);
+
     }
-
-
-    private Document copyDocument(Document document) {
+    private Document createDocumentCopy(Document document) {
         Document copied = documentMapperService.copyDocument(document);
-        String nameCopy = document.getName().substring(0, document.getName().lastIndexOf(".") - 1) + "_copy" +
-                          document.getName().substring(document.getName().lastIndexOf("."));
-        copied.setName(nameCopy);
-        documentRepo.save(copied);
+
+        String newName = generateCopyName(document.getName());
+        copied.setName(newName);
+
+        copied = documentRepo.save(copied);
+
         copied.setDeletedAt(null);
         copied.setPermanentDeleteAt(null);
-        copyDocumentHasTag(document, copied);
-        String blobDestinationCopied = documentStorageService.copyBlob(document.getBlobName());
-        copied.setBlobName(blobDestinationCopied);
-        // Lưu vào elasticsearch
-        documentIndexService.insertDoc(copied);
+
+        //  Copy related data
+        copyRelatedData(document, copied);
+
         return documentRepo.save(copied);
     }
 
+    private void copyRelatedData(Document source, Document target) {
+        // Copy tags
+        copyDocumentTags(source, target);
 
-    private void copyDocumentHasTag(Document document, Document docCopy) {
-        Set<Tag> tags = documentHasTagService.getTagsByDocumentId(document.getId());
-        documentHasTagService.addDocumentToTag(docCopy, tags);
+        // Copy blob
+        String newBlobName = documentStorageService.copyBlob(source.getBlobName());
+        target.setBlobName(newBlobName);
+
+        // Index document
+        documentIndexService.insertDoc(target);
     }
+
+    private String generateCopyName(String originalName) {
+        int lastDotIndex = originalName.lastIndexOf(".");
+        return originalName.substring(0, lastDotIndex - 1) +
+               "_copy" +
+               originalName.substring(lastDotIndex);
+    }
+
+    private void copyDocumentTags(Document source, Document target) {
+        Set<Tag> tags = documentHasTagService.getTagsByDocumentId(source.getId());
+        documentHasTagService.addDocumentToTag(target, tags);
+    }
+
 
     @Override
     public DocumentResponse updateDocumentById(Long documentId, DocumentRequest documentRequest) {
