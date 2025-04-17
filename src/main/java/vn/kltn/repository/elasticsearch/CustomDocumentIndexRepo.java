@@ -16,4 +16,6 @@ public interface CustomDocumentIndexRepo {
     void markDeleteDocumentsIndex(List<String> indexIds, boolean value);
 
     List<DocumentIndexResponse> getDocumentByMe(Set<Long> listDocumentSharedWith, String query, int page, int size);
+
+    void bulkUpdate(List<DocumentIndex> indices);
 }

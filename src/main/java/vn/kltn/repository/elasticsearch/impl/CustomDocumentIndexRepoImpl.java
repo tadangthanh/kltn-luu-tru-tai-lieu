@@ -5,7 +5,6 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import co.elastic.clients.elasticsearch.core.*;
-import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +18,6 @@ import vn.kltn.repository.elasticsearch.CustomDocumentIndexRepo;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,7 +32,7 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
         log.info("Mark deleted for indexId: {}", indexId);
         try {
             elasticsearchClient.update(UpdateRequest.of(u -> u.index("documents_index").id(indexId).doc(Map.of("isDeleted", value))), DocumentIndex.class);
-        }  catch (ElasticsearchException e) {
+        } catch (ElasticsearchException e) {
             if (e.getMessage() != null && e.getMessage().contains("document_missing_exception")) {
                 log.warn("Document with indexId {} not found in Elasticsearch. Skipping update.", indexId);
             } else {
@@ -57,7 +55,7 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
                             .id(documentUpdated.getId())
                             .doc(documentUpdated), // chỉ định object thay thế
                     DocumentIndex.class);
-        } catch (IOException e) {
+        } catch (IOException| ElasticsearchException e) {
             log.error("Error updating document: {}", e.getMessage(), e);
             throw new CustomIOException("Failed to update document");
         }
@@ -124,48 +122,47 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
     }
 
 
-
     @Override
     public List<DocumentIndexResponse> getDocumentByMe(Set<Long> listDocumentSharedWith, String query, int page, int size) {
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
 
         try {
             SearchResponse<DocumentIndex> response = elasticsearchClient.search(s ->
-                    s.index("documents_index")
-                            .from(page * size)
-                            .size(size)
-                            .query(q -> q
-                                    .bool(b -> b
-                                            .must(m -> m
-                                                    .multiMatch(mm -> mm
-                                                            .query(query)
-                                                            .type(TextQueryType.Phrase)
-                                                            .fields("name^3",
-                                                                    "description^2",
-                                                                    "content",
-                                                                    "updatedBy",
-                                                                    "createdBy")))
-                                            .filter(f -> f.term(
-                                                    t -> t.field("isDeleted")
-                                                            .value(false)))
-                                            .should(sh1 -> sh1.term(t -> t
-                                                    .field("createdBy")
-                                                    .value(currentEmail)))
-                                            .should(sh2 -> sh2.terms(t -> t
-                                                    .field("sharedWith")
-                                                    .terms(tq -> tq.value(listDocumentSharedWith.stream()
-                                                            .map(String::valueOf).map(FieldValue::of)
-                                                            .toList())))).minimumShouldMatch("1")))
-                            .highlight(h -> h
-                                    .preTags("<mark>")
-                                    .postTags("</mark>")
-                                    .fields("content",
-                                            f -> f.fragmentSize(150)
-                                                    .numberOfFragments(3))
-                                    .fields("name", f -> f)
-                                    .fields("description", f -> f)
-                                    .fields("updatedBy", f -> f)
-                                    .fields("createdBy", f -> f)),
+                            s.index("documents_index")
+                                    .from(page * size)
+                                    .size(size)
+                                    .query(q -> q
+                                            .bool(b -> b
+                                                    .must(m -> m
+                                                            .multiMatch(mm -> mm
+                                                                    .query(query)
+                                                                    .type(TextQueryType.Phrase)
+                                                                    .fields("name^3",
+                                                                            "description^2",
+                                                                            "content",
+                                                                            "updatedBy",
+                                                                            "createdBy")))
+                                                    .filter(f -> f.term(
+                                                            t -> t.field("isDeleted")
+                                                                    .value(false)))
+                                                    .should(sh1 -> sh1.term(t -> t
+                                                            .field("createdBy")
+                                                            .value(currentEmail)))
+                                                    .should(sh2 -> sh2.terms(t -> t
+                                                            .field("sharedWith")
+                                                            .terms(tq -> tq.value(listDocumentSharedWith.stream()
+                                                                    .map(String::valueOf).map(FieldValue::of)
+                                                                    .toList())))).minimumShouldMatch("1")))
+                                    .highlight(h -> h
+                                            .preTags("<mark>")
+                                            .postTags("</mark>")
+                                            .fields("content",
+                                                    f -> f.fragmentSize(150)
+                                                            .numberOfFragments(3))
+                                            .fields("name", f -> f)
+                                            .fields("description", f -> f)
+                                            .fields("updatedBy", f -> f)
+                                            .fields("createdBy", f -> f)),
                     DocumentIndex.class);
 
             return response.hits().hits().stream()
@@ -182,6 +179,44 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
         } catch (IOException e) {
             log.error("Error searching documents: {}", e.getMessage(), e);
             throw new CustomIOException("Failed to search documents");
+        }
+    }
+
+    @Override
+    public void bulkUpdate(List<DocumentIndex> indices) {
+        try {
+            BulkRequest.Builder builder = new BulkRequest.Builder();
+
+            for (DocumentIndex doc : indices) {
+                builder.operations(op -> op
+                        .update(u -> u
+                                .index("documents_index")
+                                .id(String.valueOf(doc.getId()))
+                                .action(a -> a
+                                        .doc(doc)
+                                        .docAsUpsert(true)
+                                )
+                        )
+                );
+            }
+
+            BulkResponse response = elasticsearchClient.bulk(builder.build());
+
+            if (response.errors()) {
+                response.items().forEach(item -> {
+                    if (item.error() != null) {
+                        log.error("Bulk sync failed. Operation: {}, docId: {}, error: {}",
+                                item.operationType(), item.id(), item.error().reason());
+                    }
+                });
+                throw new CustomIOException("Elasticsearch bulk sync error");
+            }
+
+            log.info("Bulk update successful for {} documents", indices.size());
+
+        } catch (IOException e) {
+            log.error("Bulk update failed: {}", e.getMessage(), e);
+            throw new CustomIOException("Bulk update failed");
         }
     }
 

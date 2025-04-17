@@ -2,6 +2,7 @@ package vn.kltn.service.impl;
 
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.response.PermissionResponse;
@@ -9,10 +10,12 @@ import vn.kltn.entity.*;
 import vn.kltn.map.PermissionMapper;
 import vn.kltn.repository.PermissionRepo;
 import vn.kltn.service.IAuthenticationService;
-import vn.kltn.service.IDocumentIndexService;
 import vn.kltn.service.IDocumentPermissionService;
 import vn.kltn.service.IUserService;
+import vn.kltn.service.event.DocumentUpdatedEvent;
+import vn.kltn.service.event.MultipleDocumentsUpdatedEvent;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -21,7 +24,7 @@ import java.util.Set;
 @Slf4j(topic = "DOCUMENT_PERMISSION_SERVICE")
 public class DocumentPermissionServiceImpl extends AbstractPermissionService implements IDocumentPermissionService {
     private final DocumentCommonService documentCommonService;
-    private final IDocumentIndexService documentIndexService;
+    private final ApplicationEventPublisher eventPublisher;
 
     protected DocumentPermissionServiceImpl(
             PermissionRepo permissionRepo,
@@ -29,17 +32,17 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
             IUserService userService,
             PermissionMapper permissionMapper,
             ResourceCommonService resourceCommonService,
-            DocumentCommonService documentCommonService, IDocumentIndexService documentIndexService) {
+            DocumentCommonService documentCommonService , ApplicationEventPublisher eventPublisher) {
         super(permissionRepo, userService, permissionMapper, resourceCommonService, authenticationService);
         this.documentCommonService = documentCommonService;
-        this.documentIndexService = documentIndexService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
     public PermissionResponse setPermissionResource(Long resourceId, PermissionRequest permissionRequest) {
         PermissionResponse response=super.setPermissionResource(resourceId, permissionRequest);
         // update data trong elasticsearch
-        updateIndexDocument(resourceId);
+        eventPublisher.publishEvent(new DocumentUpdatedEvent(this, resourceId));
         return response;
     }
 
@@ -49,30 +52,29 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
         Long resourceId = permission.getResource().getId();
         super.deletePermissionById(permissionId);
         // update data trong elasticsearch
-        updateIndexDocument(resourceId);
+        eventPublisher.publishEvent(new DocumentUpdatedEvent(this, resourceId));
     }
 
     @Override
     public void deleteByResourceAndRecipientId(Long resourceId, Long recipientId) {
         super.deleteByResourceAndRecipientId(resourceId, recipientId);
         // update data trong elasticsearch
-        updateIndexDocument(resourceId);
+        eventPublisher.publishEvent(new DocumentUpdatedEvent(this, resourceId));
+
     }
 
     @Override
     public void deletePermissionByResourceIds(List<Long> resourceIds) {
         super.deletePermissionByResourceIds(resourceIds);
         // update data trong elasticsearch
-        for (Long resourceId : resourceIds) {
-            updateIndexDocument(resourceId);
-        }
+        eventPublisher.publishEvent(new MultipleDocumentsUpdatedEvent(this, new HashSet<>(resourceIds)));
     }
 
     @Override
     public void deletePermissionByResourceId(Long resourceId) {
         super.deletePermissionByResourceId(resourceId);
         // update data trong elasticsearch
-        updateIndexDocument(resourceId);
+        eventPublisher.publishEvent(new DocumentUpdatedEvent(this, resourceId));
     }
 
     @Override
@@ -86,24 +88,11 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
 
 
 
-    private void updateIndexDocument(Long resourceId) {
-        Document document = documentCommonService.getDocumentByIdOrThrow(resourceId);
-        documentIndexService.updateDocument(document);
-    }
+
 
     @Override
     protected FileSystemEntity getResourceById(Long resourceId) {
         return documentCommonService.getDocumentByIdOrThrow(resourceId);
-    }
-
-    /***
-     *  lay danh sach id user ma document nay chia se
-     * @param documentId id document
-     * @return danh sach id user mà document này chia sẻ
-     */
-    @Override
-    public Set<Long> getUserIdsByDocumentShared(Long documentId) {
-        return permissionRepo.findIdsUserSharedWithByResourceId(documentId);
     }
 
     @Override
@@ -130,7 +119,7 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
     protected void inheritPermission(Resource resource, Long ownerParentId) {
         super.inheritPermission(resource, ownerParentId);
         //update data trong elasticsearch
-        updateIndexDocument(resource.getId());
+        eventPublisher.publishEvent(new DocumentUpdatedEvent(this, resource.getId()));
     }
 
     /***

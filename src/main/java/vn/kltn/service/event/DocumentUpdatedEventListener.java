@@ -1,9 +1,9 @@
 package vn.kltn.service.event;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import vn.kltn.service.IDocumentIndexService;
 
@@ -19,5 +19,10 @@ public class DocumentUpdatedEventListener {
     public void handleDocumentUpdated(DocumentUpdatedEvent event) {
         Long docId = event.getDocumentId();
         documentIndexService.syncDocument(docId);
+    }
+    @Async("taskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleMultipleDocumentsUpdated(MultipleDocumentsUpdatedEvent event) {
+        documentIndexService.syncDocuments(event.getDocumentIds());
     }
 }

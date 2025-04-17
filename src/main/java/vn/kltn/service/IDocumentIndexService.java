@@ -30,4 +30,7 @@ public interface IDocumentIndexService {
     void deleteAll(List<DocumentIndex> documentIndices);
 
     void syncDocument(Long docId);
+
+    void syncDocuments(Set<Long> documentIds);
+
 }

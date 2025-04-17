@@ -202,6 +202,21 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
         customDocumentIndexRepo.updateDocument(mapDocumentIndex(document));
     }
 
+    @Override
+    public void syncDocuments(Set<Long> documentIds) {
+        log.info("sync list document");
+        List<Document> documents = documentIds.stream()
+                .map(documentCommonService::getDocumentByIdOrThrow)
+                .toList();
+
+        List<DocumentIndex> indices = documents.stream()
+                .map(this::mapDocumentIndex)
+                .toList();
+
+        customDocumentIndexRepo.bulkUpdate(indices);
+
+    }
+
 
     private List<String> getTagsByDocumentId(Long documentId) {
         return documentHasTagService.getTagsByDocumentId(documentId).stream().map(Tag::getName).toList();

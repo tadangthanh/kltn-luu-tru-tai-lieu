@@ -11,9 +11,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.request.DocumentRequest;
@@ -87,11 +84,12 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     public void uploadDocumentWithParent(Long parentId, List<FileBuffer> bufferedFiles, CancellationToken token) {
         // luu db
         List<Document> documents = saveDocumentsWithFolder(bufferedFiles, parentId);
-        // thua ke quyen cua parent
-        documentPermissionService.inheritPermissions(documents);
         // upload file to cloud
         processUpload(token, bufferedFiles, documents);
+        // thua ke quyen cua parent
+        documentPermissionService.inheritPermissions(documents);
         // thong bao bang websocket
+
     }
 
 
@@ -245,19 +243,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         return documents;
     }
 
-
-    private Document mapToDocument(DocumentRequest documentRequest, MultipartFile file) {
-        Document document = documentMapper.toDocument(documentRequest);
-        document.setSize(file.getSize());
-        document.setType(file.getContentType());
-        document.setName(file.getOriginalFilename());
-        return document;
-    }
-
-    private List<DocumentResponse> mapToDocumentResponse(List<Document> documents) {
-        return documents.stream().map(this::mapToDocumentResponse).toList();
-    }
-
     private DocumentResponse mapToDocumentResponse(Document document) {
         return documentMapper.toDocumentResponse(document);
     }
@@ -401,7 +386,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         documentMapper.updateDocument(docExists, documentRequest);
         docExists = documentRepo.save(docExists);
         eventPublisher.publishEvent(new DocumentUpdatedEvent(this,documentId));
-
         return mapToDocumentResponse(docExists);
     }
 }

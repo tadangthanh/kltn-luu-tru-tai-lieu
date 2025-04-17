@@ -2,22 +2,21 @@ package vn.kltn.service.impl;
 
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.response.PermissionResponse;
-import vn.kltn.entity.Document;
 import vn.kltn.entity.FileSystemEntity;
 import vn.kltn.entity.Permission;
 import vn.kltn.map.PermissionMapper;
 import vn.kltn.repository.FolderRepo;
 import vn.kltn.repository.PermissionRepo;
 import vn.kltn.service.IAuthenticationService;
-import vn.kltn.service.IDocumentIndexService;
 import vn.kltn.service.IUserService;
+import vn.kltn.service.event.MultipleDocumentsUpdatedEvent;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -28,16 +27,16 @@ import java.util.stream.Collectors;
 public class FolderPermissionServiceImpl extends AbstractPermissionService implements IFolderPermissionService {
     private final FolderCommonService folderCommonService;
     private final DocumentCommonService documentCommonService;
-    private final IDocumentIndexService documentIndexService;
     private final FolderRepo folderRepo;
+    private final ApplicationEventPublisher eventPublisher;
 
 
-    protected FolderPermissionServiceImpl(PermissionRepo permissionRepo, IUserService userService, PermissionMapper permissionMapper, IAuthenticationService authenticationService, FolderCommonService folderCommonService, ResourceCommonService resourceCommonService, DocumentCommonService documentCommonService, IDocumentIndexService documentIndexService, FolderRepo folderRepo) {
+    protected FolderPermissionServiceImpl(PermissionRepo permissionRepo, IUserService userService, PermissionMapper permissionMapper, IAuthenticationService authenticationService, FolderCommonService folderCommonService, ResourceCommonService resourceCommonService, DocumentCommonService documentCommonService , FolderRepo folderRepo, ApplicationEventPublisher eventPublisher) {
         super(permissionRepo, userService, permissionMapper, resourceCommonService, authenticationService);
         this.folderCommonService = folderCommonService;
         this.documentCommonService = documentCommonService;
-        this.documentIndexService = documentIndexService;
         this.folderRepo = folderRepo;
+        this.eventPublisher = eventPublisher;
     }
 
 
@@ -85,14 +84,7 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
 
         // Xóa các permission liên quan đến user này cho các resource con
         permissionRepo.deleteAllByResourceIdInAndRecipientId(resourceIdsToDelete, recipientId);
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                // Transaction đã commit, giờ mới gọi update elasticsearch
-                List<Document> documents = documentCommonService.getDocuments(documentIds);
-                documentIndexService.updateAllDocument(documents);
-            }
-        });
+        eventPublisher.publishEvent(new MultipleDocumentsUpdatedEvent(this, new HashSet<>(documentIds)));
     }
 
 
@@ -122,16 +114,7 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
         if (!permissionsForDocument.isEmpty()) {
             permissionRepo.saveAllAndFlush(permissionsForDocument);
             // update lai tron elasticsearch
-            if (TransactionSynchronizationManager.isSynchronizationActive()) {
-                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        // Transaction đã commit, giờ mới gọi update elasticsearch
-                        List<Document> documents = documentCommonService.getDocuments(documentChildIds);
-                        documentIndexService.updateAllDocument(documents);
-                    }
-                });
-            }
+            eventPublisher.publishEvent(new MultipleDocumentsUpdatedEvent(this, new HashSet<>(documentChildIds)));
         }
 
     }
