@@ -4,8 +4,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.FileBuffer;
+import vn.kltn.dto.ProcessUploadResult;
+import vn.kltn.dto.UploadContext;
 import vn.kltn.exception.CustomIOException;
+import vn.kltn.index.DocumentIndex;
 import vn.kltn.service.IAzureStorageService;
+import vn.kltn.service.IDocumentIndexService;
+import vn.kltn.service.IDocumentMapperService;
 import vn.kltn.service.IUploadProcessor;
 
 import java.io.ByteArrayInputStream;
@@ -21,11 +26,61 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class UploadProcessorImpl implements IUploadProcessor {
     private final IAzureStorageService azureStorageService;
+    private final IDocumentMapperService documentMapperService;
+    private final IDocumentIndexService documentIndexService;
+    private final UploadFinalizerService uploadFinalizerService;
 
     @Override
     public List<String> process(List<FileBuffer> bufferedFiles) {
         return uploadBufferedFilesToCloud(bufferedFiles);
     }
+
+    @Override
+    public ProcessUploadResult processUpload(UploadContext context, List<FileBuffer> files) {
+        try {
+            // Upload files
+            if (checkCancellation(context)) {
+                return createCancelledResult();
+            }
+            List<String> blobNames = uploadBufferedFilesToCloud(files);
+            context.setBlobNames(blobNames);
+
+            // Map blobs to documents
+            if (checkCancellation(context)) {
+                return createCancelledResult();
+            }
+            documentMapperService.mapBlobNamesToDocuments(context.getDocuments(), blobNames);
+
+            // Index documents
+            if (checkCancellation(context)) {
+                return createCancelledResult();
+            }
+            List<DocumentIndex> indices = documentIndexService.insertAllDoc(context.getDocuments()).join();
+            context.setDocumentIndices(indices);
+
+            if (checkCancellation(context)) {
+                return createCancelledResult();
+            }
+
+            return new ProcessUploadResult(false, blobNames, indices);
+        } finally {
+            uploadFinalizerService.finalizeUpload(context.getToken());
+        }
+    }
+
+    private boolean checkCancellation(UploadContext context) {
+        return uploadFinalizerService.checkCancelledAndFinalize(
+                context.getToken(),
+                context.getDocuments(),
+                context.getDocumentIndices(),
+                context.getBlobNames()
+        );
+    }
+
+    private ProcessUploadResult createCancelledResult() {
+        return new ProcessUploadResult(true, null, null);
+    }
+
 
     private List<String> uploadBufferedFilesToCloud(List<FileBuffer> files) {
         List<CompletableFuture<String>> futures = new ArrayList<>();

@@ -12,6 +12,7 @@ import vn.kltn.entity.Permission;
 import vn.kltn.entity.Tag;
 import vn.kltn.exception.CustomIOException;
 import vn.kltn.exception.InsertIndexException;
+import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.index.DocumentIndex;
 import vn.kltn.map.DocumentIndexMapper;
 import vn.kltn.repository.elasticsearch.CustomDocumentIndexRepo;
@@ -167,9 +168,13 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     @Override
     @Async("taskExecutor")
     public void syncDocument(Long docId) {
-        log.info("sync documentId: {}", docId);
-        Document document = documentCommonService.getDocumentByIdOrThrow(docId);
-        customDocumentIndexRepo.updateDocument(mapDocumentIndex(document));
+        try {
+            log.info("sync documentId: {}", docId);
+            Document document = documentCommonService.getDocumentByIdOrThrow(docId);
+            customDocumentIndexRepo.updateDocument(mapDocumentIndex(document));
+        } catch (ResourceNotFoundException e) {
+            log.warn("Document {} not found, skipping sync", docId);
+        }
     }
 
     @Override

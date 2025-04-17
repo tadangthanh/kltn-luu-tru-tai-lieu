@@ -47,9 +47,10 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     private final UploadFinalizerService uploadFinalizerService;
     private final IUploadProcessor uploadProcessor;
     private final ApplicationEventPublisher eventPublisher;
-    private final DocumentStorageService documentStorageService;
+    private final IDocumentStorageService documentStorageService;
     private final IDocumentMapperService documentMapperService;
-    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo  , IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, UploadFinalizerService uploadFinalizerService, IUploadProcessor uploadProcessor, ApplicationEventPublisher eventPublisher, DocumentStorageService documentStorageService, IDocumentMapperService documentMapperService) {
+
+    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo  , IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, UploadFinalizerService uploadFinalizerService, IUploadProcessor uploadProcessor, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
         this.documentRepo = documentRepo;
         this.documentHasTagService = documentHasTagService;
@@ -76,9 +77,9 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     @Async("taskExecutor")
     public void uploadDocumentWithParent(Long parentId, List<FileBuffer> bufferedFiles, CancellationToken token) {
         // luu db
-        List<Document> documents = saveDocumentsWithFolder(bufferedFiles, parentId);
-        // upload file to cloud
-        processUpload(token, bufferedFiles, documents);
+        List<Document> documents = documentStorageService.saveDocumentsWithFolder(bufferedFiles, parentId);
+        // storage file to cloud
+        documentStorageService.store(token,bufferedFiles,documents);
         // thua ke quyen cua parent
         documentPermissionService.inheritPermissions(documents);
         // thong bao bang websocket
