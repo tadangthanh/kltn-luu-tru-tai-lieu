@@ -17,9 +17,6 @@ public interface IDocumentIndexService {
 
     List<DocumentIndexResponse> getDocumentByMe(Set<Long> listDocumentSharedWith, String query, int page, int size);
 
-    void updateDocument(Document document);
-
-    void updateAllDocument(List<Document> documents);
 
     void deleteIndexByIdList(List<Long> indexIds);
 
