@@ -2,6 +2,7 @@ package vn.kltn.service;
 
 import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.request.DocumentRequest;
+import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.entity.Document;
 
@@ -17,6 +18,8 @@ public interface IDocumentMapperService {
     Document mapFileBufferToDocument(FileBuffer buffer);
 
     List<Document> mapFilesBufferToListDocument(List<FileBuffer> bufferList);
+
+    DocumentDataResponse mapDocToDocDataResponse(Document document);
 
     void mapBlobNamesToDocuments(List<Document> documents, List<String> blobNames);
 }

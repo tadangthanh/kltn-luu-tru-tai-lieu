@@ -5,14 +5,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.request.DocumentRequest;
+import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.User;
+import vn.kltn.exception.CustomIOException;
+import vn.kltn.exception.InvalidDataException;
 import vn.kltn.map.DocumentMapper;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.service.IAuthenticationService;
+import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IDocumentMapperService;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +32,7 @@ public class DocumentMapperServiceImpl implements IDocumentMapperService {
     private final DocumentMapper documentMapper;
     private final IAuthenticationService authenticationService;
     private final DocumentRepo documentRepo;
-
+    private final IAzureStorageService azureStorageService;
     @Override
     public DocumentResponse mapToDocumentResponse(Document document) {
         return documentMapper.toDocumentResponse(document);
@@ -79,6 +85,22 @@ public class DocumentMapperServiceImpl implements IDocumentMapperService {
         }
 
         return documents;
+    }
+
+    @Override
+    public DocumentDataResponse mapDocToDocDataResponse(Document document) {
+        String blobName = document.getBlobName();
+        try (InputStream inputStream = azureStorageService.downloadBlobInputStream(blobName)) {
+            return DocumentDataResponse.builder()
+                    .data(inputStream.readAllBytes())
+                    .name(document.getName() + document.getBlobName()
+                            .substring(document.getBlobName()
+                                    .lastIndexOf('.')))
+                    .type(document.getType()).documentId(document.getId()).build();
+        } catch (IOException e) {
+            log.error("Error reading file from Azure Storage: {}", e.getMessage());
+            throw new CustomIOException("Lỗi đọc dữ liệu từ file");
+        }
     }
 
     @Override

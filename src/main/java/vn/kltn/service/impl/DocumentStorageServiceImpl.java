@@ -3,6 +3,7 @@ package vn.kltn.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.FileBuffer;
@@ -10,12 +11,14 @@ import vn.kltn.dto.ProcessUploadResult;
 import vn.kltn.dto.UploadContext;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.Folder;
+import vn.kltn.entity.Tag;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.service.*;
 
-import java.io.InputStream;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -29,6 +32,8 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
     private final IUploadProcessor uploadProcessor;
     private final IDocumentIndexService documentIndexService;
     private final IDocumentHasTagService documentHasTagService;
+    @Value("${app.delete.document-retention-days}")
+    private int documentRetentionDays;
 
     @Override
     public void deleteBlobsFromCloud(List<String> blobNames) {
@@ -36,6 +41,83 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
         if (!blobNames.isEmpty()) {
             azureStorageService.deleteBLobs(blobNames);
         }
+    }
+
+    @Override
+    public void markDeleteDocumentsByFolders(List<Long> folderIds) {
+        log.info("mark delete documents by folders: {}", folderIds);
+        documentRepo.setDeleteDocument(folderIds, LocalDateTime.now(), LocalDateTime.now().plusDays(documentRetentionDays));
+        List<Long> documentIdsToMarkDelete = documentRepo.findDocumentIdsWithParentIds(folderIds);
+        // danh dau isDeleted o elasticsearch
+        markDeleteDocumentIndexByFolders(documentIdsToMarkDelete, true);
+    }
+
+    @Override
+    public void restoreDocumentsByFolders(List<Long> folderIds) {
+        log.info("restore documents by folders");
+        documentRepo.setDeleteDocument(folderIds, null, null);
+        List<Long> documentIdsToMarkDelete = documentRepo.findDocumentIdsWithParentIds(folderIds);
+        // danh dau isDeleted o elasticsearch
+        markDeleteDocumentIndexByFolders(documentIdsToMarkDelete, false);
+    }
+
+    @Override
+    public Document copyDocument(Document document) {
+        Document copied = documentMapperService.copyDocument(document);
+
+        String newName = generateCopyName(document.getName());
+        copied.setName(newName);
+
+        copied = documentRepo.save(copied);
+
+        copied.setDeletedAt(null);
+        copied.setPermanentDeleteAt(null);
+
+        //  Copy related data
+        copyRelatedData(document, copied);
+
+        return documentRepo.save(copied);
+    }
+
+    private void copyRelatedData(Document source, Document target) {
+        // Copy tags
+        copyDocumentTags(source, target);
+
+        // Copy blob
+        String newBlobName = copyBlob(source.getBlobName());
+        target.setBlobName(newBlobName);
+
+        // Index document
+        documentIndexService.insertDoc(target);
+    }
+
+    private String generateCopyName(String originalName) {
+        int lastDotIndex = originalName.lastIndexOf(".");
+        return originalName.substring(0, lastDotIndex - 1) +
+               "_copy" +
+               originalName.substring(lastDotIndex);
+    }
+
+    private void copyDocumentTags(Document source, Document target) {
+        Set<Tag> tags = documentHasTagService.getTagsByDocumentId(source.getId());
+        documentHasTagService.addDocumentToTag(target, tags);
+    }
+
+    @Override
+    public void deleteDocumentsByFolders(List<Long> folderIds) {
+        log.info("delete documents by folders");
+        // Lấy danh sách documents theo folderIds
+        List<Document> documentsToDelete = documentRepo.findDocumentsByParentIds(folderIds);
+        if (documentsToDelete.isEmpty()) {
+            return; // Không có document nào để xóa, thoát sớm
+        }
+        deleteDocuments(documentsToDelete);
+    }
+
+    private void markDeleteDocumentIndexByFolders(List<Long> folderIds, boolean value) {
+        List<Long> documentsMarkDeleted = documentRepo.findDocumentIdsWithParentIds(folderIds);
+        // danh dau isDeleted o elasticsearch
+        documentIndexService.markDeleteDocuments(documentsMarkDeleted, value);
     }
 
     @Override
@@ -104,11 +186,6 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
     public void deleteBlob(String blobName) {
         log.info("delete blob from cloud: {}", blobName);
         azureStorageService.deleteBlob(blobName);
-    }
-
-    @Override
-    public InputStream downloadBlobInputStream(String blobName) {
-        return azureStorageService.downloadBlobInputStream(blobName);
     }
 
     @Override

@@ -17,18 +17,13 @@ import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.entity.Document;
-import vn.kltn.entity.Tag;
-import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.service.*;
 import vn.kltn.service.event.DocumentUpdatedEvent;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 
 @Service
 @Transactional
@@ -144,28 +139,18 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     @Override
     public void softDeleteDocumentsByFolderIds(List<Long> folderIds) {
         log.info("delete document by folder ids");
-        documentRepo.setDeleteDocument(folderIds, LocalDateTime.now(), LocalDateTime.now().plusDays(documentRetentionDays));
-        List<Long> documentsMarkDeleted = documentRepo.findDocumentIdsWithParentIds(folderIds);
-        // danh dau isDeleted o elasticsearch
-        documentIndexService.markDeleteDocuments(documentsMarkDeleted, true);
+        documentStorageService.markDeleteDocumentsByFolders(folderIds);
     }
 
     @Override
     public void hardDeleteDocumentByFolderIds(List<Long> folderIds) {
-        // Lấy danh sách documents theo folderIds
-        List<Document> documentsToDelete = documentRepo.findDocumentsByParentIds(folderIds);
-        if (documentsToDelete.isEmpty()) {
-            return; // Không có document nào để xóa, thoát sớm
-        }
-        documentStorageService.deleteDocuments(documentsToDelete);
+        documentStorageService.deleteDocumentsByFolders(folderIds);
     }
 
 
     @Override
     public void restoreDocumentsByFolderIds(List<Long> folderIds) {
-        documentRepo.setDeleteDocument(folderIds, null, null);
-        List<Long> documentIdsToMarkDelete = documentRepo.findDocumentIdsWithParentIds(folderIds);
-        documentIndexService.markDeleteDocuments(documentIdsToMarkDelete, false);
+        documentStorageService.restoreDocumentsByFolders(folderIds);
     }
 
     @Override
@@ -176,67 +161,16 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     @Override
     public DocumentDataResponse openDocumentById(Long documentId) {
         Document document = getResourceByIdOrThrow(documentId);
-        return mapDocToDocDataResponse(document);
+        return documentMapperService.mapDocToDocDataResponse(document);
     }
 
-    private DocumentDataResponse mapDocToDocDataResponse(Document document) {
-        String blobName = document.getBlobName();
-        try (InputStream inputStream = documentStorageService.downloadBlobInputStream(blobName)) {
-            return DocumentDataResponse.builder().data(inputStream.readAllBytes()).name(document.getName() + document.getBlobName().substring(document.getBlobName().lastIndexOf('.'))).type(document.getType()).documentId(document.getId()).build();
-        } catch (IOException e) {
-            log.error("Error reading file from Azure Storage: {}", e.getMessage());
-            throw new InvalidDataException("Lỗi đọc dữ liệu từ file");
-        }
-    }
 
     @Override
     public DocumentResponse copyDocumentById(Long documentId) {
         log.info("copy document by id: {}", documentId);
         Document document = getResourceByIdOrThrow(documentId);
-        Document copied = createDocumentCopy(document);
+        Document copied = documentStorageService.copyDocument(document);
         return documentMapperService.mapToDocumentResponse(copied);
-
-    }
-
-    private Document createDocumentCopy(Document document) {
-        Document copied = documentMapperService.copyDocument(document);
-
-        String newName = generateCopyName(document.getName());
-        copied.setName(newName);
-
-        copied = documentRepo.save(copied);
-
-        copied.setDeletedAt(null);
-        copied.setPermanentDeleteAt(null);
-
-        //  Copy related data
-        copyRelatedData(document, copied);
-
-        return documentRepo.save(copied);
-    }
-
-    private void copyRelatedData(Document source, Document target) {
-        // Copy tags
-        copyDocumentTags(source, target);
-
-        // Copy blob
-        String newBlobName = documentStorageService.copyBlob(source.getBlobName());
-        target.setBlobName(newBlobName);
-
-        // Index document
-        documentIndexService.insertDoc(target);
-    }
-
-    private String generateCopyName(String originalName) {
-        int lastDotIndex = originalName.lastIndexOf(".");
-        return originalName.substring(0, lastDotIndex - 1) +
-               "_copy" +
-               originalName.substring(lastDotIndex);
-    }
-
-    private void copyDocumentTags(Document source, Document target) {
-        Set<Tag> tags = documentHasTagService.getTagsByDocumentId(source.getId());
-        documentHasTagService.addDocumentToTag(target, tags);
     }
 
 
