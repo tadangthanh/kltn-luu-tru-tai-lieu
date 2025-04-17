@@ -400,12 +400,8 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         Document docExists = getResourceByIdOrThrow(documentId);
         documentMapper.updateDocument(docExists, documentRequest);
         docExists = documentRepo.save(docExists);
-//        documentIndexService.updateDocument(docExists);
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                eventPublisher.publishEvent(new DocumentUpdatedEvent(this,documentId));
-            }});
+        eventPublisher.publishEvent(new DocumentUpdatedEvent(this,documentId));
+
         return mapToDocumentResponse(docExists);
     }
 }
