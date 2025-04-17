@@ -9,7 +9,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.FileBuffer;
@@ -17,7 +16,6 @@ import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.dto.response.DocumentResponse;
-import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.Folder;
 import vn.kltn.entity.Tag;
@@ -25,11 +23,7 @@ import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.index.DocumentIndex;
-import vn.kltn.map.DocumentMapper;
 import vn.kltn.repository.DocumentRepo;
-import vn.kltn.repository.specification.EntitySpecificationsBuilder;
-import vn.kltn.repository.specification.SpecificationUtil;
-import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
 import vn.kltn.service.event.DocumentUpdatedEvent;
 
@@ -45,7 +39,6 @@ import java.util.stream.Collectors;
 @Slf4j(topic = "DOCUMENT_SERVICE")
 public class DocumentServiceImpl extends AbstractResourceService<Document, DocumentResponse> implements IDocumentService {
     private final DocumentRepo documentRepo;
-    private final DocumentMapper documentMapper;
     private final IDocumentHasTagService documentHasTagService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
@@ -55,12 +48,10 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     private final IUploadProcessor uploadProcessor;
     private final ApplicationEventPublisher eventPublisher;
     private final DocumentStorageService documentStorageService;
-    private final IDocumentSearchService documentSearchService;
     private final IDocumentMapperService documentMapperService;
-    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, DocumentMapper documentMapper , IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, UploadFinalizerService uploadFinalizerService, IUploadProcessor uploadProcessor, ApplicationEventPublisher eventPublisher, DocumentStorageService documentStorageService, IDocumentSearchService documentSearchService, IDocumentMapperService documentMapperService) {
+    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo  , IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, UploadFinalizerService uploadFinalizerService, IUploadProcessor uploadProcessor, ApplicationEventPublisher eventPublisher, DocumentStorageService documentStorageService, IDocumentMapperService documentMapperService) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
         this.documentRepo = documentRepo;
-        this.documentMapper = documentMapper;
         this.documentHasTagService = documentHasTagService;
         this.documentIndexService = documentIndexService;
         this.documentPermissionService = documentPermissionService;
@@ -68,7 +59,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         this.uploadProcessor = uploadProcessor;
         this.eventPublisher = eventPublisher;
         this.documentStorageService = documentStorageService;
-        this.documentSearchService = documentSearchService;
         this.documentMapperService = documentMapperService;
     }
 
@@ -136,22 +126,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         return documents;
     }
 
-//    @Override
-//    public PageResponse<List<DocumentResponse>> searchByCurrentUser(Pageable pageable, String[] documents) {
-//        log.info("search document by current user");
-//        if (documents != null && documents.length > 0) {
-//            EntitySpecificationsBuilder<Document> builder = new EntitySpecificationsBuilder<>();
-//            Specification<Document> spec = SpecificationUtil.buildSpecificationFromFilters(documents, builder);
-//            // nó trả trả về 1 spec mới
-//            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
-//            String email = SecurityContextHolder.getContext().getAuthentication().getName();
-//            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdBy"), email));
-//            Page<Document> docPage = documentRepo.findAll(spec, pageable);
-//            return PaginationUtils.convertToPageResponse(docPage, pageable, documentMapperService::mapToDocumentResponse);
-//        }
-//        return PaginationUtils.convertToPageResponse(documentRepo.findAll(pageable), pageable, this::mapToDocumentResponse);
-//    }
-
     @Override
     protected void hardDeleteResource(Document resource) {
         log.info("hard delete document with id {}", resource.getId());
@@ -176,7 +150,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
     @Override
     protected DocumentResponse mapToR(Document resource) {
-        return documentMapper.toDocumentResponse(resource);
+        return documentMapperService.mapToDocumentResponse(resource);
     }
 
     @Override
@@ -230,7 +204,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         // Duyệt từng file
         for (FileBuffer buffer : bufferList) {
             String fileName = buffer.getFileName();
-            Document document = documentMapper.mapFileBufferToDocument(buffer);
+            Document document = documentMapperService.mapFileBufferToDocument(buffer);
             document.setOwner(uploader);
             // Nếu file trùng tên với file cũ → tăng version
             if (existingMap.containsKey(fileName)) {
@@ -353,7 +327,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
 
 
     private Document copyDocument(Document document) {
-        Document copied = documentMapper.copyDocument(document);
+        Document copied = documentMapperService.copyDocument(document);
         String nameCopy= document.getName().substring(0,document.getName().lastIndexOf(".")-1)+"_copy"+
                 document.getName().substring(document.getName().lastIndexOf("."));
         copied.setName(nameCopy);
@@ -378,7 +352,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     public DocumentResponse updateDocumentById(Long documentId, DocumentRequest documentRequest) {
         log.info("update document by id: {}", documentId);
         Document docExists = getResourceByIdOrThrow(documentId);
-        documentMapper.updateDocument(docExists, documentRequest);
+        documentMapperService.updateDocument(docExists, documentRequest);
         docExists = documentRepo.save(docExists);
         eventPublisher.publishEvent(new DocumentUpdatedEvent(this,documentId));
         return documentMapperService.mapToDocumentResponse(docExists);
