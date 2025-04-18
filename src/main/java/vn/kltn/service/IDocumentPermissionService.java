@@ -8,9 +8,10 @@ import java.util.List;
 import java.util.Set;
 
 public interface IDocumentPermissionService extends IPermissionService {
-    void inheritPermissions(List<Document> documents);
+    void inheritPermissionsFromParent(List<Document> documents);
 
     PermissionResponse addPermission(Long resourceId, PermissionRequest permissionRequest);
+
     Set<Long> getDocumentIdsByUser(Long userId);
 
 }

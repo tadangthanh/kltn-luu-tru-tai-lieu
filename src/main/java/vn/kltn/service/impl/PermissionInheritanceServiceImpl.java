@@ -5,10 +5,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import vn.kltn.entity.FileSystemEntity;
-import vn.kltn.entity.Permission;
-import vn.kltn.entity.User;
+import vn.kltn.entity.*;
 import vn.kltn.repository.PermissionRepo;
+import vn.kltn.service.IAuthenticationService;
+import vn.kltn.service.IDocumentValidator;
 import vn.kltn.service.IPermissionInheritanceService;
 import vn.kltn.service.event.MultipleDocumentsUpdatedEvent;
 import vn.kltn.service.event.publisher.PermissionEventPublisher;
@@ -16,8 +16,11 @@ import vn.kltn.service.event.publisher.PermissionEventPublisher;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static vn.kltn.common.Permission.EDITOR;
 
 @Service
 @Transactional
@@ -29,10 +32,52 @@ public class PermissionInheritanceServiceImpl implements IPermissionInheritanceS
     private final ApplicationEventPublisher eventPublisher;
     private final FolderCommonService folderCommonService;
     private final PermissionEventPublisher permissionEventPublisher;
-
+    private final IAuthenticationService authenticationService;
+    private final IDocumentValidator documentValidator;
     @Override
     public void propagatePermissions(Long parentId, Permission permission) {
         createPermissionForChildResource(parentId, permission);
+    }
+
+    @Override
+    public void inheritPermissionsFromParent(List<Document> documents) {
+        log.info("Inheriting permissions for uploaded documents...");
+        if (documents == null || documents.isEmpty()) return;
+
+        User currentUser = authenticationService.getCurrentUser();
+
+        for (Document document : documents) {
+            if (document == null || document.getParent() == null) continue;
+
+            documentValidator.validateDocumentNotDeleted(document);
+
+            boolean isOwner = document.getParent().getOwner().getId().equals(currentUser.getId());
+            inheritPermissions(document, isOwner);
+        }
+    }
+
+    private void inheritPermissions(Document document, boolean isOwner) {
+        Set<Permission> parentPermissions = document.getParent().getPermissions();
+        if (parentPermissions == null || parentPermissions.isEmpty()) return;
+
+        List<Permission> newPermissions = parentPermissions.stream()
+                .map(permission -> permission.copyForResource(document))
+                .collect(Collectors.toList());
+
+        if (!isOwner) {
+            // Editor tạo tài liệu → gán thêm quyền EDITOR cho chủ folder cha
+            Permission extraPermission = createEditorPermissionFor(document, document.getParent().getOwner());
+            newPermissions.add(extraPermission);
+        }
+
+        permissionRepo.saveAll(newPermissions);
+    }
+
+    private Permission createEditorPermissionFor(Document document, User recipient) {
+        return new Permission()
+                .withRecipient(recipient)
+                .withResource(document)
+                .withPermission(EDITOR);
     }
 
     private void createPermissionForChildResource(Long parentResourceId, Permission permission) {

@@ -10,6 +10,7 @@ import vn.kltn.map.PermissionMapper;
 import vn.kltn.repository.PermissionRepo;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IDocumentPermissionService;
+import vn.kltn.service.IPermissionInheritanceService;
 import vn.kltn.service.IUserService;
 import vn.kltn.service.event.publisher.PermissionEventPublisher;
 
@@ -23,6 +24,7 @@ import java.util.Set;
 public class DocumentPermissionServiceImpl extends AbstractPermissionService implements IDocumentPermissionService {
     private final DocumentCommonService documentCommonService;
     private final PermissionEventPublisher permissionEventPublisher;
+    private final IPermissionInheritanceService permissionInheritanceService;
 
     protected DocumentPermissionServiceImpl(
             PermissionRepo permissionRepo,
@@ -30,10 +32,11 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
             IUserService userService,
             PermissionMapper permissionMapper,
             ResourceCommonService resourceCommonService,
-            DocumentCommonService documentCommonService, PermissionEventPublisher permissionEventPublisher) {
+            DocumentCommonService documentCommonService, PermissionEventPublisher permissionEventPublisher, IPermissionInheritanceService permissionInheritanceService) {
         super(permissionRepo, userService, permissionMapper, resourceCommonService, authenticationService);
         this.documentCommonService = documentCommonService;
         this.permissionEventPublisher = permissionEventPublisher;
+        this.permissionInheritanceService = permissionInheritanceService;
     }
 
     @Override
@@ -90,23 +93,24 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
     }
 
     @Override
-    public void inheritPermissions(List<Document> documents) {
-        if (documents == null || documents.isEmpty()) return;
-
-        User currentUser = authenticationService.getCurrentUser();
-
-        for (Document document : documents) {
-            Resource parent = document.getParent();
-            if (parent == null) continue; // Bỏ qua nếu không có folder cha
-
-            if (parent.getOwner().getId().equals(currentUser.getId())) {
-                // Chủ sở hữu tạo → kế thừa bình thường
-                inheritPermissionsForOwnerCreatedResource(document);
-            } else {
-                // Editor tạo → kế thừa và cấp quyền cho chủ folder cha
-                inheritPermissionsForEditorCreatedResource(document, parent.getOwner().getId());
-            }
-        }
+    public void inheritPermissionsFromParent(List<Document> documents) {
+//        if (documents == null || documents.isEmpty()) return;
+//
+//        User currentUser = authenticationService.getCurrentUser();
+//
+//        for (Document document : documents) {
+//            Resource parent = document.getParent();
+//            if (parent == null) continue; // Bỏ qua nếu không có folder cha
+//
+//            if (parent.getOwner().getId().equals(currentUser.getId())) {
+//                // Chủ sở hữu tạo → kế thừa bình thường
+//                inheritPermissionsForOwnerCreatedResource(document);
+//            } else {
+//                // Editor tạo → kế thừa và cấp quyền cho chủ folder cha
+//                inheritPermissionsForEditorCreatedResource(document, parent.getOwner().getId());
+//            }
+//        }
+        permissionInheritanceService.inheritPermissionsFromParent(documents);
     }
 
     @Override

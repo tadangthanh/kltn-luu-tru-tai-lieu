@@ -37,4 +37,18 @@ public class Permission extends BaseEntity {
         copy.setResource(newResource);
         return copy;
     }
+    public Permission withRecipient(User recipient) {
+        this.setRecipient(recipient);
+        return this;
+    }
+
+    public Permission withResource(FileSystemEntity resource) {
+        this.setResource(resource);
+        return this;
+    }
+
+    public Permission withPermission(vn.kltn.common.Permission permission) {
+        this.setPermission(permission);
+        return this;
+    }
 }

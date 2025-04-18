@@ -70,7 +70,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         // storage file to cloud
         documentStorageService.store(token, bufferedFiles, documents);
         // thua ke quyen cua parent
-        documentPermissionService.inheritPermissions(documents);
+        documentPermissionService.inheritPermissionsFromParent(documents);
         // thong bao bang websocket
 
     }

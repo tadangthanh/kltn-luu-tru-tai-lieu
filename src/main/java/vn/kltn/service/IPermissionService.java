@@ -4,13 +4,11 @@ import org.springframework.data.domain.Pageable;
 import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.PermissionResponse;
-import vn.kltn.entity.Permission;
 import vn.kltn.entity.Resource;
 
 import java.util.List;
 
 public interface IPermissionService {
-//    Permission setPermission(Long resourceId, PermissionRequest permissionRequest);
 
     PermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest);
 
