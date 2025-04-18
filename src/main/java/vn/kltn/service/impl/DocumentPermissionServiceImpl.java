@@ -5,7 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.response.PermissionResponse;
-import vn.kltn.entity.*;
+import vn.kltn.entity.Document;
+import vn.kltn.entity.FileSystemEntity;
+import vn.kltn.entity.Permission;
 import vn.kltn.map.PermissionMapper;
 import vn.kltn.repository.PermissionRepo;
 import vn.kltn.service.IAuthenticationService;
@@ -94,31 +96,9 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
 
     @Override
     public void inheritPermissionsFromParent(List<Document> documents) {
-//        if (documents == null || documents.isEmpty()) return;
-//
-//        User currentUser = authenticationService.getCurrentUser();
-//
-//        for (Document document : documents) {
-//            Resource parent = document.getParent();
-//            if (parent == null) continue; // Bỏ qua nếu không có folder cha
-//
-//            if (parent.getOwner().getId().equals(currentUser.getId())) {
-//                // Chủ sở hữu tạo → kế thừa bình thường
-//                inheritPermissionsForOwnerCreatedResource(document);
-//            } else {
-//                // Editor tạo → kế thừa và cấp quyền cho chủ folder cha
-//                inheritPermissionsForEditorCreatedResource(document, parent.getOwner().getId());
-//            }
-//        }
         permissionInheritanceService.inheritPermissionsFromParent(documents);
     }
 
-    @Override
-    protected void inheritPermission(Resource resource, Long ownerParentId) {
-        super.inheritPermission(resource, ownerParentId);
-        //update data trong elasticsearch
-        permissionEventPublisher.publishDocumentUpdate(resource.getId());
-    }
 
     /***
      *  lay danh sach document duoc chia se cho user nay

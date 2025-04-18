@@ -69,6 +69,10 @@ public class PermissionInheritanceServiceImpl implements IPermissionInheritanceS
             Permission extraPermission = createEditorPermissionFor(document, document.getParent().getOwner());
             newPermissions.add(extraPermission);
         }
+        // Lọc bỏ quyền của người dùng đã sở hữu tài liệu
+        newPermissions= newPermissions.stream()
+                .filter(permission -> !permission.getRecipient().getId().equals(document.getOwner().getId()))
+                .collect(Collectors.toList());
 
         permissionRepo.saveAll(newPermissions);
     }

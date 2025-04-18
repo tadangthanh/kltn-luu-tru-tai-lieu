@@ -1,6 +1,7 @@
 package vn.kltn.entity;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 public interface Resource {
     User getOwner();
@@ -8,6 +9,8 @@ public interface Resource {
     Long getId();
 
     Resource getParent();
+
+    Set<Permission> getPermissions();
 
     void setParent(Resource parent);
 

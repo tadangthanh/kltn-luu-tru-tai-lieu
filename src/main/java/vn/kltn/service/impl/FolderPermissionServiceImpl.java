@@ -20,8 +20,6 @@ import vn.kltn.service.event.MultipleDocumentsUpdatedEvent;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -56,19 +54,6 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
         return mapToPermissionResponse(permission);
     }
 
-    private List<Permission> createPermissionForChild(List<Long> resourceIds,
-                                                      PermissionRequest permissionRequest,
-                                                      Function<Long, FileSystemEntity> getResourceByIdFunc) {
-        return resourceIds.stream()
-                .map(resourceId -> {
-                    FileSystemEntity resource = getResourceByIdFunc.apply(resourceId);
-                    Permission permissionChild = mapToPermission(permissionRequest);
-                    permissionChild.setResource(resource);
-                    return permissionChild;
-                })
-                .collect(Collectors.toList());
-    }
-
     @Override
     public void deletePermissionById(Long permissionId) {
         Permission existingPermission = getPermissionByIdOrThrow(permissionId);
@@ -89,39 +74,6 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
         permissionRepo.deleteAllByResourceIdInAndRecipientId(resourceIdsToDelete, recipientId);
         eventPublisher.publishEvent(new MultipleDocumentsUpdatedEvent(this, new HashSet<>(documentIds)));
     }
-
-
-    private void insertPermissionForChild(Long parentResourceId, PermissionRequest permissionRequest) {
-        // Lấy danh sách các folder con (loại trừ folder cha) mà user chưa có permission
-        List<Long> folderChildIds = permissionRepo.findSubFolderIdsEmptyPermission(
-                parentResourceId, permissionRequest.getRecipientId());
-        // Tạo danh sách Permission cho các folder con
-        List<Permission> permissionsForFolder = createPermissionForChild(folderChildIds, permissionRequest, this::getResourceById);
-
-        // Batch insert cho folder (nếu có)
-        if (!permissionsForFolder.isEmpty()) {
-            permissionRepo.saveAll(permissionsForFolder);
-        }
-
-        // Thêm folder cha vào danh sách để xử lý các document con
-        List<Long> folderIdsForDocument = new ArrayList<>(folderChildIds);
-        folderIdsForDocument.add(parentResourceId);
-
-        // Lấy danh sách các document con mà user chưa có permission
-        List<Long> documentChildIds = documentCommonService.getDocumentChildIdsEmptyPermission(
-                folderIdsForDocument, permissionRequest.getRecipientId());
-        // Tạo danh sách Permission cho các document con
-        List<Permission> permissionsForDocument = createPermissionForChild(documentChildIds, permissionRequest, documentCommonService::getDocumentByIdOrThrow);
-
-        // Batch insert cho document (nếu có)
-        if (!permissionsForDocument.isEmpty()) {
-            permissionRepo.saveAllAndFlush(permissionsForDocument);
-            // update lai tron elasticsearch
-            eventPublisher.publishEvent(new MultipleDocumentsUpdatedEvent(this, new HashSet<>(documentChildIds)));
-        }
-
-    }
-
 
     @Override
     public PermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest) {
