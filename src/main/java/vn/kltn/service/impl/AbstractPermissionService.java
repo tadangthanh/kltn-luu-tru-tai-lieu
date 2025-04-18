@@ -47,22 +47,7 @@ public abstract class AbstractPermissionService implements IPermissionService {
         this.authenticationService = authenticationService;
     }
 
-    @Override
-    public PermissionResponse setPermissionResource(Long resourceId, PermissionRequest permissionRequest) {
-        log.info("set permission for resourceId: {}, permission: {}, recipient id {}", resourceId, permissionRequest.getPermission(),permissionRequest.getRecipientId());
-        // kiem tra quyen da ton tai hay chua
-        validatePermissionNotExists(permissionRequest.getRecipientId(), resourceId);
-        FileSystemEntity resource = getResourceById(resourceId);
-        // validate đã thêm quyền này cho người này hay chưa ?
-        resourceCommonService.validateCurrentUserIsOwnerResource(resource);
-        // validate xem resource co bi xoa hay chua
-        resourceCommonService.validateResourceNotDeleted(resource);
-        // validate xem người dùng có quyền tạo permission hay không
-        validateEditorOrOwner(resource);
-        Permission permission = mapToPermission(permissionRequest);
-        permission.setResource(resource);
-        return mapToPermissionResponse(savePermission(permission));
-    }
+
 
     @Override
     public PermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest) {
@@ -142,6 +127,21 @@ public abstract class AbstractPermissionService implements IPermissionService {
 
     protected void inheritPermissionsForEditorCreatedResource(Resource resource, Long ownerParentId) {
         inheritPermission(resource, ownerParentId);
+    }
+    protected Permission setPermission(Long resourceId, PermissionRequest permissionRequest) {
+        log.info("set permission for resourceId: {}, permission: {}, recipient id {}", resourceId, permissionRequest.getPermission(),permissionRequest.getRecipientId());
+        // kiem tra quyen da ton tai hay chua
+        validatePermissionNotExists(permissionRequest.getRecipientId(), resourceId);
+        FileSystemEntity resource = getResourceById(resourceId);
+        // validate đã thêm quyền này cho người này hay chưa ?
+        resourceCommonService.validateCurrentUserIsOwnerResource(resource);
+        // validate xem resource co bi xoa hay chua
+        resourceCommonService.validateResourceNotDeleted(resource);
+        // validate xem người dùng có quyền tạo permission hay không
+        validateEditorOrOwner(resource);
+        Permission permission = mapToPermission(permissionRequest);
+        permission.setResource(resource);
+        return savePermission(permission);
     }
 
     /***

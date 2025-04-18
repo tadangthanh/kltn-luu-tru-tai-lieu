@@ -15,7 +15,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SoftDeleteOperation implements IFolderOperation {
     private final FolderRepo folderRepo;
-    private final IFolderOperation softDeleteOperation;
     private final IDocumentService documentService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;

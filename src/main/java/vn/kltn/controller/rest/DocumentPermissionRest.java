@@ -23,7 +23,7 @@ public class DocumentPermissionRest {
     @PostMapping("/{documentId}")
     public ResponseData<PermissionResponse> addPermissionDocument(@PathVariable("documentId") Long documentId,
                                                                   @Validated(Create.class) @RequestBody PermissionRequest permissionRequest) {
-        return new ResponseData<>(200, "Thành công", documentPermissionService.setPermissionResource(documentId, permissionRequest));
+        return new ResponseData<>(200, "Thành công", documentPermissionService.addPermission(documentId, permissionRequest));
     }
 
     @PutMapping("/{permissionId}")

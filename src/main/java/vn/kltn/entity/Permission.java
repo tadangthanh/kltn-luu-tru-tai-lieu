@@ -30,4 +30,11 @@ public class Permission extends BaseEntity {
         this.resource = (FileSystemEntity) resource;
         this.permission = permission;
     }
+    public Permission copyForResource(FileSystemEntity newResource) {
+        Permission copy = new Permission();
+        copy.setPermission(this.getPermission());
+        copy.setRecipient(this.getRecipient());
+        copy.setResource(newResource);
+        return copy;
+    }
 }

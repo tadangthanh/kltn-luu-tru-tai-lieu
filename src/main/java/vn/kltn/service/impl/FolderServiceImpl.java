@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.dto.response.FolderResponse;
 import vn.kltn.entity.Folder;
-import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.repository.FolderRepo;
 import vn.kltn.service.*;
@@ -20,17 +19,15 @@ import vn.kltn.service.*;
 @Slf4j(topic = "FOLDER_SERVICE")
 public class FolderServiceImpl extends AbstractResourceService<Folder, FolderResponse> implements IFolderService {
     private final FolderRepo folderRepo;
-    private final IDocumentService documentService;
     private final FolderCommonService folderCommonService;
     private final IFolderCreationService folderCreationService;
     private final IFolderMapperService folderMapperService;
     private final IFolderDeletionService folderDeletionService;
     private final IFolderRestorationService folderRestorationService;
 
-    public FolderServiceImpl(@Qualifier("folderPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IDocumentPermissionService documentPermissionService, FolderRepo folderRepo, IAuthenticationService authenticationService, IDocumentService documentService, FolderCommonService folderCommonService, IFolderPermissionService folderPermissionService, IFolderCreationService folderCreationService, IFolderMapperService folderMapperService, IFolderDeletionService folderDeletionService, IFolderRestorationService folderRestorationService) {
+    public FolderServiceImpl(@Qualifier("folderPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IDocumentPermissionService documentPermissionService, FolderRepo folderRepo, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IFolderPermissionService folderPermissionService, IFolderCreationService folderCreationService, IFolderMapperService folderMapperService, IFolderDeletionService folderDeletionService, IFolderRestorationService folderRestorationService) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
         this.folderRepo = folderRepo;
-        this.documentService = documentService;
         this.folderCommonService = folderCommonService;
         this.folderCreationService = folderCreationService;
         this.folderMapperService = folderMapperService;
@@ -47,13 +44,6 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
     @Override
     public Folder getFolderByIdOrThrow(Long folderId) {
         return folderCommonService.getFolderByIdOrThrow(folderId);
-    }
-
-    private void validateFolderDeleted(Folder folder) {
-        if (folder.getDeletedAt() == null) {
-            log.warn("Folder with id {} is not deleted", folder.getId());
-            throw new ConflictResourceException("Thư mục chưa bị xóa");
-        }
     }
 
     @Override

@@ -23,7 +23,7 @@ public class FolderPermissionRest {
     @PostMapping("/{folderId}")
     public ResponseData<PermissionResponse> addPermissionFolder(@PathVariable("folderId") Long folderId, @Validated(Create.class)
     @RequestBody PermissionRequest permissionRequest) {
-        return new ResponseData<>(200, "Thành công", folderPermissionService.setPermissionResource(folderId, permissionRequest));
+        return new ResponseData<>(200, "Thành công", folderPermissionService.addPermission(folderId, permissionRequest));
     }
 
     @PutMapping("/{permissionId}")

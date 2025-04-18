@@ -13,6 +13,7 @@ import vn.kltn.repository.FolderRepo;
 import vn.kltn.repository.PermissionRepo;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IFolderPermissionService;
+import vn.kltn.service.IPermissionInheritanceService;
 import vn.kltn.service.IUserService;
 import vn.kltn.service.event.MultipleDocumentsUpdatedEvent;
 
@@ -30,14 +31,16 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
     private final DocumentCommonService documentCommonService;
     private final FolderRepo folderRepo;
     private final ApplicationEventPublisher eventPublisher;
+    private final IPermissionInheritanceService permissionInheritanceService;
 
 
-    protected FolderPermissionServiceImpl(PermissionRepo permissionRepo, IUserService userService, PermissionMapper permissionMapper, IAuthenticationService authenticationService, FolderCommonService folderCommonService, ResourceCommonService resourceCommonService, DocumentCommonService documentCommonService , FolderRepo folderRepo, ApplicationEventPublisher eventPublisher) {
+    protected FolderPermissionServiceImpl(PermissionRepo permissionRepo, IUserService userService, PermissionMapper permissionMapper, IAuthenticationService authenticationService, FolderCommonService folderCommonService, ResourceCommonService resourceCommonService, DocumentCommonService documentCommonService, FolderRepo folderRepo, ApplicationEventPublisher eventPublisher, IPermissionInheritanceService permissionInheritanceService) {
         super(permissionRepo, userService, permissionMapper, resourceCommonService, authenticationService);
         this.folderCommonService = folderCommonService;
         this.documentCommonService = documentCommonService;
         this.folderRepo = folderRepo;
         this.eventPublisher = eventPublisher;
+        this.permissionInheritanceService = permissionInheritanceService;
     }
 
 
@@ -46,17 +49,16 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
         return folderCommonService.getFolderByIdOrThrow(resourceId);
     }
 
-
     @Override
-    // tạo permision cho folder thì các folder con và document con sẽ tự động được tạo permission
-    public PermissionResponse setPermissionResource(Long resourceId, PermissionRequest permissionRequest) {
-        PermissionResponse response = super.setPermissionResource(resourceId, permissionRequest);
-        // insert permission cho cả các folder con
-        insertPermissionForChild(resourceId, permissionRequest);
-        return response;
+    public PermissionResponse addPermission(Long resourceId, PermissionRequest permissionRequest) {
+        Permission permission = super.setPermission(resourceId, permissionRequest);
+        permissionInheritanceService.propagatePermissions(resourceId, permission);
+        return mapToPermissionResponse(permission);
     }
 
-    private List<Permission> createPermissionForChild(List<Long> resourceIds, PermissionRequest permissionRequest, Function<Long, FileSystemEntity> getResourceByIdFunc) {
+    private List<Permission> createPermissionForChild(List<Long> resourceIds,
+                                                      PermissionRequest permissionRequest,
+                                                      Function<Long, FileSystemEntity> getResourceByIdFunc) {
         return resourceIds.stream()
                 .map(resourceId -> {
                     FileSystemEntity resource = getResourceByIdFunc.apply(resourceId);

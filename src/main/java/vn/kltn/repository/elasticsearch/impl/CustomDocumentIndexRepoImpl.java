@@ -189,13 +189,10 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
 
             for (DocumentIndex doc : indices) {
                 builder.operations(op -> op
-                        .update(u -> u
+                        .index(i -> i
                                 .index("documents_index")
                                 .id(String.valueOf(doc.getId()))
-                                .action(a -> a
-                                        .doc(doc)
-                                        .docAsUpsert(true)
-                                )
+                                .document(doc)
                         )
                 );
             }
