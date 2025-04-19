@@ -161,7 +161,15 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public TokenResponse getTokenResponse(User user) {
-        return TokenResponse.builder().accessToken(jwtService.generateAccessToken(user.getId(), user.getEmail(), user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))).refreshToken(jwtService.generateRefreshToken(user.getId(), user.getEmail(), user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))).build();
+        return TokenResponse.builder()
+                .accessToken(jwtService.generateAccessToken(user.getId(), user.getEmail(), user.getAuthorities().stream().map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.toList())))
+                .refreshToken(jwtService.generateRefreshToken(user.getId(), user.getEmail(), user.getAuthorities().stream().map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.toList())))
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .avatarUrl(user.getAvatarUrl())
+                .build();
     }
 
     @Override

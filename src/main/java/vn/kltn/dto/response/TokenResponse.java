@@ -10,4 +10,7 @@ import java.io.Serializable;
 public class TokenResponse implements Serializable {
     private String accessToken;
     private String refreshToken;
+    private String fullName;
+    private String email;
+    private String avatarUrl;
 }
