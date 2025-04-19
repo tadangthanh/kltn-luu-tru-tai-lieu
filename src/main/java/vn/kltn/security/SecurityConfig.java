@@ -42,6 +42,7 @@ public class SecurityConfig implements WebMvcConfigurer {
     private final CustomAuthorizationRequestRepository authorizationRequestRepository;
     private final String[] WHITE_LIST = {
             "/auth/**",
+            "/ws/**",
             "/api/auth/**",
             "/api/v1/user/register",
             "/api/v1/user/confirm/**",
@@ -50,7 +51,6 @@ public class SecurityConfig implements WebMvcConfigurer {
             "/api/v1/user/reset-password",
             "/repository/invitation/**"
     };
-
     //quan ly cac roles, user truy cap he thong
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
