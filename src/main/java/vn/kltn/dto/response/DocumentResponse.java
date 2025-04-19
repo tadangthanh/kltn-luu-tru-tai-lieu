@@ -7,5 +7,6 @@ import lombok.Setter;
 @Setter
 public class DocumentResponse extends ResourceResponse {
     private String type;
+    private String blobName;
     private int version;
 }

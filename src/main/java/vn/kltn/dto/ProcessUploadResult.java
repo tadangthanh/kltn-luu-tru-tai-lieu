@@ -2,7 +2,7 @@ package vn.kltn.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import vn.kltn.index.DocumentIndex;
+import vn.kltn.dto.response.DocumentResponse;
 
 import java.util.List;
 
@@ -10,6 +10,5 @@ import java.util.List;
 @AllArgsConstructor
 public class ProcessUploadResult {
     private final boolean cancelled;
-    private final List<String> blobNames;
-    private final List<DocumentIndex> documentIndices;
+    private final List<DocumentResponse> documents;
 }

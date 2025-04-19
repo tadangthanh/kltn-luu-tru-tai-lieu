@@ -4,11 +4,14 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.ProcessUploadResult;
 import vn.kltn.dto.UploadContext;
+import vn.kltn.dto.response.UploadProgressDTO;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.Folder;
 import vn.kltn.entity.Tag;
@@ -34,6 +37,7 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
     private final IDocumentHasTagService documentHasTagService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
+
 
     @Override
     public void deleteBlobsFromCloud(List<String> blobNames) {
@@ -166,10 +170,6 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
     public void store(CancellationToken token, List<FileBuffer> bufferedFiles, List<Document> documents) {
         UploadContext context = new UploadContext(token, documents);
         ProcessUploadResult result = uploadProcessor.processUpload(context, bufferedFiles);
-
-        if (result.isCancelled()) {
-            log.info("Upload was cancelled");
-        }
     }
 
     @Override

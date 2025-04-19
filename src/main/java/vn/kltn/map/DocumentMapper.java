@@ -8,6 +8,8 @@ import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.entity.Document;
 
+import java.util.List;
+
 import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 
 @Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = IGNORE)
@@ -19,11 +21,13 @@ public interface DocumentMapper {
     @Mapping(target = "parentId", source = "parent.id")
     DocumentResponse toDocumentResponse(Document document);
 
+    List<DocumentResponse> toDocumentResponseList(List<Document> documents);
+
     @Mapping(target = "id", ignore = true)
     Document copyDocument(Document document);
 
-    @Mapping(target = "name",source = "fileName")
-    @Mapping(target = "type",source = "contentType")
+    @Mapping(target = "name", source = "fileName")
+    @Mapping(target = "type", source = "contentType")
     Document mapFileBufferToDocument(FileBuffer fileBuffer);
 
     void updateDocument(@MappingTarget Document document, DocumentRequest documentRequest);

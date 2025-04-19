@@ -44,6 +44,11 @@ public class DocumentMapperServiceImpl implements IDocumentMapperService {
     }
 
     @Override
+    public List<DocumentResponse> mapToDocumentResponseList(List<Document> documents) {
+        return documentMapper.toDocumentResponseList(documents);
+    }
+
+    @Override
     public Document copyDocument(Document document) {
         return documentMapper.copyDocument(document);
     }

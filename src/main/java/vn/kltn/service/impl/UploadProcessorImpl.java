@@ -2,10 +2,13 @@ package vn.kltn.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.ProcessUploadResult;
 import vn.kltn.dto.UploadContext;
+import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.exception.CustomIOException;
 import vn.kltn.index.DocumentIndex;
 import vn.kltn.service.IAzureStorageService;
@@ -29,6 +32,7 @@ public class UploadProcessorImpl implements IUploadProcessor {
     private final IDocumentMapperService documentMapperService;
     private final IDocumentIndexService documentIndexService;
     private final UploadFinalizerService uploadFinalizerService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     public List<String> process(List<FileBuffer> bufferedFiles) {
@@ -49,22 +53,20 @@ public class UploadProcessorImpl implements IUploadProcessor {
             if (checkCancellation(context)) {
                 return createCancelledResult();
             }
+            uploadFinalizerService.finalizeUpload(context.getToken());
             documentMapperService.mapBlobNamesToDocuments(context.getDocuments(), blobNames);
-
-            // Index documents
-            if (checkCancellation(context)) {
-                return createCancelledResult();
-            }
+            List<DocumentResponse> documentResponses = documentMapperService.mapToDocumentResponseList(context.getDocuments());
+            messagingTemplate.convertAndSendToUser(
+                    SecurityContextHolder.getContext().getAuthentication().getName(),
+                    "/topic/upload-documents-completed",
+                    new ProcessUploadResult(false, documentResponses));
             List<DocumentIndex> indices = documentIndexService.insertAllDoc(context.getDocuments()).join();
             context.setDocumentIndices(indices);
 
-            if (checkCancellation(context)) {
-                return createCancelledResult();
-            }
-
-            return new ProcessUploadResult(false, blobNames, indices);
+            return new ProcessUploadResult(false, documentResponses);
         } finally {
             uploadFinalizerService.finalizeUpload(context.getToken());
+
         }
     }
 
@@ -78,7 +80,7 @@ public class UploadProcessorImpl implements IUploadProcessor {
     }
 
     private ProcessUploadResult createCancelledResult() {
-        return new ProcessUploadResult(true, null, null);
+        return new ProcessUploadResult(true, null);
     }
 
 
@@ -87,7 +89,7 @@ public class UploadProcessorImpl implements IUploadProcessor {
         for (FileBuffer file : files) {
             try (InputStream inputStream = new ByteArrayInputStream(file.getData())) {
                 CompletableFuture<String> future = azureStorageService.uploadChunkedWithContainerDefaultAsync(inputStream,
-                        file.getFileName(), file.getSize(), 10 * 1024 * 1024)
+                                file.getFileName(), file.getSize(), 1024 * 1024)
                         .handle((blobName, ex) -> {
                             if (ex != null) {
                                 log.error("Upload failed for file {}: {}", file.getFileName(), ex.getMessage());

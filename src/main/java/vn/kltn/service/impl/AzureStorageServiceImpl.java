@@ -8,7 +8,10 @@ import com.azure.storage.blob.specialized.BlockBlobClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import vn.kltn.dto.response.UploadProgressDTO;
 import vn.kltn.exception.CustomBlobStorageException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.service.IAzureStorageService;
@@ -30,6 +33,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     private final BlobServiceClient blobServiceClient;
     @Value("${spring.cloud.azure.storage.blob.container-name}")
     private String containerNameDefault;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     public String uploadChunkedWithContainerDefault(InputStream data, String originalFileName, long length, int chunkSize) {
@@ -72,7 +76,8 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
             byte[] buffer = new byte[chunkSize];
             int bytesRead;
             int blockNumber = 0;
-
+            int totalChunks = (int) ((length + chunkSize - 1) / chunkSize);
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
             while ((bytesRead = data.read(buffer)) != -1) {
                 String blockId = Base64.getEncoder().encodeToString(String.format("%06d", blockNumber).getBytes()); // Tạo Block ID
                 blockBlobClient.stageBlock(blockId, new ByteArrayInputStream(buffer, 0, bytesRead), bytesRead);  // Upload từng phần
@@ -81,6 +86,16 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
                 //  In log với số phần upload thành công
                 System.out.println("✅ Đã upload thành công phần " + (blockNumber + 1) + " trên tổng số " + ((length + chunkSize - 1) / chunkSize) + " phần");
                 blockNumber++;
+                int progressPercent = (int) ((blockNumber * 100.0) / totalChunks);
+                if (blockNumber == totalChunks) {
+                    progressPercent = 100; // đảm bảo chunk cuối là 100%
+                }
+
+                messagingTemplate.convertAndSendToUser(
+                        email,
+                        "/topic/upload-documents",
+                        new UploadProgressDTO(originalFileName, blockNumber, totalChunks, progressPercent)
+                );
             }
 
             // Ghép các phần lại

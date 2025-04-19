@@ -8,7 +8,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.FileBuffer;
@@ -16,6 +19,7 @@ import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.dto.response.DocumentResponse;
+import vn.kltn.dto.response.ResponseData;
 import vn.kltn.entity.Document;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.repository.DocumentRepo;
@@ -39,8 +43,9 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
     private final IDocumentStorageService documentStorageService;
     private final IDocumentMapperService documentMapperService;
     private final IDocumentSearchService documentSearchService;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService) {
+    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, SimpMessagingTemplate messagingTemplate) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
         this.documentRepo = documentRepo;
         this.documentHasTagService = documentHasTagService;
@@ -50,6 +55,7 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         this.documentStorageService = documentStorageService;
         this.documentMapperService = documentMapperService;
         this.documentSearchService = documentSearchService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @Override
@@ -59,7 +65,6 @@ public class DocumentServiceImpl extends AbstractResourceService<Document, Docum
         List<Document> documents = documentStorageService.saveDocuments(bufferedFiles);
         // upload file to cloud
         documentStorageService.store(token, bufferedFiles, documents);
-        // thong bao bang websocket
     }
 
     @Override

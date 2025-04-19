@@ -12,6 +12,7 @@ public interface IDocumentMapperService {
     DocumentResponse mapToDocumentResponse(Document document);
 
     void updateDocument(Document docExists, DocumentRequest documentRequest);
+    List<DocumentResponse> mapToDocumentResponseList(List<Document> documents);
 
     Document copyDocument(Document document);
 

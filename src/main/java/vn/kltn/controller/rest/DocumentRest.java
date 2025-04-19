@@ -41,7 +41,7 @@ public class DocumentRest {
         uploadTokenManager.registerToken(uploadId, token);
         token.setUploadId(uploadId);
         documentService.uploadDocumentEmptyParent(FileUtil.getFileBufferList(files), token);
-        return new ResponseData<>(201, "Đang tải ....", uploadId);
+        return new ResponseData<>(200, "Đang tải ....", uploadId);
     }
 
     @PostMapping("/cancel")
@@ -66,7 +66,7 @@ public class DocumentRest {
         uploadTokenManager.registerToken(uploadId, token);
         token.setUploadId(uploadId);
         documentService.uploadDocumentWithParent(folderId, FileUtil.getFileBufferList(files), token);
-        return new ResponseData<>(201, "Đang tải lên...", uploadId);
+        return new ResponseData<>(200, "Đang tải lên...", uploadId);
     }
 
     @DeleteMapping("/{documentId}")
