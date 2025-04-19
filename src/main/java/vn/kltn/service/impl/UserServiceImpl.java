@@ -52,6 +52,7 @@ public class UserServiceImpl implements IUserService {
         validationUserRegister(userRegister);
         User user = userMapper.registerToUser(userRegister);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setFullName(userRegister.getEmail().split("@")[0]);
         user = userRepo.save(user);
         user.setStatus(UserStatus.NONE);
         Role role = roleService.findRoleByName("user");

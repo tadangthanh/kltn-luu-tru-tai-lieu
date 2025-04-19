@@ -65,18 +65,14 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
             throw new UnauthorizedException(e.getMessage());
         }
         var user = userService.getByEmail(authRequest.getEmail());
-        String accessToken = jwtService.generateAccessToken(user.getId(), authRequest.getEmail(), authorities);
-        String refreshToken = jwtService.generateRefreshToken(user.getId(), authRequest.getEmail(), authorities);
+       TokenResponse tokenResponse = userService.getTokenResponse(user);
         // save token to redis
         redisTokenService.save(RedisToken.builder()
                 .id(user.getEmail())
-                .accessToken(accessToken)
-                .resetToken(refreshToken)
+                .accessToken(tokenResponse.getAccessToken())
+                .resetToken(tokenResponse.getRefreshToken())
                 .build());
-        return TokenResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .build();
+        return tokenResponse;
     }
 
     @Override

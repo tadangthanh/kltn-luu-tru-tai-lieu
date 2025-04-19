@@ -81,7 +81,7 @@ public class GmailServiceImpl implements IMailService {
         String template = "confirm-email.html";
 
         Context context = new Context();
-        context.setVariable("linkConfirm", confirmUrl + "?token=" + token);
+        context.setVariable("linkConfirm", confirmUrl + "/"+id+"?token=" + token);
 
         sendEmail("Ta dang thanh", email, subject, template, context);
     }
