@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.TokenType;
 import vn.kltn.common.UserStatus;
@@ -22,7 +21,6 @@ import vn.kltn.map.UserMapper;
 import vn.kltn.repository.UserRepo;
 import vn.kltn.service.*;
 
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static vn.kltn.common.TokenType.ACCESS_TOKEN;
@@ -123,6 +121,26 @@ public class UserServiceImpl implements IUserService {
         userRepo.save(currentUser);
     }
 
+    @Transactional
+    public User createFromGoogle(String email, String fullName, String avatarUrl) {
+        // Nếu cần lấy sub từ token thì truyền vào tham số thêm
+        User user = new User();
+        user.setEmail(email);
+        user.setFullName(fullName);
+        user.setAvatarUrl(avatarUrl);
+        user.setStatus(UserStatus.ACTIVE);
+
+        // Password để trống vì user này login qua Google
+        user.setPassword(null);
+
+        userRepo.save(user);
+        // Gán role mặc định
+        Role userRole = roleService.findRoleByName("user");
+        userHasRoleService.saveUserHasRole(user,userRole);
+        return user;
+    }
+
+
     @Override
     public User getUserByEmail(String email) {
         return userRepo.findByEmail(email).orElseThrow(() -> {
@@ -139,49 +157,11 @@ public class UserServiceImpl implements IUserService {
         });
     }
 
-    @Override
-    public TokenResponse loginWithGoogle(OAuth2User oAuth2User) {
-        User user = mapOAuth2UserToUser(oAuth2User);
-        if (userRepo.existsBySub(user.getSub())) {
-            user = getBySub(user.getSub());
-            return getTokenResponse(user);
-        }
-        user.setStatus(UserStatus.ACTIVE);
-        user = userRepo.save(user);
-        Role role = roleService.findRoleByName("user");
-        userHasRoleService.saveUserHasRole(user, role);
-        return getTokenResponse(user);
-    }
 
-    private TokenResponse getTokenResponse(User user) {
+
+    @Override
+    public TokenResponse getTokenResponse(User user) {
         return TokenResponse.builder().accessToken(jwtService.generateAccessToken(user.getId(), user.getEmail(), user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))).refreshToken(jwtService.generateRefreshToken(user.getId(), user.getEmail(), user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))).build();
-    }
-
-    @Override
-    public User mapOAuth2UserToUser(OAuth2User oAuth2User) {
-        // Lấy tất cả các thuộc tính của người dùng
-        Map<String, Object> attributes = oAuth2User.getAttributes();
-
-        // Lấy các thông tin cụ thể
-        String email = (String) attributes.get("email");
-        String name = (String) attributes.get("name");
-        String picture = (String) attributes.get("picture");
-        String sub = (String) attributes.get("sub");
-
-        User user = new User();
-        user.setEmail(email);
-        user.setFullName(name);
-        user.setAvatarUrl(picture);
-        user.setSub(sub);
-        return user;
-    }
-
-    @Override
-    public User getBySub(String sub) {
-        return userRepo.findBySub(sub).orElseThrow(() -> {
-            log.warn("User not found by sub: {}", sub);
-            return new ResourceNotFoundException("Không tìm thấy user {}" + sub);
-        });
     }
 
     @Override
@@ -191,6 +171,7 @@ public class UserServiceImpl implements IUserService {
             return new ResourceNotFoundException("User not found");
         });
     }
+
 
 
     private void validateUpdatePassword(AuthChangePassword authChangePassword, User currentUser) {

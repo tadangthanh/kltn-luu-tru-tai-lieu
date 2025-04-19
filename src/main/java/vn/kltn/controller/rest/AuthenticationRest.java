@@ -16,6 +16,7 @@ import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IUserService;
 
 import java.io.ByteArrayInputStream;
+import java.util.Map;
 
 @RequestMapping("/api/auth")
 @Slf4j(topic = "AUTHENTICATION_CONTROLLER")
@@ -42,5 +43,10 @@ public class AuthenticationRest {
         return new ResponseData<>(HttpStatus.OK.value(), "Đổi mật khẩu thành công");
     }
 
-
+    @PostMapping("/google")
+    public ResponseEntity<?> googleLogin(@RequestBody Map<String, String> request) {
+        String idToken = request.get("token");
+        TokenResponse tokens = authenticationService.verifyGoogleTokenAndLogin(idToken);
+        return ResponseEntity.ok(tokens);
+    }
 }

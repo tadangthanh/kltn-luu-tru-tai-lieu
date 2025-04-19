@@ -1,9 +1,14 @@
 package vn.kltn.service.impl;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import com.nimbusds.oauth2.sdk.util.StringUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -16,6 +21,7 @@ import vn.kltn.dto.request.AuthRequest;
 import vn.kltn.dto.response.TokenResponse;
 import vn.kltn.entity.RedisToken;
 import vn.kltn.entity.User;
+import vn.kltn.exception.AuthVerifyException;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.exception.UnauthorizedException;
@@ -25,6 +31,7 @@ import vn.kltn.service.IRedisTokenService;
 import vn.kltn.service.IUserService;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.springframework.http.HttpHeaders.REFERER;
@@ -38,6 +45,8 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final IUserService userService;
     private final IRedisTokenService redisTokenService;
+    @Value("${google.client-id}")
+    private String googleClientId;
 
     @Override
     public TokenResponse getAccessToken(AuthRequest authRequest) {
@@ -107,6 +116,40 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         }
         log.error("Principal is not User or UserDetails");
         throw new ResourceNotFoundException("User not found");
+    }
+
+    @Override
+    public TokenResponse verifyGoogleTokenAndLogin(String idTokenString) {
+        log.info("verify google token and login: {}", idTokenString.substring(0, 10) + "..." + idTokenString.substring(idTokenString.length() - 10));
+        try {
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+                    .setAudience(Collections.singletonList(googleClientId))
+                    .build();
+
+            GoogleIdToken idToken = verifier.verify(idTokenString);
+            if (idToken == null) {
+                log.error("ID token không hợp lệ");
+                throw new InvalidDataException("ID token không hợp lệ");
+            }
+
+            GoogleIdToken.Payload payload = idToken.getPayload();
+
+            String email = payload.getEmail();
+            String name = (String) payload.get("name");
+            String picture = (String) payload.get("picture");
+
+            // 1. Check user trong DB
+            User user = userService.getUserByEmail(email);
+            if (user == null) {
+                user = userService.createFromGoogle(email, name, picture);
+            }
+
+            return userService.getTokenResponse(user);
+
+        } catch (Exception e) {
+            log.error("Xác thực Google thất bại: {}", e.getMessage());
+            throw new AuthVerifyException("Xác thực Google thất bại");
+        }
     }
 
 

@@ -25,8 +25,6 @@ public class User extends BaseEntity implements UserDetails {
     @Column(nullable = false)
     private String fullName;
     private String avatarUrl;
-    @Column(unique = true, nullable = false)
-    private String sub;
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private UserStatus status;

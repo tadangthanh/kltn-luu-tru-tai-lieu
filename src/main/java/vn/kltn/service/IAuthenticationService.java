@@ -10,4 +10,6 @@ public interface IAuthenticationService {
     TokenResponse getRefreshToken(String token);
 
     User getCurrentUser();
+
+    TokenResponse verifyGoogleTokenAndLogin(String idToken);
 }

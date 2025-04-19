@@ -98,6 +98,7 @@ repo:
   max-repos-per-member-default: ${MAX_REPOS_PER_MEMBER_DEFAULT:5}
 google:
   api-key: ${googleapikey}
+  client-id: ${googleclientid}
 elasticsearch:
   url: ${ELASTICSEARCH_HOST:localhost}:${ELASTICSEARCH_PORT:9200}
 

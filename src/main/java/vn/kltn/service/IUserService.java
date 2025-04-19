@@ -12,6 +12,8 @@ import vn.kltn.entity.User;
 public interface IUserService extends UserDetailsService {
     void register(UserRegister userRegister);
 
+    TokenResponse getTokenResponse(User user);
+
     // xac nhan email de kich hoat tai khoan
     void confirmEmail(Long userId, String token);
 
@@ -23,15 +25,11 @@ public interface IUserService extends UserDetailsService {
 
     void updatePassword(AuthChangePassword authChangePassword);
 
+    User createFromGoogle(String email, String fullName, String avatarUrl);
+
     User getUserByEmail(String email);
 
     User getUserById(Long id);
-
-    TokenResponse loginWithGoogle(OAuth2User oAuth2User);
-
-    User mapOAuth2UserToUser(OAuth2User oAuth2User);
-
-    User getBySub(String sub);
 
     User getByEmail(String email);
 
