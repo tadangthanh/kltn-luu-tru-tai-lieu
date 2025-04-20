@@ -16,7 +16,7 @@ public class Conversation extends BaseEntity {
     private String answer;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "conversation_file_id")
-    private ConversationFile conversationFile;
+    @JoinColumn(name = "assistant_file_id")
+    private AssistantFile assistantFile;
 
 }

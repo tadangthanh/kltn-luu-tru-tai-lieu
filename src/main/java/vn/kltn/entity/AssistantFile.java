@@ -8,11 +8,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "conversation_file")
+@Table(name = "assistant_file")
 @Getter
 @Setter
-public class ConversationFile extends BaseEntity {
-    @Column(name = "name", nullable = false,unique = true)
+public class AssistantFile extends BaseEntity {
+    @Column(name = "name", nullable = false, unique = true)
     private String name;
     @Column(name = "original_file_name", nullable = false)
     private String originalFileName;
@@ -20,6 +20,6 @@ public class ConversationFile extends BaseEntity {
     private LocalDateTime createTime;
     @ManyToOne(fetch = FetchType.LAZY)
     private User user;
-    @OneToMany(mappedBy = "conversationFile", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "assistantFile", cascade = CascadeType.ALL)
     private List<Conversation> conversations;
 }
