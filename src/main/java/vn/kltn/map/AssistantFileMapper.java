@@ -9,7 +9,7 @@ import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 
 @Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = IGNORE)
 public interface AssistantFileMapper {
-    @Mapping(target = "assistantFileId", source = "assistantFile.id")
+    @Mapping(target = "userId", source = "user.id")
     AssistantFileDto toDto(AssistantFile assistantFile);
 
     AssistantFile toEntity(AssistantFileDto assistantFileDto);

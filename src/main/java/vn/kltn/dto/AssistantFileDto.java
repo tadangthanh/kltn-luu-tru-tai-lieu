@@ -21,4 +21,5 @@ public class AssistantFileDto extends BaseDto {
 
     @NotNull(message = "Create time is required")
     private LocalDateTime createTime;
+    private Long userId;
 }
