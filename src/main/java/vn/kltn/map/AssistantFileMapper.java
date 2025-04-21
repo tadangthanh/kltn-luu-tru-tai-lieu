@@ -2,6 +2,7 @@ package vn.kltn.map;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import vn.kltn.dto.AssistantFileDto;
 import vn.kltn.entity.AssistantFile;
 
@@ -13,4 +14,8 @@ public interface AssistantFileMapper {
     AssistantFileDto toDto(AssistantFile assistantFile);
 
     AssistantFile toEntity(AssistantFileDto assistantFileDto);
+
+    @Mapping(target = "id", ignore = true)
+    void updateEntity(@MappingTarget AssistantFile assistantFile,
+                      AssistantFileDto assistantFileDto);
 }

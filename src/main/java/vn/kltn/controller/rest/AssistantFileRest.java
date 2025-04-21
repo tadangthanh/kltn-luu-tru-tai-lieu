@@ -35,9 +35,13 @@ public class AssistantFileRest {
         return new ResponseData<>(200, "Thành công", pageResponse);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseData<Void> deleteAssistantFile(@PathVariable Long id) {
-        assistantFileService.delete(id);
+    @DeleteMapping("/{name} ")
+    public ResponseData<Void> deleteAssistantFile(@PathVariable String name) {
+        assistantFileService.deleteByName(name);
         return new ResponseData<>(200, "Xóa thành công", null);
+    }
+    @PutMapping("/{name}")
+    public ResponseData<AssistantFileDto> updateAssistantFile(@PathVariable String name,@Valid @RequestBody AssistantFileDto assistantFileDto) {
+        return new ResponseData<>(200, "Cập nhật thành công", assistantFileService.update(name,assistantFileDto));
     }
 }

@@ -64,8 +64,18 @@ public class AssistantFileServiceImpl implements IAssistantFileService {
     }
 
     @Override
-    public void delete(Long id) {
-        log.info("Delete assistant file: id={}", id);
-        assistantFileRepo.deleteById(id);
+    public void deleteByName(String name) {
+        log.info("Delete assistant file: name={}", name);
+        assistantFileRepo.deleteByName(name);
+    }
+
+    @Override
+    public AssistantFileDto update(String name, AssistantFileDto assistantFileDto) {
+        AssistantFile fileExist = assistantFileRepo.findByName(name).orElseThrow(() -> {
+            log.error("Assistant file not found, name: {}", name);
+            return new ResourceNotFoundException("Assistant file not found");
+        });
+        assistantFileMapper.updateEntity(fileExist, assistantFileDto);
+        return assistantFileMapper.toDto(assistantFileRepo.save(fileExist));
     }
 }

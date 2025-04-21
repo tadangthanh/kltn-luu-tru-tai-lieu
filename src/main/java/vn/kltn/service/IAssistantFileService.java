@@ -1,5 +1,6 @@
 package vn.kltn.service;
 
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
 import vn.kltn.dto.AssistantFileDto;
 import vn.kltn.dto.response.PageResponse;
@@ -14,5 +15,7 @@ public interface IAssistantFileService {
 
     AssistantFile getFileById(Long id);
 
-    void delete(Long id);
+    void deleteByName(String name);
+
+    AssistantFileDto update(String name, AssistantFileDto assistantFileDto);
 }
