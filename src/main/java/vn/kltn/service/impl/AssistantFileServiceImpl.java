@@ -3,11 +3,8 @@ package vn.kltn.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.AssistantFileDto;
-import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.AssistantFile;
 import vn.kltn.entity.User;
 import vn.kltn.exception.ResourceNotFoundException;
@@ -27,32 +24,22 @@ public class AssistantFileServiceImpl implements IAssistantFileService {
     private final AssistantFileRepo assistantFileRepo;
     private final IAuthenticationService authenticationService;
 
-
     @Override
-    public AssistantFileDto createFile(AssistantFileDto assistantFileDto) {
+    public AssistantFileDto uploadFile(AssistantFileDto assistantFileDto) {
         log.info("Create assistant file: {}", assistantFileDto.getName());
         AssistantFile assistantFile = assistantFileMapper.toEntity(assistantFileDto);
-        assistantFile.setUser(authenticationService.getCurrentUser());
         assistantFile = assistantFileRepo.save(assistantFile);
         return assistantFileMapper.toDto(assistantFile);
     }
 
     @Override
-    public PageResponse<List<AssistantFileDto>> getFiles(Pageable pageable) {
-        log.info("Get assistant files page: {},size :{}", pageable.getPageNumber(), pageable.getPageSize());
+    public List<AssistantFileDto> getListFileByChatSessionId(Long chatSessionId) {
+        log.info("Get assistant files by chat session id: {}", chatSessionId);
         User currentUser = authenticationService.getCurrentUser();
-        Page<AssistantFile> assistantFilePage = assistantFileRepo.findAllByCurrentUser(currentUser.getId(), pageable);
-        List<AssistantFileDto> assistantFileList = assistantFilePage.getContent().stream()
+        List<AssistantFile> assistantFileList = assistantFileRepo.findAllByChatSessionId(chatSessionId,currentUser.getId());
+        return assistantFileList.stream()
                 .map(assistantFileMapper::toDto)
                 .toList();
-        return PageResponse.<List<AssistantFileDto>>builder()
-                .items(assistantFileList)
-                .pageNo(pageable.getPageNumber())
-                .pageSize(pageable.getPageSize())
-                .totalPage(assistantFilePage.getTotalPages())
-                .totalItems(assistantFilePage.getTotalElements())
-                .hasNext(assistantFilePage.hasNext())
-                .build();
     }
 
     @Override

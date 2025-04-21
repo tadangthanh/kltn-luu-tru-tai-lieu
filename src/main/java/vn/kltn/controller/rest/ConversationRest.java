@@ -21,10 +21,10 @@ public class ConversationRest {
     }
     @GetMapping("/assistant-file/{assistantFileId}")
     public ResponseData<?> getAllByAssistantFileId(@PathVariable Long assistantFileId, Pageable pageable) {
-        return new ResponseData<>(200, "Thành công", conversationService.getAllByAssistantFileId(assistantFileId, pageable));
+        return new ResponseData<>(200, "Thành công", conversationService.getAllByChatSessionId(assistantFileId, pageable));
     }
     @GetMapping("/all/assistant-file/{assistantFileId}")
     public ResponseData<?> getAllByAssistantFileId(@PathVariable Long assistantFileId) {
-        return new ResponseData<>(200, "Thành công", conversationService.getAllByAssistantFileId(assistantFileId));
+        return new ResponseData<>(200, "Thành công", conversationService.getAllByChatSessionId(assistantFileId));
     }
 }

@@ -9,6 +9,7 @@ import java.util.List;
 public interface IConversationService {
     ConversationDto addConversation(ConversationDto conversationDto);
 
-    PageResponse<List<ConversationDto>> getAllByAssistantFileId(Long assistantFileId, Pageable pageable);
-    List<ConversationDto> getAllByAssistantFileId(Long assistantFileId);
+    PageResponse<List<ConversationDto>> getAllByChatSessionId(Long assistantFileId, Pageable pageable);
+
+    List<ConversationDto> getAllByChatSessionId(Long assistantFileId);
 }

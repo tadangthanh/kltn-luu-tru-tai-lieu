@@ -11,10 +11,9 @@ import java.util.List;
 
 @Repository
 public interface ConversationRepo extends JpaRepository<Conversation, Long> {
+    @Query("SELECT c FROM Conversation c WHERE c.chatSession.id = :chatSessionId")
+    Page<Conversation> findAllByChatSessionId(Long chatSessionId, Pageable pageable);
 
-    @Query("SELECT c FROM Conversation c WHERE c.assistantFile.id = :assistantFileId")
-    Page<Conversation> findAllByAssistantFile(Long assistantFileId, Pageable pageable);
-
-    @Query("SELECT c FROM Conversation c WHERE c.assistantFile.id = :assistantFileId order by c.id asc")
-    List<Conversation> findAllByAssistantFileId(Long assistantFileId);
+    @Query("SELECT c FROM Conversation c WHERE c.chatSession.id = :chatSessionId")
+    List<Conversation> findAllByChatSessionId(Long chatSessionId);
 }

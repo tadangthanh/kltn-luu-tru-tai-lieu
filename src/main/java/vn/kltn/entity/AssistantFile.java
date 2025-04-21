@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Table(name = "assistant_file")
@@ -18,8 +17,10 @@ public class AssistantFile extends BaseEntity {
     private String originalFileName;
     private LocalDateTime expirationTime;
     private LocalDateTime createTime;
-    @ManyToOne(fetch = FetchType.LAZY)
-    private User user;
-    @OneToMany(mappedBy = "assistantFile", cascade = CascadeType.ALL)
-    private List<Conversation> conversations;
+
+    @ManyToOne
+    @JoinColumn(name = "chat_session_id", nullable = false)
+    private ChatSession chatSession;
+
+
 }

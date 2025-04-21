@@ -11,6 +11,6 @@ public class ConversationDto extends BaseDto {
     @NotBlank(message = "Question is required")
     private String question;
     private String answer;
-    @NotNull(message = "Assistant file id is required")
-    private Long assistantFileId;
+    @NotNull(message = "chatSession id is required")
+    private Long chatSessionId;
 }

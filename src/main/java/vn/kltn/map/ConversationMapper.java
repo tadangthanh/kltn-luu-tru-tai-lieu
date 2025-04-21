@@ -9,7 +9,7 @@ import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 
 @Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = IGNORE)
 public interface ConversationMapper {
-    @Mapping(target = "assistantFileId", source = "assistantFile.id")
+    @Mapping(target = "chatSessionId", source = "chatSession.id")
     ConversationDto toDto(Conversation conversation);
 
     Conversation toEntity(ConversationDto conversationDto);
