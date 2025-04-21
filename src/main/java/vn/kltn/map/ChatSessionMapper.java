@@ -3,6 +3,7 @@ package vn.kltn.map;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import vn.kltn.dto.ChatSessionDto;
+import vn.kltn.dto.request.ChatSessionInit;
 import vn.kltn.entity.ChatSession;
 
 import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
@@ -13,4 +14,6 @@ public interface ChatSessionMapper {
     ChatSessionDto toDto(ChatSession chatSession);
 
     ChatSession toEntity(ChatSessionDto chatSessionDto);
+
+    ChatSession requestToEntity(ChatSessionInit chatSessionInit);
 }

@@ -17,7 +17,7 @@ public class AssistantFile extends BaseEntity {
     private String originalFileName;
     private LocalDateTime expirationTime;
     private LocalDateTime createTime;
-
+    private String uri;
     @ManyToOne
     @JoinColumn(name = "chat_session_id", nullable = false)
     private ChatSession chatSession;

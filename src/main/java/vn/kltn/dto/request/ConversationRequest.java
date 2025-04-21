@@ -1,4 +1,4 @@
-package vn.kltn.dto;
+package vn.kltn.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -7,7 +7,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ConversationDto extends BaseDto {
+public class ConversationRequest {
     @NotBlank(message = "Question is required")
     private String question;
     private String answer;

@@ -1,4 +1,4 @@
-package vn.kltn.dto;
+package vn.kltn.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -9,9 +9,11 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-public class AssistantFileDto extends BaseDto {
+public class AssistantFileRequest {
     @NotBlank(message = "File name is required")
     private String name;
+    @NotBlank(message = "uri name is required")
+    private String uri;
 
     @NotBlank(message = "Original file name is required")
     private String originalFileName;

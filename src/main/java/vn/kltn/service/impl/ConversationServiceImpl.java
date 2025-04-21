@@ -7,14 +7,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
-import vn.kltn.dto.ConversationDto;
+import vn.kltn.dto.request.ConversationRequest;
+import vn.kltn.dto.response.ConversationDto;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.ChatSession;
 import vn.kltn.entity.Conversation;
+import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.ConversationMapper;
+import vn.kltn.repository.ChatSessionRepo;
 import vn.kltn.repository.ConversationRepo;
 import vn.kltn.service.IAuthenticationService;
-import vn.kltn.service.IChatSessionService;
 import vn.kltn.service.IConversationService;
 
 import java.util.List;
@@ -23,21 +25,21 @@ import java.util.List;
 @Transactional
 @RequiredArgsConstructor
 @Slf4j(topic = "CONVERSATION_SERVICE")
-public class IConversationServiceImpl implements IConversationService {
+public class ConversationServiceImpl implements IConversationService {
     private final ConversationMapper conversationMapper;
     private final ConversationRepo conversationRepo;
     private final IAuthenticationService authenticationService;
-    private final IChatSessionService chatSessionService;
-
+//    private final IChatSessionService chatSessionService;
+    private final ChatSessionRepo chatSessionRepo;
     @Override
-    public ConversationDto addConversation(ConversationDto conversationDto) {
-        log.info("Add conversation to chat session id: {}", conversationDto.getChatSessionId());
-        Conversation conversation = conversationMapper.toEntity(conversationDto);
-        conversationRepo.save(conversation);
-        ChatSession chatSession = chatSessionService.getChatSessionById(conversationDto.getChatSessionId());
+    public ConversationDto addConversation(ConversationRequest conversationRequest) {
+        log.info("Add conversation to chat session id: {}", conversationRequest.getChatSessionId());
+        ChatSession chatSession = chatSessionRepo.findById(conversationRequest.getChatSessionId()).orElseThrow(() -> new ResourceNotFoundException("Chat session not found"));
         validateChatSessionBelongToUser(chatSession);
+        Conversation conversation = conversationMapper.toEntity(conversationRequest);
+        conversationRepo.save(conversation);
         conversation.setChatSession(chatSession);
-        return conversationMapper.toDto(conversation);
+        return conversationMapper.toResponse(conversation);
     }
 
     private void validateChatSessionBelongToUser(ChatSession chatSession) {
@@ -49,11 +51,11 @@ public class IConversationServiceImpl implements IConversationService {
     @Override
     public PageResponse<List<ConversationDto>> getAllByChatSessionId(Long chatSessionId, Pageable pageable) {
         log.info("Get all conversations by assistantFileId: {}", chatSessionId);
-        ChatSession chatSession = chatSessionService.getChatSessionById(chatSessionId);
+        ChatSession chatSession = chatSessionRepo.findById(chatSessionId).orElseThrow(() -> new ResourceNotFoundException("Chat session not found"));
         validateChatSessionBelongToUser(chatSession);
         Page<Conversation> conversations = conversationRepo.findAllByChatSessionId(chatSessionId, pageable);
         List<ConversationDto> conversationList = conversations.stream()
-                .map(conversationMapper::toDto)
+                .map(conversationMapper::toResponse)
                 .toList();
         return PageResponse.<List<ConversationDto>>builder()
                 .items(conversationList)
@@ -66,7 +68,19 @@ public class IConversationServiceImpl implements IConversationService {
     }
 
     @Override
+    public Conversation save(ChatSession chatSession, ConversationDto conversationDto) {
+        if (conversationDto == null) {
+            return null;
+        }
+
+        Conversation conversation = conversationMapper.toEntity(conversationDto);
+        conversation.setChatSession(chatSession);
+        return conversationRepo.save(conversation);
+    }
+
+
+    @Override
     public List<ConversationDto> getAllByChatSessionId(Long chatSessionId) {
-        return conversationRepo.findAllByChatSessionId(chatSessionId).stream().map(conversationMapper::toDto).toList();
+        return conversationRepo.findAllByChatSessionId(chatSessionId).stream().map(conversationMapper::toResponse).toList();
     }
 }

@@ -2,6 +2,7 @@ package vn.kltn.service;
 
 import org.springframework.data.domain.Pageable;
 import vn.kltn.dto.ChatSessionDto;
+import vn.kltn.dto.request.ChatSessionInit;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.ChatSession;
 
@@ -15,4 +16,6 @@ public interface IChatSessionService {
     ChatSession getChatSessionById(Long id);
 
     PageResponse<List<ChatSessionDto>> getAllChatSession(Pageable pageable);
+
+    ChatSessionDto createChat(ChatSessionInit chatSessionInit);
 }
