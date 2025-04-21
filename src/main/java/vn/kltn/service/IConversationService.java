@@ -10,5 +10,5 @@ public interface IConversationService {
     ConversationDto addConversation(ConversationDto conversationDto);
 
     PageResponse<List<ConversationDto>> getAllByAssistantFileId(Long assistantFileId, Pageable pageable);
-
+    List<ConversationDto> getAllByAssistantFileId(Long assistantFileId);
 }

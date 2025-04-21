@@ -64,4 +64,9 @@ public class IConversationServiceImpl implements IConversationService {
                 .hasNext(conversations.hasNext())
                 .build();
     }
+
+    @Override
+    public List<ConversationDto> getAllByAssistantFileId(Long assistantFileId) {
+        return conversationRepo.findAllByAssistantFileId(assistantFileId).stream().map(conversationMapper::toDto).toList();
+    }
 }
