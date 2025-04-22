@@ -8,7 +8,7 @@ import vn.kltn.entity.ChatSession;
 import java.util.List;
 
 public interface IAssistantFileService {
-    AssistantFileDto uploadFile(AssistantFileRequest assistantFileRequest);
+    List<AssistantFileDto> uploadFile(List<AssistantFileRequest> assistantFilesRequest);
 
     List<AssistantFileDto> getListFileByChatSessionId(Long chatSessionId);
 

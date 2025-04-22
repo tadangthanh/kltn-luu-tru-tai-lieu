@@ -15,6 +15,7 @@ import vn.kltn.repository.AssistantFileRepo;
 import vn.kltn.repository.ChatSessionRepo;
 import vn.kltn.service.IAssistantFileService;
 import vn.kltn.service.IAuthenticationService;
+import vn.kltn.service.IChatSessionService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,11 +31,18 @@ public class AssistantFileServiceImpl implements IAssistantFileService {
     private final ChatSessionRepo chatSessionRepo;
 
     @Override
-    public AssistantFileDto uploadFile(AssistantFileRequest assistantFileRequest) {
-        log.info("Create assistant file: {}", assistantFileRequest.getName());
-        AssistantFile assistantFile = assistantFileMapper.toEntity(assistantFileRequest);
-        assistantFile = assistantFileRepo.save(assistantFile);
-        return assistantFileMapper.toResponse(assistantFile);
+    public List<AssistantFileDto> uploadFile(List<AssistantFileRequest> assistantFilesRequest) {
+        log.info("batch upload assistant files");
+        if(assistantFilesRequest == null || assistantFilesRequest.isEmpty()) {
+            return new ArrayList<>();
+        }
+        ChatSession chatSession = chatSessionRepo.findById(assistantFilesRequest.get(0).getChatSessionId()).orElseThrow(() -> new ResourceNotFoundException("Chat session not found"));
+        List<AssistantFile> assistantFiles = assistantFileMapper.toEntity(assistantFilesRequest);
+        for (AssistantFile assistantFile : assistantFiles) {
+            assistantFile.setChatSession(chatSession);
+        }
+        assistantFiles = assistantFileRepo.saveAll(assistantFiles);
+        return assistantFileMapper.toResponse(assistantFiles);
     }
 
     @Override

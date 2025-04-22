@@ -37,8 +37,8 @@ public class ConversationServiceImpl implements IConversationService {
         ChatSession chatSession = chatSessionRepo.findById(conversationRequest.getChatSessionId()).orElseThrow(() -> new ResourceNotFoundException("Chat session not found"));
         validateChatSessionBelongToUser(chatSession);
         Conversation conversation = conversationMapper.toEntity(conversationRequest);
-        conversationRepo.save(conversation);
         conversation.setChatSession(chatSession);
+        conversationRepo.save(conversation);
         return conversationMapper.toResponse(conversation);
     }
 

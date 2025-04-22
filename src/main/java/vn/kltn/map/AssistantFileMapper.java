@@ -15,8 +15,13 @@ import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 public interface AssistantFileMapper {
     AssistantFileDto toResponse(AssistantFile assistantFile);
 
+    List<AssistantFileDto> toResponse(List<AssistantFile> assistantFiles);
+
     @Mapping(target = "id", ignore = true)
     AssistantFile toEntity(AssistantFileRequest assistantFileRequest);
+
+    @Mapping(target = "id", ignore = true)
+    List<AssistantFile> toEntity(List<AssistantFileRequest> assistantFilesRequest);
 
 
     @Mapping(target = "id", ignore = true)

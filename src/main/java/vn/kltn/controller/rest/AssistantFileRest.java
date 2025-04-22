@@ -19,9 +19,10 @@ public class AssistantFileRest {
     private final IAssistantFileService assistantFileService;
 
     @PostMapping
-    public ResponseData<AssistantFileDto> createAssistantFile(@Valid @RequestBody AssistantFileRequest assistantFileRequest) {
-        return new ResponseData<>(201, "Thành công", assistantFileService.uploadFile(assistantFileRequest));
+    public ResponseData<List<AssistantFileDto>> createAssistantFile(@Valid @RequestBody List<AssistantFileRequest> assistantFilesRequest) {
+        return new ResponseData<>(201, "Thành công", assistantFileService.uploadFile(assistantFilesRequest));
     }
+
 
     @GetMapping("/{chatSessionId}")
     public ResponseData<List<AssistantFileDto>> getList(@PathVariable Long chatSessionId) {
@@ -34,8 +35,9 @@ public class AssistantFileRest {
         assistantFileService.deleteByName(name);
         return new ResponseData<>(200, "Xóa thành công", null);
     }
+
     @PutMapping("/{name}")
-    public ResponseData<AssistantFileDto> updateAssistantFile(@PathVariable String name,@Valid @RequestBody AssistantFileRequest assistantFileRequest) {
-        return new ResponseData<>(200, "Cập nhật thành công", assistantFileService.update(name,assistantFileRequest));
+    public ResponseData<AssistantFileDto> updateAssistantFile(@PathVariable String name, @Valid @RequestBody AssistantFileRequest assistantFileRequest) {
+        return new ResponseData<>(200, "Cập nhật thành công", assistantFileService.update(name, assistantFileRequest));
     }
 }
