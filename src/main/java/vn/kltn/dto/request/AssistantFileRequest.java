@@ -14,7 +14,8 @@ public class AssistantFileRequest {
     private String name;
     @NotBlank(message = "uri name is required")
     private String uri;
-
+    @NotBlank(message = "mimeType name is required")
+    private String mimeType;
     @NotBlank(message = "Original file name is required")
     private String originalFileName;
 
