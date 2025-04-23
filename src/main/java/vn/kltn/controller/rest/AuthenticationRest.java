@@ -33,7 +33,7 @@ public class AuthenticationRest {
     }
 
     @PostMapping("/refresh-token")
-    public ResponseData<TokenResponse> refreshToken(@RequestHeader("Referer") String refreshToken) {
+    public ResponseData<TokenResponse> refreshToken(@RequestHeader("X-Refresh-Token") String refreshToken) {
         return new ResponseData<>(HttpStatus.OK.value(), "Success", authenticationService.getRefreshToken(refreshToken));
     }
 
