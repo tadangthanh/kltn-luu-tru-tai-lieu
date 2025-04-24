@@ -15,12 +15,17 @@ import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.*;
 import vn.kltn.repository.util.FileUtil;
+import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IDocumentSearchService;
 import vn.kltn.service.IDocumentService;
 import vn.kltn.service.impl.UploadTokenManager;
 import vn.kltn.validation.ValidFiles;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.*;
 
 @RequiredArgsConstructor
@@ -30,7 +35,7 @@ import java.util.*;
 public class DocumentRest {
     private final IDocumentService documentService;
     private final UploadTokenManager uploadTokenManager;
-
+    private final IAzureStorageService azureStorageService;
     @PostMapping
     public ResponseData<String> uploadWithoutParent(@ValidFiles @RequestPart("files") MultipartFile[] files) {
         // Tạo token mới cho mỗi yêu cầu upload
@@ -114,22 +119,61 @@ public class DocumentRest {
     public ResponseData<DocumentResponse> getDocumentById(@PathVariable Long documentId) {
         return new ResponseData<>(200, "Thành công", documentService.getResourceById(documentId));
     }
+
     @PostMapping("/save-editor")
     public ResponseEntity<Map<String, Object>> saveDocument(@RequestBody Map<String, Object> documentRequest) {
         System.out.println("📥 Callback received from OnlyOffice:");
-        System.out.println(documentRequest); // log để xem body OnlyOffice gửi lên
+        System.out.println(documentRequest); // Log để kiểm tra body OnlyOffice gửi lên
 
-        // Luôn trả về error = 0 để tránh lỗi trên OnlyOffice, kể cả khi không có key
+        // Kiểm tra xem có tồn tại "key" (documentId) không
         String documentId = (String) documentRequest.get("key");
         if (documentId == null) {
             System.out.println("⚠️ Missing documentId (key), nhưng vẫn trả về thành công để tránh lỗi OnlyOffice.");
-            return ResponseEntity.ok(Map.of("error", 0));  // vẫn trả về thành công!
+            return ResponseEntity.ok(Map.of("error", 0));  // Vẫn trả về thành công!
         }
 
-        // TODO: xử lý lưu file nếu status = 6 (completed)
-        // hoặc bạn có thể log lại toàn bộ để test thử
+        // Lấy thông tin status từ OnlyOffice callback
+        Integer status = (Integer) documentRequest.get("status");
 
+        // Kiểm tra nếu status là 6 (hoàn thành) hoặc 2 (chỉnh sửa)
+        if (status != null && (status == 6 || status == 2)) {
+//            // TODO: Xử lý lưu file khi status = 6 hoặc 2
+//            // Trong trường hợp status = 6, bạn có thể tải file từ OnlyOffice về và lưu vào Azure Blob Storage.
+//
+//            String fileUrl = (String) documentRequest.get("url"); // URL tải tài liệu sau khi chỉnh sửa
+//            if (fileUrl != null) {
+//                // Ví dụ bạn có thể tải file về từ URL này và lưu lại trên Azure
+//                byte[] fileData = downloadFile(fileUrl); // Hàm tải file từ URL (cần implement)
+//
+//                // Gọi service để lưu file lên Azure Blob
+//                azureStorageService.uploadChunkedWithContainerDefault(fileData, "documents/" + documentId + ".docx");
+//
+//                System.out.println("📤 File đã được lưu lên Azure Blob Storage.");
+//            } else {
+//                System.out.println("⚠️ Không có URL file trong callback.");
+//            }
+        }
+
+        // Trả về thành công dù có lỗi hay không, tránh lỗi OnlyOffice
         return ResponseEntity.ok(Map.of("error", 0));
+    }
+
+    // Hàm tải file từ URL
+    private byte[] downloadFile(String fileUrl) {
+        // Sử dụng HttpClient hoặc thư viện thích hợp để tải file về
+        // Đây chỉ là một ví dụ đơn giản, bạn cần triển khai lại phương thức này theo cách của mình.
+        try {
+            URL url = new URL(fileUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setDoInput(true);
+            InputStream inputStream = connection.getInputStream();
+
+            return inputStream.readAllBytes(); // Đọc toàn bộ nội dung của file
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
 
