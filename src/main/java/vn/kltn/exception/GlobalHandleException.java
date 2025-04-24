@@ -33,18 +33,8 @@ public class GlobalHandleException extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.OK);
     }
 
-    @ExceptionHandler({AccessDeniedException.class, AccessDeniedException.class})
-    public final ResponseEntity<ErrorResponse> handleAccessDenied(Exception ex, WebRequest request) {
-        ErrorResponse errorResponse = new ErrorResponse();
-        errorResponse.setTimestamp(LocalDateTime.now());
-        errorResponse.setStatus(HttpStatus.FORBIDDEN.value());
-        errorResponse.setError(HttpStatus.FORBIDDEN.getReasonPhrase());
-        errorResponse.setMessage(ex.getMessage());
-        errorResponse.setPath(request.getDescription(false));
-        return new ResponseEntity<>(errorResponse, HttpStatus.OK);
-    }
 
-    @ExceptionHandler({UnauthorizedException.class, InvalidTokenException.class})
+    @ExceptionHandler({UnauthorizedException.class, InvalidTokenException.class, AccessDeniedException.class})
     public final ResponseEntity<ErrorResponse> handleUnauthorized(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(LocalDateTime.now());

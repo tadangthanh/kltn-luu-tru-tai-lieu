@@ -12,6 +12,19 @@ services:
       - REDIS_DISABLE_COMMANDS=FLUSHDB;FLUSHALL
     networks:
       - backend
+
+  onlyoffice-documentserver:
+    image: onlyoffice/documentserver
+    container_name: onlyoffice
+    ports:
+      - "80:80"   # hoặc đổi thành "8080:80" nếu port 80 đang bị dùng
+    environment:
+      - JWT_ENABLED=false
+    restart: unless-stopped
+    networks:
+      - backend
+
+
 networks:
   backend:
     driver: bridge

@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -20,9 +21,7 @@ import vn.kltn.service.impl.UploadTokenManager;
 import vn.kltn.validation.ValidFiles;
 
 import java.io.ByteArrayInputStream;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/documents")
@@ -115,14 +114,50 @@ public class DocumentRest {
     public ResponseData<DocumentResponse> getDocumentById(@PathVariable Long documentId) {
         return new ResponseData<>(200, "Thành công", documentService.getResourceById(documentId));
     }
+    @PostMapping("/save-editor")
+    public ResponseEntity<Map<String, Object>> saveDocument(@RequestBody Map<String, Object> documentRequest) {
+        System.out.println("📥 Callback received from OnlyOffice:");
+        System.out.println(documentRequest); // log để xem body OnlyOffice gửi lên
+
+        // Luôn trả về error = 0 để tránh lỗi trên OnlyOffice, kể cả khi không có key
+        String documentId = (String) documentRequest.get("key");
+        if (documentId == null) {
+            System.out.println("⚠️ Missing documentId (key), nhưng vẫn trả về thành công để tránh lỗi OnlyOffice.");
+            return ResponseEntity.ok(Map.of("error", 0));  // vẫn trả về thành công!
+        }
+
+        // TODO: xử lý lưu file nếu status = 6 (completed)
+        // hoặc bạn có thể log lại toàn bộ để test thử
+
+        return ResponseEntity.ok(Map.of("error", 0));
+    }
+
+
+
 
     @GetMapping("/open")
-    public ResponseEntity<InputStreamResource> openDoc(@RequestParam(value = "documentId") Long documentId) {
+    public ResponseEntity<InputStreamResource> openDoc(@RequestParam(value = "documentId") Long documentId,
+                                                       @RequestHeader(value = HttpHeaders.RANGE, defaultValue = "") String range) {
         DocumentDataResponse documentDataResponse = documentService.openDocumentById(documentId);
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" +
-                                                                           documentDataResponse.getName() + "\"")
-                .contentType(MediaType.parseMediaType(documentDataResponse.getType())).body(new InputStreamResource(new
-                        ByteArrayInputStream(documentDataResponse.getData())));
+
+        if (!range.isEmpty()) {
+            // Tạo response cho một phần của tài liệu nếu Range header được gửi
+            String[] rangeParts = range.replace("bytes=", "").split("-");
+            long start = Long.parseLong(rangeParts[0]);
+            long end = rangeParts.length > 1 ? Long.parseLong(rangeParts[1]) : documentDataResponse.getData().length - 1;
+            byte[] dataRange = Arrays.copyOfRange(documentDataResponse.getData(), (int) start, (int) end + 1);
+
+            return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + documentDataResponse.getName() + "\"")
+                    .header(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + documentDataResponse.getData().length)
+                    .contentType(MediaType.parseMediaType(documentDataResponse.getType()))
+                    .body(new InputStreamResource(new ByteArrayInputStream(dataRange)));
+        }
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + documentDataResponse.getName() + "\"")
+                .contentType(MediaType.parseMediaType(documentDataResponse.getType()))
+                .body(new InputStreamResource(new ByteArrayInputStream(documentDataResponse.getData())));
     }
 
 }
