@@ -9,9 +9,8 @@ import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.PermissionResponse;
-import vn.kltn.entity.FileSystemEntity;
+import vn.kltn.entity.Item;
 import vn.kltn.entity.Permission;
-import vn.kltn.entity.Resource;
 import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.map.PermissionMapper;
@@ -34,16 +33,16 @@ public abstract class AbstractPermissionService implements IPermissionService {
     protected final PermissionRepo permissionRepo;
     protected final IUserService userService;
     protected final PermissionMapper permissionMapper;
-    protected final ResourceCommonService resourceCommonService;
+    protected final ItemCommonService itemCommonService;
     protected final IAuthenticationService authenticationService;
 
     protected AbstractPermissionService(PermissionRepo permissionRepo,
                                         IUserService userService, PermissionMapper permissionMapper,
-                                        ResourceCommonService resourceCommonService, IAuthenticationService authenticationService) {
+                                        ItemCommonService itemCommonService, IAuthenticationService authenticationService) {
         this.permissionRepo = permissionRepo;
         this.userService = userService;
         this.permissionMapper = permissionMapper;
-        this.resourceCommonService = resourceCommonService;
+        this.itemCommonService = itemCommonService;
         this.authenticationService = authenticationService;
     }
 
@@ -60,10 +59,10 @@ public abstract class AbstractPermissionService implements IPermissionService {
     @Override
     public PageResponse<List<PermissionResponse>> getPagePermissionByResourceId(Long resourceId, Pageable pageable) {
         log.info("get page permission by resource id: {}", resourceId);
-        Resource resource = getResourceById(resourceId);
+        Item resource = getResourceById(resourceId);
         // kiểm tra xem user hiện tại có permission với resource hiện tại hay k ?
         validateEditorOrOwner(resource);
-        Page<Permission> pagePermission = permissionRepo.findAllByResourceId(resourceId, pageable);
+        Page<Permission> pagePermission = permissionRepo.findAllByItemId(resourceId, pageable);
         return PaginationUtils.convertToPageResponse(pagePermission, pageable, this::mapToPermissionResponse);
     }
 
@@ -76,13 +75,13 @@ public abstract class AbstractPermissionService implements IPermissionService {
     @Override
     public void deletePermissionByResourceId(Long resourceId) {
         log.info("delete permission by resource id: {}", resourceId);
-        permissionRepo.deleteByResourceId(resourceId);
+        permissionRepo.deleteByItemId(resourceId);
     }
 
     @Override
     public void validateUserIsEditor(Long resourceId, Long userId) {
         log.info("validate user is editor by resourceId: {}, userId: {}", resourceId, userId);
-        if (!permissionRepo.existsByResourceIdAndRecipientIdAndPermission(resourceId, userId, EDITOR)) {
+        if (!permissionRepo.existsByItemIdAndRecipientIdAndPermission(resourceId, userId, EDITOR)) {
             log.warn("User with id {} is not editor of resource with id {}", userId, resourceId);
             throw new AccessDeniedException("Bạn không có quyền với tài nguyên này");
         }
@@ -91,58 +90,58 @@ public abstract class AbstractPermissionService implements IPermissionService {
     @Override
     public void deleteByResourceAndRecipientId(Long resourceId, Long recipientId) {
         log.info("delete permission by resourceId: {}, recipientId: {}", resourceId, recipientId);
-        permissionRepo.deleteByResourceIdAndRecipientId(resourceId, recipientId);
+        permissionRepo.deleteByItemIdAndRecipientId(resourceId, recipientId);
     }
 
     @Override
     public void deletePermissionByResourceIds(List<Long> resourceIds) {
         log.info("delete permission by resourceIds: {}", resourceIds);
-        permissionRepo.deleteAllByResourceIds(resourceIds);
+        permissionRepo.deleteAllByItemIds(resourceIds);
     }
 
     /***
      *  folder con sẽ kế thừa quyền truy cập từ folder cha ( trong truong hop chu so huu folder cha tao)
      *  trong trong hop nguoi tao folder la editor thi chu so huu se co quyen editor voi folder con ma thanh vien nay tao
-     * @param resource : tài nguyên được tạo mới
+     * @param item : tài nguyên được tạo mới
      */
     @Override
-    public void inheritPermissions(Resource resource) {
+    public void inheritPermissions(Item item) {
         // folder cha của tài nguyên được tạo mới, lấy các permission từ folder cha và gán cho tài nguyên mới
-        Resource folderParent = resource.getParent();
+        Item folderParent = item.getParent();
         User currentUser = authenticationService.getCurrentUser();
         boolean isOwner = folderParent.getOwner().getId().equals(currentUser.getId());
-        inheritPermission(resource, isOwner);
+        inheritPermission(item, isOwner);
     }
 
     protected Permission setPermission(Long resourceId, PermissionRequest permissionRequest) {
         log.info("set permission for resourceId: {}, permission: {}, recipient id {}", resourceId, permissionRequest.getPermission(), permissionRequest.getRecipientId());
         // kiem tra quyen da ton tai hay chua
         validatePermissionNotExists(permissionRequest.getRecipientId(), resourceId);
-        FileSystemEntity resource = getResourceById(resourceId);
+        Item resource = getResourceById(resourceId);
         // validate đã thêm quyền này cho người này hay chưa ?
-        resourceCommonService.validateCurrentUserIsOwnerResource(resource);
+        itemCommonService.validateCurrentUserIsOwnerItem(resource);
         // validate xem resource co bi xoa hay chua
-        resourceCommonService.validateResourceNotDeleted(resource);
+        itemCommonService.validateItemNotDeleted(resource);
         // validate xem người dùng có quyền tạo permission hay không
         validateEditorOrOwner(resource);
         Permission permission = mapToPermission(permissionRequest);
-        permission.setResource(resource);
+        permission.setItem(resource);
         return savePermission(permission);
     }
 
     /***
      * Thực hiện kế thừa quyền từ folder cha khi tạo folder con
-     * @param resource: resource tạo mới
+     * @param item: resource tạo mới
      */
-    protected void inheritPermission(Resource resource, boolean isOwner) {
-        if (resource == null || resource.getParent() == null) return;
+    protected void inheritPermission(Item item, boolean isOwner) {
+        if (item == null || item.getParent() == null) return;
         // Validate nếu resource bị xóa hoặc không có parent thì dừng lại
-        resourceCommonService.validateResourceNotDeleted(resource);
-        Set<Permission> parentPermissions = resource.getParent().getPermissions();
+        itemCommonService.validateItemNotDeleted(item);
+        Set<Permission> parentPermissions = item.getParent().getPermissions();
         if (parentPermissions == null || parentPermissions.isEmpty()) return;
 
         List<Permission> newPermissions = new ArrayList<>(parentPermissions.stream()
-                .map(permission -> permission.copyForResource((FileSystemEntity) resource))
+                .map(permission -> permission.copyForItem( item))
                 .toList());
 
         if (newPermissions.isEmpty()) return;
@@ -150,19 +149,19 @@ public abstract class AbstractPermissionService implements IPermissionService {
         // Nếu là Editor, thêm quyền cho chủ sở hữu folder chứa cái folder mà edior đang tạo
         if (!isOwner) {
             // Editor tạo tài liệu → gán thêm quyền EDITOR cho chủ folder cha
-            Permission extraPermission = createEditorPermissionFor((FileSystemEntity) resource, resource.getParent().getOwner());
+            Permission extraPermission = createEditorPermissionFor( item, item.getParent().getOwner());
             newPermissions.add(extraPermission);
         }
         // Lọc bỏ quyền của người dùng đã sở hữu tài liệu
-        newPermissions = newPermissions.stream().filter(permission -> !permission.getRecipient().getId().equals(resource.getOwner().getId())).toList();
+        newPermissions = newPermissions.stream().filter(permission -> !permission.getRecipient().getId().equals(item.getOwner().getId())).toList();
         // Lưu tất cả permissions một lần
         saveAllPermissions(newPermissions);
     }
 
-    protected Permission createEditorPermissionFor(FileSystemEntity resource, User recipient) {
+    protected Permission createEditorPermissionFor(Item resource, User recipient) {
         return new Permission()
                 .withRecipient(recipient)
-                .withResource(resource)
+                .withItem(resource)
                 .withPermission(EDITOR);
     }
 
@@ -173,12 +172,12 @@ public abstract class AbstractPermissionService implements IPermissionService {
         permissionRepo.saveAll(permissions);
     }
 
-    protected void validateEditorOrOwner(Resource resource) {
+    protected void validateEditorOrOwner(Item resource) {
         User curentUser = authenticationService.getCurrentUser();
         if (resource.getOwner().getId().equals(curentUser.getId())) {
             return;
         }
-        if (!permissionRepo.existsByResourceIdAndRecipientIdAndPermission(resource.getId(), curentUser.getId(), EDITOR)) {
+        if (!permissionRepo.existsByItemIdAndRecipientIdAndPermission(resource.getId(), curentUser.getId(), EDITOR)) {
             throw new AccessDeniedException("Bạn không có quyền chỉnh sửa tài nguyên này");
         }
     }
@@ -201,12 +200,12 @@ public abstract class AbstractPermissionService implements IPermissionService {
      * @param resourceId : id tài nguyên được cấp quyền
      */
     protected void validatePermissionNotExists(Long recipientId, Long resourceId) {
-        if (permissionRepo.existsByRecipientIdAndResourceId(recipientId, resourceId)) {
+        if (permissionRepo.existsByRecipientIdAndItemId(recipientId, resourceId)) {
             throw new InvalidDataException("Quyền đã tồn tại cho người dùng này trên tài nguyên này");
         }
     }
 
-    protected abstract FileSystemEntity getResourceById(Long resourceId);
+    protected abstract Item getResourceById(Long resourceId);
 
     protected Permission getPermissionByIdOrThrow(Long permissionId) {
         return permissionRepo.findById(permissionId)

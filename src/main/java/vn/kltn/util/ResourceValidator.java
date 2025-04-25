@@ -1,24 +1,24 @@
 package vn.kltn.util;
 
-import vn.kltn.entity.Resource;
+import vn.kltn.entity.Item;
 import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 
 public class ResourceValidator {
     /**
-     * Kiểm tra người dùng hiện tại có phải chủ sở hữu của resource không.
+     * Kiểm tra người dùng hiện tại có phải chủ sở hữu của Item không.
      */
-    public static <T extends Resource> void validateCurrentUserIsOwner(T resource, User currentUser) {
-        if (resource.getOwner() == null || !resource.getOwner().getId().equals(currentUser.getId())) {
+    public static <T extends Item> void validateCurrentUserIsOwner(T item, User currentUser) {
+        if (item.getOwner() == null || !item.getOwner().getId().equals(currentUser.getId())) {
             throw new InvalidDataException("Không có quyền thực hiện hành động này");
         }
     }
 
     /**
-     * Kiểm tra resource chưa bị xóa (deletedAt == null)
+     * Kiểm tra Item chưa bị xóa (deletedAt == null)
      */
-    public static <T extends Resource> void validateResourceNotDeleted(T resource) {
-        if (resource.getDeletedAt() != null) {
+    public static <T extends Item> void validateItemNotDeleted(T item) {
+        if (item.getDeletedAt() != null) {
             throw new InvalidDataException("Resource đã bị xóa");
         }
     }

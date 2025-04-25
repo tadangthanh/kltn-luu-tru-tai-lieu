@@ -9,8 +9,8 @@ import vn.kltn.common.Permission;
 import vn.kltn.dto.BaseDto;
 import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.response.PageResponse;
-import vn.kltn.entity.AccessResource;
-import vn.kltn.entity.Resource;
+import vn.kltn.entity.AccessItem;
+import vn.kltn.entity.Item;
 import vn.kltn.entity.User;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.specification.SpecificationUtil;
@@ -20,7 +20,7 @@ import vn.kltn.service.IAccessService;
 import java.util.List;
 
 @Service
-public abstract class AbstractAccessService<T extends AccessResource, R extends BaseDto> implements IAccessService<T, R> {
+public abstract class AbstractAccessService<T extends AccessItem, R extends BaseDto> implements IAccessService<T, R> {
 
     // Phương thức tạo mới access - dùng chung cho DocumentAccess và FolderAccess
     @Override
@@ -79,26 +79,26 @@ public abstract class AbstractAccessService<T extends AccessResource, R extends 
         // kiem tra quyen editor ở folder cha của resorce này
         User currentUser = getCurrentUser();
         // Nếu user là chủ sở hữu của document, cho phép cập nhật
-        if (currentUserIsOwnerResource(access.getResource(), currentUser)) {
+        if (currentUserIsOwnerItem(access.getItem(), currentUser)) {
             return;
         }
         if (access.getRecipient() == null) {
             throw new AccessDeniedException("Bạn không có quyền thực hiện hành động này!");
         }
         // Kiểm tra xem user có quyền EDITOR trên document không
-        if (isExistsByResourceAndRecipientAndPermission(access.getResource().getId(), currentUser.getId(), Permission.EDITOR)) {
+        if (isExistsByResourceAndRecipientAndPermission(access.getItem().getId(), currentUser.getId(), Permission.EDITOR)) {
             return;
         }
         // Nếu không phải chủ sở hữu hoặc editor, chặn quyền cập nhật
         throw new AccessDeniedException("Bạn không có quyền thực hiện hành động này!");
     }
 
-    protected boolean currentUserIsOwnerResource(Resource resource, User currentUser) {
-        return resource.getOwner() != null && resource.getOwner().getId().equals(currentUser.getId());
+    protected boolean currentUserIsOwnerItem(Item item, User currentUser) {
+        return item.getOwner() != null && item.getOwner().getId().equals(currentUser.getId());
     }
 
     protected boolean isExistsByResourceAndRecipientAndPermission(Long resourceId, Long recipientId, Permission permission) {
-        AccessResource access = getAccessByResourceAndRecipient(resourceId, recipientId);
+        AccessItem access = getAccessByResourceAndRecipient(resourceId, recipientId);
         return access != null && access.getPermission().equals(permission);
     }
 

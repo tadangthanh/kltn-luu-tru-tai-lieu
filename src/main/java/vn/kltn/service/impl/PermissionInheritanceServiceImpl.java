@@ -61,7 +61,7 @@ public class PermissionInheritanceServiceImpl implements IPermissionInheritanceS
         if (parentPermissions == null || parentPermissions.isEmpty()) return;
 
         List<Permission> newPermissions = parentPermissions.stream()
-                .map(permission -> permission.copyForResource(document))
+                .map(permission -> permission.copyForItem(document))
                 .collect(Collectors.toList());
 
         if (!isOwner) {
@@ -80,7 +80,7 @@ public class PermissionInheritanceServiceImpl implements IPermissionInheritanceS
     private Permission createEditorPermissionFor(Document document, User recipient) {
         return new Permission()
                 .withRecipient(recipient)
-                .withResource(document)
+                .withItem(document)
                 .withPermission(EDITOR);
     }
 
@@ -131,11 +131,11 @@ public class PermissionInheritanceServiceImpl implements IPermissionInheritanceS
 
     private List<Permission> createPermissionForChild(List<Long> resourceIds,
                                                       Permission permission,
-                                                      Function<Long, FileSystemEntity> getResourceByIdFunc) {
+                                                      Function<Long, Item> getResourceByIdFunc) {
         return resourceIds.stream()
                 .map(resourceId -> {
-                    FileSystemEntity resource = getResourceByIdFunc.apply(resourceId);
-                    return permission.copyForResource(resource);
+                    Item resource = getResourceByIdFunc.apply(resourceId);
+                    return permission.copyForItem(resource);
                 })
                 .collect(Collectors.toList());
     }

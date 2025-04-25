@@ -7,7 +7,7 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "permission", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"recipient_id", "resource_id"})})
+        @UniqueConstraint(columnNames = {"recipient_id", "item_id"})})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,23 +18,24 @@ public class Permission extends BaseEntity {
 
     @Setter
     @ManyToOne
-    @JoinColumn(name = "resource_id", nullable = false)
-    private FileSystemEntity resource;
+    @JoinColumn(name = "item_id", nullable = false)
+    private Item item;
+
     @Enumerated(EnumType.STRING)
     private vn.kltn.common.Permission permission;
 
     private boolean isCustomPermission = false;
 
-    public Permission(User recipient, Resource resource, vn.kltn.common.Permission permission) {
+    public Permission(User recipient, Item item, vn.kltn.common.Permission permission) {
         this.recipient = recipient;
-        this.resource = (FileSystemEntity) resource;
+        this.item =  item;
         this.permission = permission;
     }
-    public Permission copyForResource(FileSystemEntity newResource) {
+    public Permission copyForItem(Item item) {
         Permission copy = new Permission();
         copy.setPermission(this.getPermission());
         copy.setRecipient(this.getRecipient());
-        copy.setResource(newResource);
+        copy.setItem(item);
         return copy;
     }
     public Permission withRecipient(User recipient) {
@@ -42,8 +43,8 @@ public class Permission extends BaseEntity {
         return this;
     }
 
-    public Permission withResource(FileSystemEntity resource) {
-        this.setResource(resource);
+    public Permission withItem(Item item) {
+        this.setItem(item);
         return this;
     }
 

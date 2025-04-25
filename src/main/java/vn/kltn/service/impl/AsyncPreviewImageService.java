@@ -29,7 +29,7 @@ public class AsyncPreviewImageService {
         log.info("Thread: {}", Thread.currentThread().getName());
         List<String> imageBlobNames = new ArrayList<>();
         try {
-            Document document = documentService.getResourceByIdOrThrow(documentId);
+            Document document = documentService.getItemByIdOrThrow(documentId);
             imageBlobNames.addAll(documentConversionService.convertPdfToImagesAndUpload(document, pages));
             if (imageBlobNames.size() != pages.size()) {
                 log.error("Số lượng ảnh tạo ra không khớp với số trang yêu cầu");

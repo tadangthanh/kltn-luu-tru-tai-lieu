@@ -6,7 +6,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.response.PermissionResponse;
-import vn.kltn.entity.FileSystemEntity;
+import vn.kltn.entity.Item;
 import vn.kltn.entity.Permission;
 import vn.kltn.map.PermissionMapper;
 import vn.kltn.repository.FolderRepo;
@@ -32,8 +32,8 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
     private final IPermissionInheritanceService permissionInheritanceService;
 
 
-    protected FolderPermissionServiceImpl(PermissionRepo permissionRepo, IUserService userService, PermissionMapper permissionMapper, IAuthenticationService authenticationService, FolderCommonService folderCommonService, ResourceCommonService resourceCommonService, DocumentCommonService documentCommonService, FolderRepo folderRepo, ApplicationEventPublisher eventPublisher, IPermissionInheritanceService permissionInheritanceService) {
-        super(permissionRepo, userService, permissionMapper, resourceCommonService, authenticationService);
+    protected FolderPermissionServiceImpl(PermissionRepo permissionRepo, IUserService userService, PermissionMapper permissionMapper, IAuthenticationService authenticationService, FolderCommonService folderCommonService, ItemCommonService itemCommonService, DocumentCommonService documentCommonService, FolderRepo folderRepo, ApplicationEventPublisher eventPublisher, IPermissionInheritanceService permissionInheritanceService) {
+        super(permissionRepo, userService, permissionMapper, itemCommonService, authenticationService);
         this.folderCommonService = folderCommonService;
         this.documentCommonService = documentCommonService;
         this.folderRepo = folderRepo;
@@ -43,7 +43,7 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
 
 
     @Override
-    protected FileSystemEntity getResourceById(Long resourceId) {
+    protected Item getResourceById(Long resourceId) {
         return folderCommonService.getFolderByIdOrThrow(resourceId);
     }
 
@@ -57,7 +57,7 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
     @Override
     public void deletePermissionById(Long permissionId) {
         Permission existingPermission = getPermissionByIdOrThrow(permissionId);
-        Long parentId = existingPermission.getResource().getId();
+        Long parentId = existingPermission.getItem().getId();
         Long recipientId = existingPermission.getRecipient().getId();
 
         // Lấy tất cả folder con và document con liên quan
@@ -71,7 +71,7 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
         super.deletePermissionById(permissionId);
 
         // Xóa các permission liên quan đến user này cho các resource con
-        permissionRepo.deleteAllByResourceIdInAndRecipientId(resourceIdsToDelete, recipientId);
+        permissionRepo.deleteAllByItemIdInAndRecipientId(resourceIdsToDelete, recipientId);
         eventPublisher.publishEvent(new MultipleDocumentsUpdatedEvent(this, new HashSet<>(documentIds)));
     }
 
@@ -87,7 +87,7 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
 
     // update các folder/document con mà không phải là custom permission
     private void updateAllChildNotCustom(Permission permission) {
-        List<Long> folderIdsForUpdatePermission = folderCommonService.getAllFolderChildInheritedPermission(permission.getResource().getId(), permission.getRecipient().getId());
+        List<Long> folderIdsForUpdatePermission = folderCommonService.getAllFolderChildInheritedPermission(permission.getItem().getId(), permission.getRecipient().getId());
         // update cả folder và document có parent id thuộc folderIdsForUpdatePermission
         permissionRepo.updateAllChildNotCustom(folderIdsForUpdatePermission, permission.getRecipient().getId(), permission.getPermission());
     }

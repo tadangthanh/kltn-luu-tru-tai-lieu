@@ -12,7 +12,7 @@ import java.util.Set;
 @Setter
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
-public abstract class FileSystemEntity extends BaseEntity implements Resource {
+public abstract class Item extends BaseEntity {
     private String name;
     @ManyToOne
     @JoinColumn(name = "parent_id")
@@ -24,18 +24,9 @@ public abstract class FileSystemEntity extends BaseEntity implements Resource {
     @Column(name = "permanent_delete_at")
     private LocalDateTime permanentDeleteAt; // thoi gian xoa vinh vien
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<FileSystemEntity> children = new HashSet<>();
+    private Set<Item> children = new HashSet<>();
 
-    @OneToMany(mappedBy = "resource", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Permission> permissions = new HashSet<>();
-
-    @Override
-    public void setParent(Resource parent) {
-        if (parent instanceof Folder) {
-            this.parent = (Folder) parent;
-        } else {
-            this.parent = null; // Hoặc throw Exception nếu cần
-        }
-    }
 
 }

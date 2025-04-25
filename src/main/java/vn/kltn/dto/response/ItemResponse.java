@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-public abstract class ResourceResponse extends BaseDto {
+public abstract class ItemResponse extends BaseDto {
     private String name;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Long parentId;

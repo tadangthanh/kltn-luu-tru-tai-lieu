@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.response.PermissionResponse;
 import vn.kltn.entity.Document;
-import vn.kltn.entity.FileSystemEntity;
+import vn.kltn.entity.Item;
 import vn.kltn.entity.Permission;
 import vn.kltn.map.PermissionMapper;
 import vn.kltn.repository.PermissionRepo;
@@ -33,9 +33,9 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
             IAuthenticationService authenticationService,
             IUserService userService,
             PermissionMapper permissionMapper,
-            ResourceCommonService resourceCommonService,
+            ItemCommonService itemCommonService,
             DocumentCommonService documentCommonService, PermissionEventPublisher permissionEventPublisher, IPermissionInheritanceService permissionInheritanceService) {
-        super(permissionRepo, userService, permissionMapper, resourceCommonService, authenticationService);
+        super(permissionRepo, userService, permissionMapper, itemCommonService, authenticationService);
         this.documentCommonService = documentCommonService;
         this.permissionEventPublisher = permissionEventPublisher;
         this.permissionInheritanceService = permissionInheritanceService;
@@ -52,7 +52,7 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
     @Override
     public void deletePermissionById(Long permissionId) {
         Permission permission = getPermissionByIdOrThrow(permissionId);
-        Long resourceId = permission.getResource().getId();
+        Long resourceId = permission.getItem().getId();
         super.deletePermissionById(permissionId);
         // update data trong elasticsearch
         permissionEventPublisher.publishDocumentUpdate(resourceId);
@@ -90,7 +90,7 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
 
 
     @Override
-    protected FileSystemEntity getResourceById(Long resourceId) {
+    protected Item getResourceById(Long resourceId) {
         return documentCommonService.getDocumentByIdOrThrow(resourceId);
     }
 

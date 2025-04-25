@@ -59,7 +59,7 @@ public interface DocumentRepo extends JpaRepository<Document, Long>, JpaSpecific
             """, nativeQuery = true)
     List<Document> findDocumentChildEmptyPermission(@Param("parentResourceIds") List<Long> parentResourceIds, @Param("recipientId") Long recipientId);
 
-    @Query("select d from Document d where d.id in (select p.resource.id from Permission p where p.recipient.id = ?1)")
+    @Query("select d from Document d where d.id in (select p.item.id from Permission p where p.recipient.id = ?1)")
     List<Document> findAllDocumentByResourceAndRecipient(Long resourceId, Long recipientId);
 
 }

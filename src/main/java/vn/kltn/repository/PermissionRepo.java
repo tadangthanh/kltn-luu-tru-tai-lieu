@@ -7,38 +7,35 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import vn.kltn.entity.Document;
-import vn.kltn.entity.Folder;
 import vn.kltn.entity.Permission;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 public interface PermissionRepo extends JpaRepository<Permission, Long> {
 
-    boolean existsByRecipientIdAndResourceId(Long recipientId, Long resourceId);
+    boolean existsByRecipientIdAndItemId(Long recipientId, Long itemId);
 
     @Modifying
     @Transactional
-    @Query("UPDATE Permission p SET p.permission = :permission WHERE ((p.resource.id IN :resourceIds AND p.recipient.id = :recipientId) or (p.resource.parent.id IN :resourceIds)) and p.isCustomPermission = false")
+    @Query("UPDATE Permission p SET p.permission = :permission WHERE ((p.item.id IN :resourceIds AND p.recipient.id = :recipientId) or (p.item.parent.id IN :itemIds)) and p.isCustomPermission = false")
         //update cả folder và document có parent id thuộc folderIdsForUpdatePermission
-    void updateAllChildNotCustom(List<Long> resourceIds, Long recipientId, vn.kltn.common.Permission permission);
+    void updateAllChildNotCustom(List<Long> itemIds, Long recipientId, vn.kltn.common.Permission permission);
 
-    Page<Permission> findAllByResourceId(Long resourceId, Pageable pageable);
+    Page<Permission> findAllByItemId(Long itemId, Pageable pageable);
 
-    boolean existsByResourceIdAndRecipientIdAndPermission(Long resourceId, Long recipientId, vn.kltn.common.Permission permission);
+    boolean existsByItemIdAndRecipientIdAndPermission(Long itemId, Long recipientId, vn.kltn.common.Permission permission);
 
     @Query(value = """
             WITH RECURSIVE sub_folders AS (
                 SELECT id FROM folder WHERE id = :folderId
                 UNION ALL
                 SELECT f.id FROM folder f
-                                INNER JOIN file_system_entity fse ON f.id=fse.id
-                                INNER JOIN sub_folders sf ON fse.parent_id = sf.id
+                                INNER JOIN item i ON f.id=i.id
+                                INNER JOIN sub_folders sf ON i.parent_id = sf.id
                                 where f.deleted_at is null AND NOT EXISTS(
                                                 SELECT 1 FROM permission p where p.recipient_id = :recipientId
-                                                                                         and p.resource_id = fse.id
+                                                                                         and p.item_id = i.id
                                             )
             )
             SELECT id FROM sub_folders where id != :folderId;
@@ -47,28 +44,24 @@ public interface PermissionRepo extends JpaRepository<Permission, Long> {
     List<Long> findSubFolderIdsEmptyPermission(@Param("folderId") Long folderId, @Param("recipientId") Long recipientId);
 
 
-    void deleteByResourceId(Long resourceId);
+    void deleteByItemId(Long itemId);
 
 
-    void deleteByResourceIdAndRecipientId(Long resourceId, Long recipientId);
+    void deleteByItemIdAndRecipientId(Long itemId, Long recipientId);
 
     @Modifying
     @Transactional
-    @Query("delete Permission p where p.resource.id in ?1")
-    void deleteAllByResourceIds(List<Long> resourceIds);
+    @Query("delete Permission p where p.item.id in ?1")
+    void deleteAllByItemIds(List<Long> itemIds);
 
-    Optional<Permission> findByResourceIdAndRecipientId(Long resourceId, Long recipientId);
+    @Query("SELECT p.recipient.id FROM Permission p WHERE p.item.id = ?1")
+    Set<Long> findIdsUserSharedWithByItemId(Long itemId);
 
-    Set<Permission> findByResourceId(Long resourceId);
-
-    @Query("SELECT p.recipient.id FROM Permission p WHERE p.resource.id = ?1")
-    Set<Long> findIdsUserSharedWithByResourceId(Long resourceId);
-
-    @Query("SELECT p.resource.id FROM Permission p WHERE p.recipient.id = ?1")
+    @Query("SELECT p.item.id FROM Permission p WHERE p.recipient.id = ?1")
     Set<Long> findIdsDocumentByUserId(Long userId);
 
     @Modifying
     @Transactional
-    @Query("delete from Permission p where p.resource.id in ?1 and p.recipient.id = ?2")
-    void deleteAllByResourceIdInAndRecipientId(List<Long> folderChildIds, Long recipientId);
+    @Query("delete from Permission p where p.item.id in ?1 and p.recipient.id = ?2")
+    void deleteAllByItemIdInAndRecipientId(List<Long> folderChildIds, Long recipientId);
 }

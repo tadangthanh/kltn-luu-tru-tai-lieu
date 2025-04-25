@@ -25,7 +25,7 @@ public class OwnerShipTransferServiceImpl implements IOwnerShipTransferService {
     private final IUserService userService;
     private final IMailService mailService;
     private final OwnerShipTransferMapper ownerShipTransferMapper;
-    private final ResourceCommonService resourceCommonService;
+    private final ItemCommonService itemCommonService;
     private final IAuthenticationService authenticationService;
     private final FolderCommonService folderCommonService;
     private final DocumentCommonService documentCommonService;
@@ -69,7 +69,7 @@ public class OwnerShipTransferServiceImpl implements IOwnerShipTransferService {
         OwnerShipTransfer ownerShipTransfer = isDocument
                 ? getTransferByDocumentAndOldOwner(resourceId, oldOwner.getId())
                 : getTransferByFolderAndOldOwner(resourceId, oldOwner.getId());
-        Resource resource;
+        Item resource;
 
         if (ownerShipTransfer != null) {
             resource = isDocument ? ownerShipTransfer.getDocument() : ownerShipTransfer.getFolder();
@@ -104,8 +104,8 @@ public class OwnerShipTransferServiceImpl implements IOwnerShipTransferService {
                 ? getTransferByDocumentIdAndNewOwner(resourceId, newOwner.getId())
                 : getTransferByFolderIdAndNewOwner(resourceId, newOwner.getId());
         validateTransferStatusIsPending(ownerShipTransfer);
-        Resource resource = isDocument ? ownerShipTransfer.getDocument() : ownerShipTransfer.getFolder();
-        resourceCommonService.validateResourceNotDeleted(resource);
+        Item resource = isDocument ? ownerShipTransfer.getDocument() : ownerShipTransfer.getFolder();
+        itemCommonService.validateItemNotDeleted(resource);
         transferOwnership(ownerShipTransfer);
         return mapToOwnerShipTransferResponse(ownerShipTransfer);
     }
@@ -117,14 +117,14 @@ public class OwnerShipTransferServiceImpl implements IOwnerShipTransferService {
                 ? getTransferByDocumentIdAndNewOwner(resourceId, newOwner.getId())
                 : getTransferByFolderIdAndNewOwner(resourceId, newOwner.getId());
         validateTransferStatusIsPending(ownerShipTransfer);
-        Resource resource = isDocument ? ownerShipTransfer.getDocument() : ownerShipTransfer.getFolder();
-        resourceCommonService.validateResourceNotDeleted(resource);
+        Item resource = isDocument ? ownerShipTransfer.getDocument() : ownerShipTransfer.getFolder();
+        itemCommonService.validateItemNotDeleted(resource);
         ownerShipTransfer.setStatus(TransferStatus.DECLINED);
         return mapToOwnerShipTransferResponse(ownerShipTransfer);
     }
 
     // Phương thức trợ giúp: Gửi email thông báo
-    private void sendEmailTransferOwnerShip(Resource resource, User newOwner) {
+    private void sendEmailTransferOwnerShip(Item resource, User newOwner) {
         if (resource instanceof Document) {
             mailService.sendEmailTransferOwnershipDocument(newOwner.getEmail(), (Document) resource);
         } else if (resource instanceof Folder) {
@@ -134,7 +134,7 @@ public class OwnerShipTransferServiceImpl implements IOwnerShipTransferService {
 
     // Chuyển quyền sở hữu
     private void transferOwnership(OwnerShipTransfer transfer) {
-        Resource resource = transfer.getDocument() != null ? transfer.getDocument() : transfer.getFolder();
+        Item resource = transfer.getDocument() != null ? transfer.getDocument() : transfer.getFolder();
         resource.setOwner(transfer.getNewOwner());
         transfer.setStatus(TransferStatus.ACCEPTED);
     }
@@ -198,8 +198,8 @@ public class OwnerShipTransferServiceImpl implements IOwnerShipTransferService {
         }
     }
 
-    private <T extends Resource> void validateConditionsResourceTransfer(T resource) {
-        resourceCommonService.validateResourceNotDeleted(resource);
-        resourceCommonService.validateCurrentUserIsOwnerResource(resource);
+    private <T extends Item> void validateConditionsResourceTransfer(T resource) {
+        itemCommonService.validateItemNotDeleted(resource);
+        itemCommonService.validateCurrentUserIsOwnerItem(resource);
     }
 }

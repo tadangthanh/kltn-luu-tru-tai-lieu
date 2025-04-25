@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.Tag;
@@ -173,6 +174,7 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     public void syncDocument(Long docId) {
         log.info("sync documentId: {}", docId);
         Document document = documentCommonService.getDocumentById(docId);
+        if(document == null) return;
         customDocumentIndexRepo.updateDocument(mapDocumentIndex(document));
     }
 

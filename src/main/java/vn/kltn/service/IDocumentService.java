@@ -11,7 +11,7 @@ import vn.kltn.entity.Document;
 
 import java.util.List;
 
-public interface IDocumentService extends IResourceService<Document, DocumentResponse> {
+public interface IDocumentService extends IItemService<Document, DocumentResponse> {
     void uploadDocumentEmptyParent(List<FileBuffer> bufferedFiles, CancellationToken token);
 
     void uploadDocumentWithParent(Long folderId, List<FileBuffer> bufferedFiles, CancellationToken token);

@@ -2,7 +2,7 @@ package vn.kltn.entity;
 
 import vn.kltn.common.Permission;
 
-public interface AccessResource {
+public interface AccessItem {
     User getRecipient();
 
     void setRecipient(User recipient);
@@ -11,7 +11,7 @@ public interface AccessResource {
 
     void setPermission(vn.kltn.common.Permission permission);
 
-    Resource getResource();
+    Item getItem();
 
-    <T extends Resource> void setResource(T resource);
+    <T extends Item> void setItem(T item);
 }

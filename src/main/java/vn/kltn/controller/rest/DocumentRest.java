@@ -16,7 +16,6 @@ import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.*;
 import vn.kltn.repository.util.FileUtil;
 import vn.kltn.service.IAzureStorageService;
-import vn.kltn.service.IDocumentSearchService;
 import vn.kltn.service.IDocumentService;
 import vn.kltn.service.impl.UploadTokenManager;
 import vn.kltn.validation.ValidFiles;
@@ -75,13 +74,13 @@ public class DocumentRest {
 
     @DeleteMapping("/{documentId}")
     public ResponseData<Void> softDelete(@PathVariable Long documentId) {
-        documentService.deleteResourceById(documentId);
+        documentService.deleteItemById(documentId);
         return new ResponseData<>(204, "Xóa thành công", null);
     }
 
     @DeleteMapping("/{documentId}/hard")
     public ResponseData<Void> hardDelete(@PathVariable Long documentId) {
-        documentService.hardDeleteResourceById(documentId);
+        documentService.hardDeleteItemById(documentId);
         return new ResponseData<>(204, "Xóa thành công", null);
     }
 
@@ -92,7 +91,7 @@ public class DocumentRest {
 
     @PostMapping("/{documentId}/restore")
     public ResponseData<DocumentResponse> restore(@PathVariable Long documentId) {
-        return new ResponseData<>(200, "Thành công", documentService.restoreResourceById(documentId));
+        return new ResponseData<>(200, "Thành công", documentService.restoreItemById(documentId));
     }
 
     @PutMapping("/{documentId}")
@@ -102,7 +101,7 @@ public class DocumentRest {
 
     @PutMapping("/{documentId}/move/{folderId}")
     public ResponseData<DocumentResponse> moveDocumentToFolder(@PathVariable Long documentId, @PathVariable Long folderId) {
-        return new ResponseData<>(200, "Thành công", documentService.moveResourceToFolder(documentId, folderId));
+        return new ResponseData<>(200, "Thành công", documentService.moveItemToFolder(documentId, folderId));
     }
 
     @GetMapping
@@ -117,7 +116,7 @@ public class DocumentRest {
 
     @GetMapping("/{documentId}")
     public ResponseData<DocumentResponse> getDocumentById(@PathVariable Long documentId) {
-        return new ResponseData<>(200, "Thành công", documentService.getResourceById(documentId));
+        return new ResponseData<>(200, "Thành công", documentService.getItemById(documentId));
     }
 
     @PostMapping("/save-editor")

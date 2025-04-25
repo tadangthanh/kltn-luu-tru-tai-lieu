@@ -17,7 +17,7 @@ import vn.kltn.service.*;
 @Service
 @Transactional
 @Slf4j(topic = "FOLDER_SERVICE")
-public class FolderServiceImpl extends AbstractResourceService<Folder, FolderResponse> implements IFolderService {
+public class FolderServiceImpl extends AbstractItemService<Folder, FolderResponse> implements IFolderService {
     private final FolderRepo folderRepo;
     private final FolderCommonService folderCommonService;
     private final IFolderCreationService folderCreationService;
@@ -57,15 +57,15 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
     }
 
     @Override
-    public FolderResponse restoreResourceById(Long resourceId) {
-        Folder folder = folderRestorationService.restore(resourceId);
+    public FolderResponse restoreItemById(Long itemId) {
+        Folder folder = folderRestorationService.restore(itemId);
         return folderMapperService.mapToResponse(folder);
     }
 
     @Override
-    public Folder getResourceByIdOrThrow(Long resourceId) {
-        return folderRepo.findById(resourceId).orElseThrow(() -> {
-            log.warn("Folder with id {} is not found", resourceId);
+    public Folder getItemByIdOrThrow(Long itemId) {
+        return folderRepo.findById(itemId).orElseThrow(() -> {
+            log.warn("Folder with id {} is not found", itemId);
             return new ResourceNotFoundException("Không tìm thấy thư mục");
         });
     }
@@ -96,8 +96,8 @@ public class FolderServiceImpl extends AbstractResourceService<Folder, FolderRes
     public FolderResponse updateFolderById(Long folderId, FolderRequest folderRequest) {
         log.info("update folder with id: {}", folderId);
         Folder folder = getFolderByIdOrThrow(folderId);
-        validateCurrentUserIsOwnerResource(folder);
-        validateResourceNotDeleted(folder);
+        validateCurrentUserIsOwnerItem(folder);
+        validateItemNotDeleted(folder);
         folderMapperService.updateFolder(folder, folderRequest);
         return folderMapperService.mapToResponse(folderRepo.save(folder));
     }

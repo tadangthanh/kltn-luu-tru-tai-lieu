@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.entity.Folder;
-import vn.kltn.entity.Resource;
+import vn.kltn.entity.Item;
 import vn.kltn.entity.User;
 import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.ResourceNotFoundException;
@@ -45,7 +45,7 @@ public class FolderValidationImpl implements IFolderValidation {
     }
 
     @Override
-    public void validateResourceNotDeleted(Resource resource) {
+    public void validateFolderNotDeleted(Item resource) {
         if (resource.getDeletedAt() != null) {
             log.warn("Folder with id {} is deleted", resource.getId());
             throw new ConflictResourceException("Thư mục đã bị xóa");

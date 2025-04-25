@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.dto.response.FolderResponse;
 import vn.kltn.dto.response.PageResponse;
@@ -28,19 +27,19 @@ public class FolderRest {
 
     @DeleteMapping("/{folderId}")
     public ResponseData<Void> softDeleteFolder(@PathVariable Long folderId) {
-        folderService.deleteResourceById(folderId);
+        folderService.deleteItemById(folderId);
         return new ResponseData<>(204, "Xóa thành công", null);
     }
 
     @DeleteMapping("/{folderId}/hard")
     public ResponseData<Void> hardDeleteFolder(@PathVariable Long folderId) {
-        folderService.hardDeleteResourceById(folderId);
+        folderService.hardDeleteItemById(folderId);
         return new ResponseData<>(204, "Xóa thành công", null);
     }
 
     @PostMapping("/{folderId}/restore")
     public ResponseData<FolderResponse> restoreFolder(@PathVariable Long folderId) {
-        return new ResponseData<>(200, "Thành công", folderService.restoreResourceById(folderId));
+        return new ResponseData<>(200, "Thành công", folderService.restoreItemById(folderId));
     }
 
     @PutMapping("/{folderId}")
@@ -50,7 +49,7 @@ public class FolderRest {
 
     @PutMapping("/{folderId}/move/{folderParentId}")
     public ResponseData<FolderResponse> moveFolder(@PathVariable Long folderId, @PathVariable Long folderParentId) {
-        return new ResponseData<>(200, "Thành công", folderService.moveResourceToFolder(folderId, folderParentId));
+        return new ResponseData<>(200, "Thành công", folderService.moveItemToFolder(folderId, folderParentId));
     }
 
     @GetMapping
@@ -60,7 +59,7 @@ public class FolderRest {
 
     @GetMapping("/{folderId}")
     public ResponseData<FolderResponse> getFolder(@PathVariable Long folderId) {
-        return new ResponseData<>(200, "Thành công", folderService.getResourceById(folderId));
+        return new ResponseData<>(200, "Thành công", folderService.getItemById(folderId));
     }
 
 

@@ -1,4 +1,4 @@
-PUT /document_segments
+PUT /documents_index
 {
   "settings": {
     "analysis": {
@@ -56,6 +56,9 @@ PUT /document_segments
       },
        "sharedWith": {
         "type": "keyword"
+      },
+      "isDeleted":{
+        "type":"keyword"
       }
     }
   }

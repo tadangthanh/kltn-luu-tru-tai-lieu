@@ -19,8 +19,8 @@ public interface FolderRepo extends JpaRepository<Folder, Long>, JpaSpecificatio
                 SELECT id FROM folder WHERE id = :folderId
                 UNION ALL
                 SELECT f.id FROM folder f
-                                inner join file_system_entity fse ON f.id=fse.id
-                                INNER JOIN sub_folders sf ON fse.parent_id = sf.id
+                                inner join item i ON f.id=i.id
+                                INNER JOIN sub_folders sf ON i.parent_id = sf.id
             )
             SELECT id FROM sub_folders;
             """, nativeQuery = true)
@@ -38,16 +38,16 @@ public interface FolderRepo extends JpaRepository<Folder, Long>, JpaSpecificatio
                 -- Lấy folder con nếu chưa bị dừng bởi isCustomPermission = true
                 SELECT f.id
                 FROM folder f
-                INNER JOIN file_system_entity fse ON f.id = fse.id
-                INNER JOIN sub_folders sf ON fse.parent_id = sf.id
-                INNER JOIN permission p ON fse.id = p.resource_id
+                INNER JOIN item i ON f.id = i.id
+                INNER JOIN sub_folders sf ON i.parent_id = sf.id
+                INNER JOIN permission p ON i.id = p.item_id
                 WHERE p.recipient_id = :userId
                 AND f.deleted_at IS NULL
                 AND p.is_custom_permission = false
                 AND NOT EXISTS (
                     SELECT 1
                     FROM permission p2
-                    WHERE p2.resource_id = fse.id
+                    WHERE p2.item_id = i.id
                     AND p2.recipient_id = :userId
                     AND p2.is_custom_permission = true
                 )

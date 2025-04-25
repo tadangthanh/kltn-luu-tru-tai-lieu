@@ -12,6 +12,6 @@ public class DocumentPermissionCommonService {
     private final PermissionRepo permissionRepo;
 
     public Set<Long> getUserIdsByDocumentShared(Long documentId) {
-        return permissionRepo.findIdsUserSharedWithByResourceId(documentId);
+        return permissionRepo.findIdsUserSharedWithByItemId(documentId);
     }
 }

@@ -1,10 +1,12 @@
 package vn.kltn.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,20 +14,12 @@ import java.util.List;
 @Setter
 @Entity
 @Table(name = "document")
-public class Document extends FileSystemEntity {
-//    private String name;
+public class Document extends Item {
     private String type;
     private String blobName;
     private Long size;
-//    @ManyToOne
-//    @JoinColumn(name = "owner_id")
-//    private User owner;
     private Integer version;
     private String description;
-//    @Column(name = "permanent_delete_at")
-//    private LocalDateTime permanentDeleteAt; // thoi gian xoa vinh vien
-//    @Column(name = "deleted_at")
-//    private LocalDateTime deletedAt;
     @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PreviewImage> previewImages = new ArrayList<>();
 }
