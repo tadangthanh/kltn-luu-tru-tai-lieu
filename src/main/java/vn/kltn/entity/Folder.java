@@ -11,14 +11,14 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "folder")
 public class Folder extends FileSystemEntity {
-    private String name;
+//    private String name;
     private String description;
     @Column(name = "size", nullable = false)
     private Long size = 0L;
-    private LocalDateTime deletedAt;
-    @Column(name = "permanent_delete_at")
-    private LocalDateTime permanentDeleteAt; // thoi gian xoa vinh vien
-    @ManyToOne
-    @JoinColumn(name = "owner_id")
-    private User owner; // chủ sở hữu
+//    private LocalDateTime deletedAt;
+//    @Column(name = "permanent_delete_at")
+//    private LocalDateTime permanentDeleteAt; // thoi gian xoa vinh vien
+//    @ManyToOne
+//    @JoinColumn(name = "owner_id")
+//    private User owner; // chủ sở hữu
 }
