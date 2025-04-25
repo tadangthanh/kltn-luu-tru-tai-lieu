@@ -5,8 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.kltn.entity.Item;
 import vn.kltn.repository.ItemRepo;
-import vn.kltn.service.IDocumentService;
-import vn.kltn.service.IFolderService;
+import vn.kltn.service.IDocumentCommonService;
+import vn.kltn.service.IFolderCommonService;
 
 import java.util.List;
 
@@ -14,8 +14,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j(topic = "RESOURCE_SERVICE")
 public class ResourceService {
-    private final IDocumentService documentService;
-    private final IFolderService folderService;
+    private final IDocumentCommonService documentService;
+    private final IFolderCommonService folderService;
     private final ItemRepo itemRepo;
 
     public void getResource() {

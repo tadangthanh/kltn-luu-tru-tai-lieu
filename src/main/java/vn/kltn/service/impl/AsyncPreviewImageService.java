@@ -9,7 +9,7 @@ import vn.kltn.entity.PreviewImage;
 import vn.kltn.exception.InternalServerErrorException;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IDocumentConversionService;
-import vn.kltn.service.IDocumentService;
+import vn.kltn.service.IDocumentCommonService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +19,7 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j(topic = "ASYNC_PREVIEW_IMAGE_SERVICE")
 @RequiredArgsConstructor
 public class AsyncPreviewImageService {
-    private final IDocumentService documentService;
+    private final IDocumentCommonService documentService;
     private final IDocumentConversionService documentConversionService;
     private final IAzureStorageService azureStorageService;
 

@@ -29,7 +29,7 @@ import java.util.List;
 @Service
 @Transactional
 @Slf4j(topic = "DOCUMENT_SERVICE")
-public class DocumentServiceImpl extends AbstractItemService<Document, DocumentResponse> implements IDocumentService {
+public class DocumentCommonServiceImpl extends AbstractItemCommonService<Document, DocumentResponse> implements IDocumentCommonService {
     private final DocumentRepo documentRepo;
     private final IDocumentHasTagService documentHasTagService;
     @Value("${app.delete.document-retention-days}")
@@ -42,7 +42,7 @@ public class DocumentServiceImpl extends AbstractItemService<Document, DocumentR
     private final IDocumentSearchService documentSearchService;
     private final ItemValidator itemValidator;
 
-    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator) {
+    public DocumentCommonServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService,itemValidator);
         this.documentRepo = documentRepo;
         this.documentHasTagService = documentHasTagService;

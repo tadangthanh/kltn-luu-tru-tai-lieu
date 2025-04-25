@@ -18,14 +18,14 @@ import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IDocumentPermissionService;
 import vn.kltn.service.IFolderPermissionService;
-import vn.kltn.service.IItemService;
+import vn.kltn.service.IItemCommonService;
 import vn.kltn.util.ItemValidator;
 
 import java.util.List;
 
 @Service
 @Transactional
-public abstract class AbstractItemService<T extends Item, R extends ItemResponse> implements IItemService<T, R> {
+public abstract class AbstractItemCommonService<T extends Item, R extends ItemResponse> implements IItemCommonService<T, R> {
     protected final IDocumentPermissionService documentPermissionService;
     protected final IFolderPermissionService folderPermissionService;
     protected final IAuthenticationService authenticationService;
@@ -33,7 +33,7 @@ public abstract class AbstractItemService<T extends Item, R extends ItemResponse
     protected final FolderCommonService folderCommonService;
     protected final ItemValidator itemValidator;
 
-    protected AbstractItemService(IDocumentPermissionService documentPermissionService, IFolderPermissionService folderPermissionService, IAuthenticationService authenticationService, @Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, FolderCommonService folderCommonService, ItemValidator itemValidator) {
+    protected AbstractItemCommonService(IDocumentPermissionService documentPermissionService, IFolderPermissionService folderPermissionService, IAuthenticationService authenticationService, @Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, FolderCommonService folderCommonService, ItemValidator itemValidator) {
         this.documentPermissionService = documentPermissionService;
         this.folderPermissionService = folderPermissionService;
         this.authenticationService = authenticationService;

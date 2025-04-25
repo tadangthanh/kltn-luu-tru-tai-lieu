@@ -18,7 +18,7 @@ import vn.kltn.util.ItemValidator;
 @Service
 @Transactional
 @Slf4j(topic = "FOLDER_SERVICE")
-public class FolderServiceImpl extends AbstractItemService<Folder, FolderResponse> implements IFolderService {
+public class FolderCommonServiceImpl extends AbstractItemCommonService<Folder, FolderResponse> implements IFolderCommonService {
     private final FolderRepo folderRepo;
     private final FolderCommonService folderCommonService;
     private final IFolderCreationService folderCreationService;
@@ -27,7 +27,7 @@ public class FolderServiceImpl extends AbstractItemService<Folder, FolderRespons
     private final IFolderRestorationService folderRestorationService;
     private final ItemValidator itemValidator;
 
-    public FolderServiceImpl(@Qualifier("folderPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IDocumentPermissionService documentPermissionService, FolderRepo folderRepo, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IFolderPermissionService folderPermissionService, IFolderCreationService folderCreationService, IFolderMapperService folderMapperService, IFolderDeletionService folderDeletionService, IFolderRestorationService folderRestorationService, ItemValidator itemValidator) {
+    public FolderCommonServiceImpl(@Qualifier("folderPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IDocumentPermissionService documentPermissionService, FolderRepo folderRepo, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IFolderPermissionService folderPermissionService, IFolderCreationService folderCreationService, IFolderMapperService folderMapperService, IFolderDeletionService folderDeletionService, IFolderRestorationService folderRestorationService, ItemValidator itemValidator) {
         super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService,itemValidator);
         this.folderRepo = folderRepo;
         this.folderCommonService = folderCommonService;
