@@ -3,6 +3,7 @@ package vn.kltn.dto.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.Setter;
+import vn.kltn.common.ItemType;
 import vn.kltn.dto.BaseDto;
 
 import java.time.LocalDateTime;
@@ -26,5 +27,7 @@ public  class ItemResponse extends BaseDto {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private LocalDateTime deletedAt;
     private Long size;
+
+    private ItemType itemType;
 
 }

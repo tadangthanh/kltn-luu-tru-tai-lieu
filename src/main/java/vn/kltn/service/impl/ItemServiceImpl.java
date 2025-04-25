@@ -60,7 +60,7 @@ public class ItemServiceImpl implements IItemService<Item, ItemResponse> {
 
     @Override
     public PageResponse<List<ItemResponse>> searchByCurrentUser(Pageable pageable, String[] items) {
-        log.info("search items by current user");
+        log.info("search items by current user page note: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
         EntitySpecificationsBuilder<Item> builder = new EntitySpecificationsBuilder<>();
         Specification<Item> spec;
         String email = SecurityContextHolder.getContext().getAuthentication().getName();

@@ -3,6 +3,7 @@ package vn.kltn.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import vn.kltn.common.ItemType;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -23,6 +24,9 @@ public abstract class Item extends BaseEntity {
     @JoinColumn(name = "owner_id")
     private User owner;
     private LocalDateTime deletedAt;
+    @Enumerated(EnumType.STRING)
+    private ItemType itemType;
+
     @Column(name = "permanent_delete_at")
     private LocalDateTime permanentDeleteAt; // thoi gian xoa vinh vien
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)

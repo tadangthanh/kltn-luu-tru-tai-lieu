@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import vn.kltn.common.ItemType;
 import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.entity.Folder;
 import vn.kltn.repository.FolderRepo;
@@ -37,12 +38,14 @@ public class FolderCreationServiceImpl implements IFolderCreationService {
     private Folder createRootFolder(FolderRequest request) {
         Folder folder = folderMapperService.mapToFolder(request);
         folder.setOwner(authenticationService.getCurrentUser());
+        folder.setItemType(ItemType.FOLDER);
         return folderRepo.save(folder);
     }
 
     private Folder createChildFolder(FolderRequest request) {
         Folder folderParent = folderCommonService.getFolderByIdOrThrow(request.getFolderParentId());
         Folder folder = folderMapperService.mapToFolder(request);
+        folder.setItemType(ItemType.FOLDER);
         folder = folderRepo.save(folder);
         folder.setOwner(authenticationService.getCurrentUser());
         folder.setParent(folderParent);

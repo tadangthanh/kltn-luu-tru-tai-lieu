@@ -8,6 +8,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.CancellationToken;
+import vn.kltn.common.ItemType;
 import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.ProcessUploadResult;
 import vn.kltn.dto.UploadContext;
@@ -177,7 +178,10 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
         // Lưu tài liệu vào cơ sở dữ liệu
         List<Document> documents = documentMapperService.mapFilesBufferToListDocument(fileBuffers);
         Folder folder = folderCommonService.getFolderByIdOrThrow(folderId);
-        documents.forEach(document -> document.setParent(folder));
+        documents.forEach(document -> {
+            document.setParent(folder);
+            document.setItemType(ItemType.DOCUMENT);
+        });
         documents = documentRepo.saveAll(documents);
         return documents;
     }
@@ -197,6 +201,7 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
     @Override
     public List<Document> saveDocuments(List<FileBuffer> bufferedFiles) {
         List<Document> documents = documentMapperService.mapFilesBufferToListDocument(bufferedFiles);
+        documents.forEach(document -> document.setItemType(ItemType.DOCUMENT));
         documents = documentRepo.saveAll(documents);
         return documents;
     }

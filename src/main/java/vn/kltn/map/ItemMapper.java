@@ -12,5 +12,6 @@ public interface ItemMapper {
     @Mapping(target = "parentId", source = "parent.id")
     @Mapping(target = "ownerName", source = "owner.fullName")
     @Mapping(target = "ownerEmail", source = "owner.email")
+    @Mapping(target = "itemType", source = "itemType")
     ItemResponse toResponse(Item item);
 }
