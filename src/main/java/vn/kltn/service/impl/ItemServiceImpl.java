@@ -73,13 +73,9 @@ public class ItemServiceImpl implements IItemService<Item, ItemResponse> {
 
         if (items != null && items.length > 0) {
             spec = spec.and(SpecificationUtil.buildSpecificationFromFilters(items, builder));
-//            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
-//            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdBy"), currentUser.getEmail()));
             Page<Item> pageAccessByResource = itemRepo.findAll(spec, pageable);
             return PaginationUtils.convertToPageResponse(pageAccessByResource, pageable, itemMapper::toResponse);
         }
-//        spec = (root, query, criteriaBuilder) -> root.get("deletedAt").isNull();
-//        spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdBy"), currentUser.getEmail()));
         return PaginationUtils.convertToPageResponse(itemRepo.findAll(spec, pageable), pageable, itemMapper::toResponse);
     }
 }
