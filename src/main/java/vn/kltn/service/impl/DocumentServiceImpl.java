@@ -8,7 +8,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.CancellationToken;
@@ -22,6 +21,7 @@ import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.service.*;
 import vn.kltn.service.event.DocumentUpdatedEvent;
+import vn.kltn.util.ItemValidator;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,9 +40,10 @@ public class DocumentServiceImpl extends AbstractItemService<Document, DocumentR
     private final IDocumentStorageService documentStorageService;
     private final IDocumentMapperService documentMapperService;
     private final IDocumentSearchService documentSearchService;
+    private final ItemValidator itemValidator;
 
-    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService) {
-        super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
+    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator) {
+        super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService,itemValidator);
         this.documentRepo = documentRepo;
         this.documentHasTagService = documentHasTagService;
         this.documentIndexService = documentIndexService;
@@ -51,6 +52,7 @@ public class DocumentServiceImpl extends AbstractItemService<Document, DocumentR
         this.documentStorageService = documentStorageService;
         this.documentMapperService = documentMapperService;
         this.documentSearchService = documentSearchService;
+        this.itemValidator = itemValidator;
     }
 
     @Override
@@ -86,12 +88,6 @@ public class DocumentServiceImpl extends AbstractItemService<Document, DocumentR
     }
 
     @Override
-    protected Page<Document> getPageResource(Pageable pageable) {
-        log.info("get page document");
-        return documentRepo.findAll(pageable);
-    }
-
-    @Override
     protected Page<Document> getPageResourceBySpec(Specification<Document> spec, Pageable pageable) {
         log.info("get page document by specification");
         return documentRepo.findAll(spec, pageable);
@@ -114,8 +110,8 @@ public class DocumentServiceImpl extends AbstractItemService<Document, DocumentR
     public DocumentResponse restoreItemById(Long itemId) {
         log.info("restore document with id {}", itemId);
         Document resource = getItemByIdOrThrow(itemId);
-        validateCurrentUserIsOwnerItem(resource);
-        validateItemDeleted(resource);
+        itemValidator.validateCurrentUserIsOwnerItem(resource);
+        itemValidator.validateItemDeleted(resource);
         resource.setDeletedAt(null);
         resource.setPermanentDeleteAt(null);
         documentIndexService.markDeleteDocument(itemId, false);

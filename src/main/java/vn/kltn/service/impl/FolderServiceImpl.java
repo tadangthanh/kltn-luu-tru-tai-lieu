@@ -13,6 +13,7 @@ import vn.kltn.entity.Folder;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.repository.FolderRepo;
 import vn.kltn.service.*;
+import vn.kltn.util.ItemValidator;
 
 @Service
 @Transactional
@@ -24,15 +25,17 @@ public class FolderServiceImpl extends AbstractItemService<Folder, FolderRespons
     private final IFolderMapperService folderMapperService;
     private final IFolderDeletionService folderDeletionService;
     private final IFolderRestorationService folderRestorationService;
+    private final ItemValidator itemValidator;
 
-    public FolderServiceImpl(@Qualifier("folderPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IDocumentPermissionService documentPermissionService, FolderRepo folderRepo, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IFolderPermissionService folderPermissionService, IFolderCreationService folderCreationService, IFolderMapperService folderMapperService, IFolderDeletionService folderDeletionService, IFolderRestorationService folderRestorationService) {
-        super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService);
+    public FolderServiceImpl(@Qualifier("folderPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IDocumentPermissionService documentPermissionService, FolderRepo folderRepo, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IFolderPermissionService folderPermissionService, IFolderCreationService folderCreationService, IFolderMapperService folderMapperService, IFolderDeletionService folderDeletionService, IFolderRestorationService folderRestorationService, ItemValidator itemValidator) {
+        super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService,itemValidator);
         this.folderRepo = folderRepo;
         this.folderCommonService = folderCommonService;
         this.folderCreationService = folderCreationService;
         this.folderMapperService = folderMapperService;
         this.folderDeletionService = folderDeletionService;
         this.folderRestorationService = folderRestorationService;
+        this.itemValidator = itemValidator;
     }
 
     @Override
@@ -77,12 +80,6 @@ public class FolderServiceImpl extends AbstractItemService<Folder, FolderRespons
     }
 
     @Override
-    protected Page<Folder> getPageResource(Pageable pageable) {
-        log.info("get page folder");
-        return folderRepo.findAll(pageable);
-    }
-
-    @Override
     protected Page<Folder> getPageResourceBySpec(Specification<Folder> spec, Pageable pageable) {
         return folderRepo.findAll(spec, pageable);
     }
@@ -96,8 +93,8 @@ public class FolderServiceImpl extends AbstractItemService<Folder, FolderRespons
     public FolderResponse updateFolderById(Long folderId, FolderRequest folderRequest) {
         log.info("update folder with id: {}", folderId);
         Folder folder = getFolderByIdOrThrow(folderId);
-        validateCurrentUserIsOwnerItem(folder);
-        validateItemNotDeleted(folder);
+        itemValidator.validateCurrentUserIsOwnerItem(folder);
+        itemValidator.validateItemNotDeleted(folder);
         folderMapperService.updateFolder(folder, folderRequest);
         return folderMapperService.mapToResponse(folderRepo.save(folder));
     }

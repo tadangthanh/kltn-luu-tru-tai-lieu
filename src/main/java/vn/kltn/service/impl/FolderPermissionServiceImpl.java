@@ -16,6 +16,7 @@ import vn.kltn.service.IFolderPermissionService;
 import vn.kltn.service.IPermissionInheritanceService;
 import vn.kltn.service.IUserService;
 import vn.kltn.service.event.MultipleDocumentsUpdatedEvent;
+import vn.kltn.util.ItemValidator;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,9 +32,8 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
     private final ApplicationEventPublisher eventPublisher;
     private final IPermissionInheritanceService permissionInheritanceService;
 
-
-    protected FolderPermissionServiceImpl(PermissionRepo permissionRepo, IUserService userService, PermissionMapper permissionMapper, IAuthenticationService authenticationService, FolderCommonService folderCommonService, ItemCommonService itemCommonService, DocumentCommonService documentCommonService, FolderRepo folderRepo, ApplicationEventPublisher eventPublisher, IPermissionInheritanceService permissionInheritanceService) {
-        super(permissionRepo, userService, permissionMapper, itemCommonService, authenticationService);
+    protected FolderPermissionServiceImpl(PermissionRepo permissionRepo, IUserService userService, PermissionMapper permissionMapper, IAuthenticationService authenticationService, FolderCommonService folderCommonService, DocumentCommonService documentCommonService, FolderRepo folderRepo, ApplicationEventPublisher eventPublisher, IPermissionInheritanceService permissionInheritanceService, ItemValidator itemValidator) {
+        super(permissionRepo, userService, permissionMapper, itemValidator, authenticationService);
         this.folderCommonService = folderCommonService;
         this.documentCommonService = documentCommonService;
         this.folderRepo = folderRepo;

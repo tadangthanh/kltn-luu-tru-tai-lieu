@@ -12,7 +12,6 @@ import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Folder;
 import vn.kltn.entity.Item;
 import vn.kltn.entity.User;
-import vn.kltn.exception.InvalidDataException;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.specification.SpecificationUtil;
 import vn.kltn.repository.util.PaginationUtils;
@@ -20,6 +19,7 @@ import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IDocumentPermissionService;
 import vn.kltn.service.IFolderPermissionService;
 import vn.kltn.service.IItemService;
+import vn.kltn.util.ItemValidator;
 
 import java.util.List;
 
@@ -31,28 +31,17 @@ public abstract class AbstractItemService<T extends Item, R extends ItemResponse
     protected final IAuthenticationService authenticationService;
     protected final AbstractPermissionService abstractPermissionService;
     protected final FolderCommonService folderCommonService;
+    protected final ItemValidator itemValidator;
 
-    protected AbstractItemService(IDocumentPermissionService documentPermissionService, IFolderPermissionService folderPermissionService, IAuthenticationService authenticationService, @Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, FolderCommonService folderCommonService) {
+    protected AbstractItemService(IDocumentPermissionService documentPermissionService, IFolderPermissionService folderPermissionService, IAuthenticationService authenticationService, @Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, FolderCommonService folderCommonService, ItemValidator itemValidator) {
         this.documentPermissionService = documentPermissionService;
         this.folderPermissionService = folderPermissionService;
         this.authenticationService = authenticationService;
         this.abstractPermissionService = abstractPermissionService;
         this.folderCommonService = folderCommonService;
+        this.itemValidator = itemValidator;
     }
 
-    @Override
-    public void validateItemNotDeleted(Item item) {
-        if (item.getDeletedAt() != null) {
-            throw new InvalidDataException("Resource đã bị xóa");
-        }
-    }
-
-    @Override
-    public void validateItemDeleted(Item item) {
-        if (item.getDeletedAt() == null) {
-            throw new InvalidDataException("Resource chưa bị xóa");
-        }
-    }
 
     @Override
     public PageResponse<List<R>> searchByCurrentUser(Pageable pageable, String[] items) {
@@ -60,20 +49,20 @@ public abstract class AbstractItemService<T extends Item, R extends ItemResponse
         Specification<T> spec;
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         if (items != null && items.length > 0) {
-             spec = SpecificationUtil.buildSpecificationFromFilters(items, builder);
+            spec = SpecificationUtil.buildSpecificationFromFilters(items, builder);
             spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdBy"), email));
             Page<T> pageAccessByResource = getPageResourceBySpec(spec, pageable);
             return PaginationUtils.convertToPageResponse(pageAccessByResource, pageable, this::mapToR);
         }
         spec = (root, query, criteriaBuilder) -> root.get("deletedAt").isNull();
         spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdBy"), email));
-        return PaginationUtils.convertToPageResponse(getPageResourceBySpec(spec,pageable), pageable, this::mapToR);
+        return PaginationUtils.convertToPageResponse(getPageResourceBySpec(spec, pageable), pageable, this::mapToR);
     }
 
     @Override
     public void hardDeleteItemById(Long itemId) {
         T resource = getItemByIdOrThrow(itemId);
-        validateItemDeleted(resource);
+        itemValidator.validateItemDeleted(resource);
         deletePermissionResourceById(resource.getId());
         hardDeleteResource(resource);
     }
@@ -84,37 +73,13 @@ public abstract class AbstractItemService<T extends Item, R extends ItemResponse
     }
 
     @Override
-    public void validateCurrentUserIsOwnerItem(Item item) {
-        User currentUser = getCurrentUser();
-        if (!item.getOwner().getId().equals(currentUser.getId())) {
-            throw new InvalidDataException("Bạn không có quyền thực hiện thao tác này");
-        }
-    }
-
-    /**
-     * Kiểm tra xem người dùng hiện tại có quyền sở hữu hoặc chỉnh sửa tài nguyên hay không
-     *
-     * @param item Tài nguyên cần kiểm tra
-     */
-    @Override
-    public void validateCurrentUserIsOwnerOrEditorItem(Item item) {
-        User currentUser = getCurrentUser();
-        // neu la chu so huu thi ko can kiem tra quyen editor
-        if (item.getOwner().getId().equals(currentUser.getId())) {
-            return;
-        }
-        // nếu khong là chu so huu thi kiem tra quyen editor
-        validateUserIsEditor(item.getId(), currentUser.getId());
-    }
-
-    @Override
     public void deleteItemById(Long itemId) {
         T resource = getItemByIdOrThrow(itemId);
         // resource chua bi xoa
-        validateItemNotDeleted(resource);
+        itemValidator.validateItemNotDeleted(resource);
         // validate chu so huu hoac editor o resource cha
         if (resource.getParent() != null) {
-            validateCurrentUserIsOwnerOrEditorItem(resource.getParent());
+            itemValidator.validateCurrentUserIsOwnerOrEditorItem(resource.getParent());
         }
         User currentUser = getCurrentUser();
         User owner = resource.getOwner();
@@ -133,12 +98,12 @@ public abstract class AbstractItemService<T extends Item, R extends ItemResponse
     public R moveItemToFolder(Long itemId, Long folderId) {
         T resourceToMove = getItemByIdOrThrow(itemId);
         //kiem tra xem nguoi dung hien tai co quyen di chuyen folder hay khong ( kiem tra quyen o folder cha)
-        validateCurrentUserIsOwnerOrEditorItem(resourceToMove.getParent());
+        itemValidator.validateCurrentUserIsOwnerOrEditorItem(resourceToMove.getParent());
         // folder can di chuyen chua bi xoa
-        validateItemNotDeleted(resourceToMove);
+        itemValidator.validateItemNotDeleted(resourceToMove);
         Folder folderDestination = getFolderByIdOrThrow(folderId);
         // folder dich chua bi xoa
-        validateItemNotDeleted(folderDestination);
+        itemValidator.validateItemNotDeleted(folderDestination);
         resourceToMove.setParent(folderDestination);
         resourceToMove = saveResource(resourceToMove);
         // xoa cac permission cu
@@ -166,8 +131,6 @@ public abstract class AbstractItemService<T extends Item, R extends ItemResponse
     }
 
     protected abstract void hardDeleteResource(T resource);
-
-    protected abstract Page<T> getPageResource(Pageable pageable);
 
     protected abstract Page<T> getPageResourceBySpec(Specification<T> spec, Pageable pageable);
 

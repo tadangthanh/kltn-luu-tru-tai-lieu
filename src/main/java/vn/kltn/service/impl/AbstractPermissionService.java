@@ -19,6 +19,7 @@ import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IPermissionService;
 import vn.kltn.service.IUserService;
+import vn.kltn.util.ItemValidator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,19 +34,18 @@ public abstract class AbstractPermissionService implements IPermissionService {
     protected final PermissionRepo permissionRepo;
     protected final IUserService userService;
     protected final PermissionMapper permissionMapper;
-    protected final ItemCommonService itemCommonService;
+    protected final ItemValidator itemValidator;
     protected final IAuthenticationService authenticationService;
 
     protected AbstractPermissionService(PermissionRepo permissionRepo,
                                         IUserService userService, PermissionMapper permissionMapper,
-                                        ItemCommonService itemCommonService, IAuthenticationService authenticationService) {
+                                        ItemValidator itemValidator, IAuthenticationService authenticationService) {
         this.permissionRepo = permissionRepo;
         this.userService = userService;
         this.permissionMapper = permissionMapper;
-        this.itemCommonService = itemCommonService;
+        this.itemValidator = itemValidator;
         this.authenticationService = authenticationService;
     }
-
 
     @Override
     public PermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest) {
@@ -119,9 +119,9 @@ public abstract class AbstractPermissionService implements IPermissionService {
         validatePermissionNotExists(permissionRequest.getRecipientId(), resourceId);
         Item resource = getResourceById(resourceId);
         // validate đã thêm quyền này cho người này hay chưa ?
-        itemCommonService.validateCurrentUserIsOwnerItem(resource);
+        itemValidator.validateCurrentUserIsOwnerItem(resource);
         // validate xem resource co bi xoa hay chua
-        itemCommonService.validateItemNotDeleted(resource);
+        itemValidator.validateItemNotDeleted(resource);
         // validate xem người dùng có quyền tạo permission hay không
         validateEditorOrOwner(resource);
         Permission permission = mapToPermission(permissionRequest);
@@ -136,7 +136,7 @@ public abstract class AbstractPermissionService implements IPermissionService {
     protected void inheritPermission(Item item, boolean isOwner) {
         if (item == null || item.getParent() == null) return;
         // Validate nếu resource bị xóa hoặc không có parent thì dừng lại
-        itemCommonService.validateItemNotDeleted(item);
+        itemValidator.validateItemNotDeleted(item);
         Set<Permission> parentPermissions = item.getParent().getPermissions();
         if (parentPermissions == null || parentPermissions.isEmpty()) return;
 

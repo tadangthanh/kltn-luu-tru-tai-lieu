@@ -15,6 +15,7 @@ import vn.kltn.service.IDocumentPermissionService;
 import vn.kltn.service.IPermissionInheritanceService;
 import vn.kltn.service.IUserService;
 import vn.kltn.service.event.publisher.PermissionEventPublisher;
+import vn.kltn.util.ItemValidator;
 
 import java.util.HashSet;
 import java.util.List;
@@ -33,9 +34,8 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
             IAuthenticationService authenticationService,
             IUserService userService,
             PermissionMapper permissionMapper,
-            ItemCommonService itemCommonService,
-            DocumentCommonService documentCommonService, PermissionEventPublisher permissionEventPublisher, IPermissionInheritanceService permissionInheritanceService) {
-        super(permissionRepo, userService, permissionMapper, itemCommonService, authenticationService);
+            DocumentCommonService documentCommonService, PermissionEventPublisher permissionEventPublisher, IPermissionInheritanceService permissionInheritanceService, ItemValidator itemValidator) {
+        super(permissionRepo, userService, permissionMapper,itemValidator, authenticationService);
         this.documentCommonService = documentCommonService;
         this.permissionEventPublisher = permissionEventPublisher;
         this.permissionInheritanceService = permissionInheritanceService;

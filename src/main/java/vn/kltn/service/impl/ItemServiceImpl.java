@@ -1,9 +1,5 @@
 package vn.kltn.service.impl;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -17,9 +13,7 @@ import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Item;
 import vn.kltn.map.ItemMapper;
 import vn.kltn.repository.ItemRepo;
-import vn.kltn.repository.specification.EntitySpecification;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
-import vn.kltn.repository.specification.SpecSearchCriteria;
 import vn.kltn.repository.specification.SpecificationUtil;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IItemService;
@@ -33,26 +27,6 @@ import java.util.List;
 public class ItemServiceImpl implements IItemService<Item, ItemResponse> {
     private final ItemRepo itemRepo;
     private final ItemMapper itemMapper;
-
-    @Override
-    public void validateItemNotDeleted(Item item) {
-
-    }
-
-    @Override
-    public void validateItemDeleted(Item item) {
-
-    }
-
-    @Override
-    public void validateCurrentUserIsOwnerItem(Item item) {
-
-    }
-
-    @Override
-    public void validateCurrentUserIsOwnerOrEditorItem(Item item) {
-
-    }
 
     @Override
     public void deleteItemById(Long itemId) {

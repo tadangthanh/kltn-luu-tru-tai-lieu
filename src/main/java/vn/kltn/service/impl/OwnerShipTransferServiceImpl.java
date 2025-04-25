@@ -14,20 +14,20 @@ import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IMailService;
 import vn.kltn.service.IOwnerShipTransferService;
 import vn.kltn.service.IUserService;
+import vn.kltn.util.ItemValidator;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 @Slf4j(topic = "OWNER_SHIP_TRANSFER_SERVICE")
 public class OwnerShipTransferServiceImpl implements IOwnerShipTransferService {
-
     private final OwnerShipTransferRepo ownerShipTransferRepo;
     private final IUserService userService;
     private final IMailService mailService;
     private final OwnerShipTransferMapper ownerShipTransferMapper;
-    private final ItemCommonService itemCommonService;
     private final IAuthenticationService authenticationService;
     private final FolderCommonService folderCommonService;
+    private final ItemValidator itemValidator;
     private final DocumentCommonService documentCommonService;
 
     // Tạo yêu cầu chuyển quyền sở hữu
@@ -105,7 +105,7 @@ public class OwnerShipTransferServiceImpl implements IOwnerShipTransferService {
                 : getTransferByFolderIdAndNewOwner(resourceId, newOwner.getId());
         validateTransferStatusIsPending(ownerShipTransfer);
         Item resource = isDocument ? ownerShipTransfer.getDocument() : ownerShipTransfer.getFolder();
-        itemCommonService.validateItemNotDeleted(resource);
+        itemValidator.validateItemNotDeleted(resource);
         transferOwnership(ownerShipTransfer);
         return mapToOwnerShipTransferResponse(ownerShipTransfer);
     }
@@ -118,7 +118,7 @@ public class OwnerShipTransferServiceImpl implements IOwnerShipTransferService {
                 : getTransferByFolderIdAndNewOwner(resourceId, newOwner.getId());
         validateTransferStatusIsPending(ownerShipTransfer);
         Item resource = isDocument ? ownerShipTransfer.getDocument() : ownerShipTransfer.getFolder();
-        itemCommonService.validateItemNotDeleted(resource);
+        itemValidator.validateItemNotDeleted(resource);
         ownerShipTransfer.setStatus(TransferStatus.DECLINED);
         return mapToOwnerShipTransferResponse(ownerShipTransfer);
     }
@@ -199,7 +199,7 @@ public class OwnerShipTransferServiceImpl implements IOwnerShipTransferService {
     }
 
     private <T extends Item> void validateConditionsResourceTransfer(T resource) {
-        itemCommonService.validateItemNotDeleted(resource);
-        itemCommonService.validateCurrentUserIsOwnerItem(resource);
+        itemValidator.validateItemNotDeleted(resource);
+        itemValidator.validateCurrentUserIsOwnerItem(resource);
     }
 }

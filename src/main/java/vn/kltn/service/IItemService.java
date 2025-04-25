@@ -1,21 +1,14 @@
 package vn.kltn.service;
 
 import org.springframework.data.domain.Pageable;
-import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ItemResponse;
+import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Item;
 
 import java.util.List;
 
 // T là kiểu dữ liệu của entity resource(document or folder), R là kiểu dữ liệu của response (DocumentResponse or FolderResponse)
 public interface IItemService<T extends Item, R extends ItemResponse> {
-    void validateItemNotDeleted(Item item);
-
-    void validateItemDeleted(Item item);
-
-    void validateCurrentUserIsOwnerItem(Item item);
-
-    void validateCurrentUserIsOwnerOrEditorItem(Item item);
 
     void deleteItemById(Long itemId);
 
