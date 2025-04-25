@@ -56,16 +56,18 @@ public abstract class AbstractItemService<T extends Item, R extends ItemResponse
 
     @Override
     public PageResponse<List<R>> searchByCurrentUser(Pageable pageable, String[] items) {
+        EntitySpecificationsBuilder<T> builder = new EntitySpecificationsBuilder<>();
+        Specification<T> spec;
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
         if (items != null && items.length > 0) {
-            EntitySpecificationsBuilder<T> builder = new EntitySpecificationsBuilder<>();
-            Specification<T> spec = SpecificationUtil.buildSpecificationFromFilters(items, builder);
-            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt")));
-            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+             spec = SpecificationUtil.buildSpecificationFromFilters(items, builder);
             spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdBy"), email));
             Page<T> pageAccessByResource = getPageResourceBySpec(spec, pageable);
             return PaginationUtils.convertToPageResponse(pageAccessByResource, pageable, this::mapToR);
         }
-        return PaginationUtils.convertToPageResponse(getPageResource(pageable), pageable, this::mapToR);
+        spec = (root, query, criteriaBuilder) -> root.get("deletedAt").isNull();
+        spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdBy"), email));
+        return PaginationUtils.convertToPageResponse(getPageResourceBySpec(spec,pageable), pageable, this::mapToR);
     }
 
     @Override
@@ -152,9 +154,6 @@ public abstract class AbstractItemService<T extends Item, R extends ItemResponse
 
     protected abstract T saveResource(T resource);
 
-    protected void deletePermissionByResourceAndRecipientId(Long resourceId, Long recipientId) {
-        abstractPermissionService.deleteByResourceAndRecipientId(resourceId, recipientId);
-    }
 
     protected void validateUserIsEditor(Long resourceId, Long userId) {
         abstractPermissionService.validateUserIsEditor(resourceId, userId);

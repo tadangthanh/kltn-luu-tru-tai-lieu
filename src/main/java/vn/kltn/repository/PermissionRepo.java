@@ -33,7 +33,7 @@ public interface PermissionRepo extends JpaRepository<Permission, Long> {
                 SELECT f.id FROM folder f
                                 INNER JOIN item i ON f.id=i.id
                                 INNER JOIN sub_folders sf ON i.parent_id = sf.id
-                                where f.deleted_at is null AND NOT EXISTS(
+                                where i.deleted_at is null AND NOT EXISTS(
                                                 SELECT 1 FROM permission p where p.recipient_id = :recipientId
                                                                                          and p.item_id = i.id
                                             )

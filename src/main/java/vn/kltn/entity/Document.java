@@ -17,9 +17,7 @@ import java.util.List;
 public class Document extends Item {
     private String type;
     private String blobName;
-    private Long size;
     private Integer version;
-    private String description;
     @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PreviewImage> previewImages = new ArrayList<>();
 }

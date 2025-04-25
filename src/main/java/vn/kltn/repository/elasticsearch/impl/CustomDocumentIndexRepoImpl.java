@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
-@Slf4j(topic = "CUSTOM_DOCUMENT_SEGMENT_REPO")
+@Slf4j(topic = "CUSTOM_DOCUMENT_INDEX_REPO")
 public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
     private final ElasticsearchClient elasticsearchClient;
 
@@ -189,10 +189,13 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
 
             for (DocumentIndex doc : indices) {
                 builder.operations(op -> op
-                        .index(i -> i
+                        .update(u -> u
                                 .index("documents_index")
                                 .id(String.valueOf(doc.getId()))
-                                .document(doc)
+                                .action(a -> a
+                                        .doc(doc.toPartialUpdateMap())
+                                        .docAsUpsert(true)
+                                )
                         )
                 );
             }

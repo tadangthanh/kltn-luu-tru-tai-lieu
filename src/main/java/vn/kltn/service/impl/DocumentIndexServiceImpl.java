@@ -104,15 +104,15 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     @Async("taskExecutor")
     public void deleteIndexByIdList(List<Long> indexIds) {
         log.info("delete indexIds: {}", indexIds);
-        if(indexIds == null || indexIds.isEmpty()) return;
+        if (indexIds == null || indexIds.isEmpty()) return;
         customDocumentIndexRepo.deleteIndexByIdList(indexIds);
     }
 
     @Override
     @Async("taskExecutor")
     public void markDeleteDocuments(List<Long> indexIds, boolean value) {
-        log.info("mark deleted indexIds: {}, value {}", indexIds,value);
-        if(indexIds == null || indexIds.isEmpty()) return;
+        log.info("mark deleted indexIds: {}, value {}", indexIds, value);
+        if (indexIds == null || indexIds.isEmpty()) return;
         List<String> indexIdsString = indexIds.stream().map(String::valueOf).toList();
         customDocumentIndexRepo.markDeleteDocumentsIndex(indexIdsString, value);
     }
@@ -174,7 +174,7 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     public void syncDocument(Long docId) {
         log.info("sync documentId: {}", docId);
         Document document = documentCommonService.getDocumentById(docId);
-        if(document == null) return;
+        if (document == null) return;
         customDocumentIndexRepo.updateDocument(mapDocumentIndex(document));
     }
 
@@ -189,7 +189,6 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
         List<DocumentIndex> indices = documents.stream()
                 .map(this::mapDocumentIndex)
                 .toList();
-
         customDocumentIndexRepo.bulkUpdate(indices);
 
     }

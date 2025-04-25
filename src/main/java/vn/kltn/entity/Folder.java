@@ -9,7 +9,4 @@ import lombok.Setter;
 @Entity
 @Table(name = "folder")
 public class Folder extends Item {
-    private String description;
-    @Column(name = "size", nullable = false)
-    private Long size = 0L;
 }

@@ -2,10 +2,7 @@ package vn.kltn.index;
 
 import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
@@ -21,6 +18,7 @@ import java.util.Map;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Document(indexName = "documents_index")
+@ToString
 public class DocumentIndex extends BaseSearchEntity {
     private Long documentId; // ID của tài liệu gốc
     private String description; // Mô tả tài liệu
@@ -35,18 +33,21 @@ public class DocumentIndex extends BaseSearchEntity {
     private List<Long> sharedWith; // danh sách id user được truy cập tài liệu
     private boolean isDeleted = false;
 
-    public Map<String, JsonData> toParamMap() {
-        Map<String, JsonData> map = new HashMap<>();
-        if (this.name != null) map.put("name", JsonData.of(this.name));
-        if (this.description != null) map.put("description", JsonData.of(this.description));
-        if (this.type != null) map.put("type", JsonData.of(this.type));
-        if (this.content != null) map.put("content", JsonData.of(this.content));
-        if (this.tags != null) map.put("tags", JsonData.of(this.tags));
-        if (this.ownerId != null) map.put("ownerId", JsonData.of(this.ownerId));
-        if (this.sharedWith != null) map.put("sharedWith", JsonData.of(this.sharedWith));
-        map.put("isDeleted", JsonData.of(this.isDeleted)); // boolean mặc định là false nên luôn truyền
-        if (this.getUpdatedAt() != null) map.put("updatedAt", JsonData.of(this.getUpdatedAt()));
-        if (this.getUpdatedBy() != null) map.put("updatedBy", JsonData.of(this.getUpdatedBy()));
+    // Custom map giữ lại content cũ nếu content mới bị null
+    public Map<String, Object> toPartialUpdateMap() {
+        Map<String, Object> map = new HashMap<>();
+        if (this.name != null) map.put("name", this.name);
+        if (this.description != null) map.put("description", this.description);
+        if (this.type != null) map.put("type", this.type);
+        if (this.content != null) map.put("content", this.content);
+        if (this.tags != null) map.put("tags", this.tags);
+        if (this.ownerId != null) map.put("ownerId", this.ownerId);
+        if (this.sharedWith != null) map.put("sharedWith", this.sharedWith);
+        map.put("isDeleted", this.isDeleted);
+        if (this.getUpdatedAt() != null) map.put("updatedAt", this.getUpdatedAt());
+        if (this.getUpdatedBy() != null) map.put("updatedBy", this.getUpdatedBy());
         return map;
     }
+
+
 }

@@ -23,12 +23,12 @@ public class FolderCreationServiceImpl implements IFolderCreationService {
 
     @Override
     public Folder createFolder(FolderRequest request) {
-        folderValidation.validateConditionsToCreateFolder(request);
         if (request.getFolderParentId() == null) {
             log.info("Creating folder with parentId is null");
             return createRootFolder(request);
         }
         log.info("Creating folder with parentId {}", request.getFolderParentId());
+        folderValidation.validateConditionsToCreateFolder(request);
         Folder folderSaved= createChildFolder(request);
         folderPermissionService.inheritPermissions(folderSaved);
         return folderSaved;

@@ -42,7 +42,7 @@ public interface FolderRepo extends JpaRepository<Folder, Long>, JpaSpecificatio
                 INNER JOIN sub_folders sf ON i.parent_id = sf.id
                 INNER JOIN permission p ON i.id = p.item_id
                 WHERE p.recipient_id = :userId
-                AND f.deleted_at IS NULL
+                AND i.deleted_at IS NULL
                 AND p.is_custom_permission = false
                 AND NOT EXISTS (
                     SELECT 1

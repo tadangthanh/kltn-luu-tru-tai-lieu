@@ -30,12 +30,12 @@ public interface DocumentRepo extends JpaRepository<Document, Long>, JpaSpecific
 
     @Query(value = """
             select d.id from document d
-                            inner join file_system_entity fse on d.id=fse.id
-                                    where fse.parent_id in (:parentResourceIds)
-                        and d.deleted_at is null
+                            inner join item i on d.id=i.id
+                                    where i.parent_id in (:parentResourceIds)
+                        and i.deleted_at is null
                         and not exists(select 1 from permission p
                                         where p.recipient_id = :recipientId
-                                        and p.resource_id = fse.id)
+                                        and p.item_id = i.id)
             """, nativeQuery = true)
     List<Long> findDocumentChildIdsEmptyPermission(@Param("parentResourceIds") List<Long> parentResourceIds, @Param("recipientId") Long recipientId);
 
@@ -48,14 +48,15 @@ public interface DocumentRepo extends JpaRepository<Document, Long>, JpaSpecific
 
     @Query("select d from Document d where d.name in ?1")
     List<Document> findAllByListName(List<String> listFileName);
+
     @Query(value = """
             select d from document d
-                            inner join file_system_entity fse on d.id=fse.id
-                                    where fse.parent_id in (:parentResourceIds)
-                        and d.deleted_at is null
+                            inner join item i on d.id=i.id
+                                    where i.parent_id in (:parentResourceIds)
+                        and i.deleted_at is null
                         and not exists(select 1 from permission p
                                         where p.recipient_id = :recipientId
-                                        and p.resource_id = fse.id)
+                                        and p.item_id = i.id)
             """, nativeQuery = true)
     List<Document> findDocumentChildEmptyPermission(@Param("parentResourceIds") List<Long> parentResourceIds, @Param("recipientId") Long recipientId);
 
