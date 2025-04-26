@@ -9,6 +9,9 @@ import lombok.Getter;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 @Getter
 @AllArgsConstructor
 public class EntitySpecification <T> implements Specification<T>   {
@@ -16,13 +19,28 @@ public class EntitySpecification <T> implements Specification<T>   {
 
     // hàm tạo điều kiện tim kiếm
     @Override
-    public Predicate toPredicate(@NonNull final Root<T> root,final CriteriaQuery<?> query,@NonNull final  CriteriaBuilder builder) {
-        if(criteria.getKey().split("\\.").length > 1){
-            return builder.equal(root.get(criteria.getKey().split("\\.")[0]).get(criteria.getKey().split("\\.")[1]), criteria.getValue());
+    public Predicate toPredicate(@NonNull final Root<T> root, final CriteriaQuery<?> query, @NonNull final CriteriaBuilder builder) {
+        if (criteria.getKey().contains(".")) {
+            String[] keys = criteria.getKey().split("\\.");
+            return builder.equal(root.get(keys[0]).get(keys[1]), criteria.getValue());
         }
+
         return switch (criteria.getOperation()) {
-            case EQUALITY -> builder.equal(root.get(criteria.getKey()), criteria.getValue().equals("true")?true:criteria.getValue().equals("false")?false:criteria.getValue());
+            case EQUALITY -> builder.equal(root.get(criteria.getKey()),
+                    "true".equals(criteria.getValue()) ? true :
+                            "false".equals(criteria.getValue()) ? false : criteria.getValue());
+
             case NEGATION -> builder.notEqual(root.get(criteria.getKey()), criteria.getValue());
+
+            case BETWEEN -> {
+                if (criteria.getValue() instanceof List<?> values && values.size() == 2) {
+                    LocalDateTime from = (LocalDateTime) values.get(0);
+                    LocalDateTime to = (LocalDateTime) values.get(1);
+                    yield builder.between(root.get(criteria.getKey()).as(LocalDateTime.class), from, to);
+                }
+                yield null;
+            }
+
             case GREATER_THAN -> builder.greaterThan(root.get(criteria.getKey()), criteria.getValue().toString());
             case LESS_THAN -> builder.lessThan(root.get(criteria.getKey()), criteria.getValue().toString());
             case LIKE -> builder.like(root.get(criteria.getKey()), "%" + criteria.getValue().toString() + "%");
@@ -31,4 +49,5 @@ public class EntitySpecification <T> implements Specification<T>   {
             case CONTAINS -> builder.like(root.get(criteria.getKey()), "%" + criteria.getValue() + "%");
         };
     }
+
 }

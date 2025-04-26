@@ -9,8 +9,6 @@ import org.springframework.web.bind.annotation.RestController;
 import vn.kltn.dto.response.ItemResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
-import vn.kltn.entity.Item;
-import vn.kltn.service.IItemCommonService;
 import vn.kltn.service.IItemService;
 
 import java.util.List;
@@ -27,7 +25,7 @@ public class ItemRest {
     }
 
     @GetMapping("/emails")
-    public ResponseData<PageResponse<List<String>>> getEmailsSharedWithMe(Pageable pageable) {
-        return new ResponseData<>(200, "Thành công", itemService.getEmailsSharedWithMe(pageable));
+    public ResponseData<PageResponse<List<String>>> getEmailsSharedWithMe(Pageable pageable,@RequestParam(required = false, value = "keyword") String keyword) {
+        return new ResponseData<>(200, "Thành công", itemService.getEmailsSharedWithMe(pageable,keyword));
     }
 }

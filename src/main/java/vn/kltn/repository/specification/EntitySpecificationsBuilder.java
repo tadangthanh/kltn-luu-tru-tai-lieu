@@ -2,6 +2,9 @@ package vn.kltn.repository.specification;
 
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,6 +39,18 @@ public class EntitySpecificationsBuilder<T> {
                     searchOperation = STARTS_WITH; // tìm kiếm bắt đầu bằng kí tự chỉ định
                 }
             }
+            if (value instanceof String && ((String) value).contains("..")) {
+                String[] range = ((String) value).split("\\.\\.");
+                if (range.length == 2 && key.equals("updatedAt")) {
+                    // parse date
+                    LocalDateTime from = LocalDate.parse(range[0]).atStartOfDay();
+                    LocalDateTime to = LocalDate.parse(range[1]).atTime(LocalTime.MAX);
+
+                    params.add(new SpecSearchCriteria(orPredicate, key, SearchOperation.BETWEEN, List.of(from, to)));
+                    return this;
+                }
+            }
+
             params.add(new SpecSearchCriteria(orPredicate, key, searchOperation, value));
         }
         return this;

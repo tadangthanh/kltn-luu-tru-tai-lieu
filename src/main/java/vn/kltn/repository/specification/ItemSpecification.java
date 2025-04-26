@@ -12,6 +12,7 @@ public class ItemSpecification {
         return (root, query, cb) -> cb.like(cb.lower(root.get("name")), "%" + keyword.toLowerCase() + "%");
     }
 
+
     public static Specification<Item> ownedBy(Long userId) {
         return (root, query, cb) -> cb.equal(root.get("owner").get("id"), userId);
     }

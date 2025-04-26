@@ -8,5 +8,6 @@ import java.util.List;
 
 public interface IItemService {
     PageResponse<List<ItemResponse>> searchByCurrentUser(Pageable pageable, String[] items);
-    PageResponse<List<String>> getEmailsSharedWithMe(Pageable pageable);
+
+    PageResponse<List<String>> getEmailsSharedWithMe(Pageable pageable, String keyword);
 }

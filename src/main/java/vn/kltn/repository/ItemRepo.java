@@ -11,6 +11,23 @@ import vn.kltn.entity.Item;
 @Repository
 public interface ItemRepo extends JpaRepository<Item, Long>, JpaSpecificationExecutor<Item> {
 
-    @Query("select distinct  i.owner.email from Item i inner join Permission p on p.item.id=i.id where p.recipient.id =?1")
+    @Query("""
+    select distinct i.owner.email 
+    from Item i 
+    inner join Permission p on p.item.id = i.id 
+    where p.recipient.id = ?1 
+    and i.deletedAt is null
+""")
     Page<String> findOwnerEmailsSharedItemForMe(Long userId, Pageable pageable);
+
+    @Query("""
+    select distinct i.owner.email 
+    from Item i 
+    inner join Permission p on p.item.id = i.id 
+    where p.recipient.id = ?1 
+    and i.deletedAt is null 
+    and lower(i.owner.email) like lower(concat('%', ?2, '%'))
+""")
+    Page<String> findOwnerEmailsSharedItemForMeFiltered(Long userId, String keyword, Pageable pageable);
+
 }

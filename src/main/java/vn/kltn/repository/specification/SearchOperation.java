@@ -2,7 +2,7 @@ package vn.kltn.repository.specification;
 
 
 public enum SearchOperation {
-    EQUALITY, NEGATION, GREATER_THAN, LESS_THAN, LIKE, STARTS_WITH, ENDS_WITH, CONTAINS;
+    EQUALITY, NEGATION, GREATER_THAN, LESS_THAN, LIKE, STARTS_WITH, ENDS_WITH, CONTAINS,BETWEEN;
 
     public static final String[] SIMPLE_OPERATION_SET = {":", "!", ">", "<", "~"};
 

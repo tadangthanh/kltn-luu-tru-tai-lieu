@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import vn.kltn.dto.response.ItemResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Item;
@@ -49,9 +50,20 @@ public class ItemServiceImpl implements IItemService {
     }
 
     @Override
-    public PageResponse<List<String>> getEmailsSharedWithMe(Pageable pageable) {
+    public PageResponse<List<String>> getEmailsSharedWithMe(Pageable pageable, String keyword) {
         log.info("get emails shared with me page no: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
-        Page<String> emailsSharedWithMe = itemRepo.findOwnerEmailsSharedItemForMe(authenticationService.getCurrentUser().getId(), pageable);
+        Page<String> emailsSharedWithMe;
+        User currentUser = authenticationService.getCurrentUser();
+        if (!StringUtils.hasText(keyword)) {
+            emailsSharedWithMe = itemRepo.findOwnerEmailsSharedItemForMe(
+                    currentUser.getId(), pageable
+            );
+        } else {
+            emailsSharedWithMe = itemRepo.findOwnerEmailsSharedItemForMeFiltered(
+                    currentUser.getId(), keyword, pageable
+            );
+        }
+
         return PageResponse.<List<String>>builder()
                 .items(emailsSharedWithMe.getContent())
                 .pageSize(pageable.getPageSize())
