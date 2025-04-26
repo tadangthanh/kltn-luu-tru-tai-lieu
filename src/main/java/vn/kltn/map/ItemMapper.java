@@ -2,6 +2,8 @@ package vn.kltn.map;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+import vn.kltn.dto.request.ItemRequest;
 import vn.kltn.dto.response.ItemResponse;
 import vn.kltn.entity.Item;
 
@@ -14,4 +16,6 @@ public interface ItemMapper {
     @Mapping(target = "ownerEmail", source = "owner.email")
     @Mapping(target = "itemType", source = "itemType")
     ItemResponse toResponse(Item item);
+
+    void updateItem(@MappingTarget Item item, ItemRequest itemRequest);
 }

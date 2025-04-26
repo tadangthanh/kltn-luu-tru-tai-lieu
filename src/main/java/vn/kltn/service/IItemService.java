@@ -1,6 +1,7 @@
 package vn.kltn.service;
 
 import org.springframework.data.domain.Pageable;
+import vn.kltn.dto.request.ItemRequest;
 import vn.kltn.dto.response.ItemResponse;
 import vn.kltn.dto.response.PageResponse;
 
@@ -10,4 +11,5 @@ public interface IItemService {
     PageResponse<List<ItemResponse>> searchByCurrentUser(Pageable pageable, String[] items);
 
     PageResponse<List<String>> getEmailsSharedWithMe(Pageable pageable, String keyword);
+    ItemResponse updateItem(Long itemId, ItemRequest itemRequest);
 }

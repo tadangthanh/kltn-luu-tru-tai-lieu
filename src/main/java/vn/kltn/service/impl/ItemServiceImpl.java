@@ -8,10 +8,12 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import vn.kltn.dto.request.ItemRequest;
 import vn.kltn.dto.response.ItemResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Item;
 import vn.kltn.entity.User;
+import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.ItemMapper;
 import vn.kltn.repository.ItemRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
@@ -72,6 +74,14 @@ public class ItemServiceImpl implements IItemService {
                 .totalItems(emailsSharedWithMe.getTotalElements())
                 .hasNext(emailsSharedWithMe.hasNext())
                 .build();
+    }
+
+    @Override
+    public ItemResponse updateItem(Long itemId, ItemRequest itemRequest) {
+        Item itemExist= itemRepo.findById(itemId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy item với id: " + itemId));
+        itemMapper.updateItem(itemExist, itemRequest);
+        itemRepo.save(itemExist);
+        return itemMapper.toResponse(itemExist);
     }
 
 }
