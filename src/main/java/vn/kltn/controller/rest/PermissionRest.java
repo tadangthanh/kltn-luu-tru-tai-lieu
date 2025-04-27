@@ -1,6 +1,5 @@
 package vn.kltn.controller.rest;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.validation.annotation.Validated;
@@ -11,6 +10,7 @@ import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
 import vn.kltn.service.IPermissionService;
 import vn.kltn.validation.Create;
+import vn.kltn.validation.Update;
 
 import java.util.List;
 
@@ -27,8 +27,12 @@ public class PermissionRest {
     }
 
     @PostMapping("/item/{itemId}")
-    public ResponseData<ItemPermissionResponse> addPermission(@PathVariable Long itemId,@Validated(Create.class) @RequestBody PermissionRequest permissionRequest) {
+    public ResponseData<ItemPermissionResponse> addPermission(@PathVariable Long itemId, @Validated(Create.class) @RequestBody PermissionRequest permissionRequest) {
         return new ResponseData<>(200, "Thành công", itemPermissionServiceImpl.addPermission(itemId, permissionRequest));
     }
 
+    @PutMapping("/{permissionId}")
+    public ResponseData<ItemPermissionResponse> updatePermission(@PathVariable Long permissionId, @Validated(Update.class) @RequestBody PermissionRequest permissionRequest) {
+        return new ResponseData<>(200, "Thành công", itemPermissionServiceImpl.updatePermission(permissionId, permissionRequest));
+    }
 }

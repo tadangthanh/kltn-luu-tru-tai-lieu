@@ -11,6 +11,7 @@ import vn.kltn.dto.response.ItemPermissionResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Item;
 import vn.kltn.entity.Permission;
+import vn.kltn.exception.InvalidDataException;
 import vn.kltn.map.PermissionMapper;
 import vn.kltn.repository.PermissionRepo;
 import vn.kltn.service.*;
@@ -63,7 +64,20 @@ public class ItemPermissionServiceImpl implements IPermissionService {
 
     @Override
     public ItemPermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest) {
-        return null;
+        log.info("update permission for permissionId: {}, permissionRequest: {}", permissionId, permissionRequest);
+        Permission permission = getPermissionByIdOrThrow(permissionId);
+        permission.setPermission(permissionRequest.getPermission());
+        permission = permissionRepo.save(permission);
+        if ((permission.getItem().getItemType() == ItemType.FOLDER)) {
+            // Nếu là folder, propagate quyền xuống tất cả con cháu
+            permissionInheritanceService.updateAllChildNotCustom(permission);
+        }
+        return permissionMapper.toItemPermissionResponse(permission);
+    }
+
+    private Permission getPermissionByIdOrThrow(Long permissionId) {
+        return permissionRepo.findById(permissionId)
+                .orElseThrow(() -> new InvalidDataException("Không tìm thấy quyền với id này"));
     }
 
     @Override

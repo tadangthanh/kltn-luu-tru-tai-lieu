@@ -34,6 +34,7 @@ public class PermissionInheritanceServiceImpl implements IPermissionInheritanceS
     private final PermissionEventPublisher permissionEventPublisher;
     private final IAuthenticationService authenticationService;
     private final IDocumentValidator documentValidator;
+
     @Override
     public void propagatePermissions(Long parentId, Permission permission) {
         createPermissionForChildResource(parentId, permission);
@@ -56,6 +57,14 @@ public class PermissionInheritanceServiceImpl implements IPermissionInheritanceS
         }
     }
 
+    @Override
+    public void updateAllChildNotCustom(Permission permission) {
+        log.info("update permission for all child not custom for permissionId: {}", permission.getId());
+        List<Long> folderIdsForUpdatePermission = folderCommonService.getAllFolderChildInheritedPermission(permission.getItem().getId(), permission.getRecipient().getId());
+        // update cả folder và document có parent id thuộc folderIdsForUpdatePermission
+        permissionRepo.updateAllChildNotCustom(folderIdsForUpdatePermission, permission.getRecipient().getId(), permission.getPermission());
+    }
+
     private void inheritPermissions(Document document, boolean isOwner) {
         Set<Permission> parentPermissions = document.getParent().getPermissions();
         if (parentPermissions == null || parentPermissions.isEmpty()) return;
@@ -70,7 +79,7 @@ public class PermissionInheritanceServiceImpl implements IPermissionInheritanceS
             newPermissions.add(extraPermission);
         }
         // Lọc bỏ quyền của người dùng đã sở hữu tài liệu
-        newPermissions= newPermissions.stream()
+        newPermissions = newPermissions.stream()
                 .filter(permission -> !permission.getRecipient().getId().equals(document.getOwner().getId()))
                 .collect(Collectors.toList());
 

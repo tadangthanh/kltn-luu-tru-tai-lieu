@@ -10,4 +10,6 @@ public interface IPermissionInheritanceService {
     void propagatePermissions(Long parentId, Permission permission);
 
     void inheritPermissionsFromParent(List<Document> documents);
+
+    void updateAllChildNotCustom(Permission permission);
 }

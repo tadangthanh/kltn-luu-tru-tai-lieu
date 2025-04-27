@@ -19,7 +19,7 @@ public interface PermissionRepo extends JpaRepository<Permission, Long> {
 
     @Modifying
     @Transactional
-    @Query("UPDATE Permission p SET p.permission = :permission WHERE ((p.item.id IN :resourceIds AND p.recipient.id = :recipientId) or (p.item.parent.id IN :itemIds)) and p.isCustomPermission = false")
+    @Query("UPDATE Permission p SET p.permission = :permission WHERE ((p.item.id IN :itemIds AND p.recipient.id = :recipientId) or (p.item.parent.id IN :itemIds)) and p.isCustomPermission = false")
         //update cả folder và document có parent id thuộc folderIdsForUpdatePermission
     void updateAllChildNotCustom(List<Long> itemIds, Long recipientId, vn.kltn.common.Permission permission);
 
