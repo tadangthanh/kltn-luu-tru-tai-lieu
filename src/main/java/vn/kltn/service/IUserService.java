@@ -8,6 +8,8 @@ import vn.kltn.dto.request.UserRegister;
 import vn.kltn.dto.response.TokenResponse;
 import vn.kltn.entity.User;
 
+import java.util.List;
+
 
 public interface IUserService extends UserDetailsService {
     void register(UserRegister userRegister);
@@ -32,5 +34,6 @@ public interface IUserService extends UserDetailsService {
     User getUserById(Long id);
 
     User getByEmail(String email);
+
 
 }

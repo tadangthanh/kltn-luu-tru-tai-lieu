@@ -2,13 +2,20 @@ package vn.kltn.controller.rest;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vn.kltn.dto.request.AuthChangePassword;
 import vn.kltn.dto.request.UserRegister;
+import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
+import vn.kltn.dto.response.UserIndexResponse;
+import vn.kltn.index.UserIndex;
+import vn.kltn.service.IUserIndexService;
 import vn.kltn.service.IUserService;
+
+import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
@@ -17,6 +24,7 @@ import vn.kltn.service.IUserService;
 @Slf4j(topic = "USER_CONTROLLER")
 public class UserRest {
     private final IUserService userService;
+    private final IUserIndexService userIndexService;
 
     @PostMapping("/register")
     public ResponseData<String> register(@Validated @RequestBody UserRegister userRegister) {
@@ -50,5 +58,12 @@ public class UserRest {
     public ResponseData<String> changePassword(@Validated @RequestBody AuthChangePassword authChangePassword) {
         userService.updatePassword(authChangePassword);
         return new ResponseData<>(HttpStatus.OK.value(), "Đổi mật khẩu thành công");
+    }
+
+    @GetMapping("/search")
+    public ResponseData<PageResponse<List<UserIndexResponse>>> searchUsers(@RequestParam(required = false) String email,
+                                                                           Pageable pageable) {
+
+        return new ResponseData<>(200, "thanh cong", userIndexService.searchUsersByEmail(email, pageable));
     }
 }

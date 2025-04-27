@@ -10,5 +10,6 @@ import vn.kltn.dto.BaseDto;
 public class ItemPermissionResponse extends BaseDto {
     private Permission permission;
     private String email;
+    private Long userId;
     private Long itemId;
 }

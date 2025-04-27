@@ -39,7 +39,7 @@ public class UserServiceImpl implements IUserService {
     private final IJwtService jwtService;
     private final IRoleService roleService;
     private final IUserHasRoleService userHasRoleService;
-
+    private final IUserIndexService userIndexService;
 
     @Override
     public UserDetails loadUserByUsername(String email) {
@@ -81,6 +81,7 @@ public class UserServiceImpl implements IUserService {
         validateUserActivationStatus(user);
         validateToken(token, TokenType.CONFIRMATION_TOKEN);
         activateUserAccount(user);
+        userIndexService.addUser(user);
     }
 
     @Override
@@ -137,7 +138,8 @@ public class UserServiceImpl implements IUserService {
         userRepo.save(user);
         // Gán role mặc định
         Role userRole = roleService.findRoleByName("user");
-        userHasRoleService.saveUserHasRole(user,userRole);
+        userHasRoleService.saveUserHasRole(user, userRole);
+        userIndexService.addUser(user);
         return user;
     }
 
@@ -157,7 +159,6 @@ public class UserServiceImpl implements IUserService {
             return new ResourceNotFoundException("Không tìm thấy user {}" + id);
         });
     }
-
 
 
     @Override
@@ -180,7 +181,6 @@ public class UserServiceImpl implements IUserService {
             return new ResourceNotFoundException("User not found");
         });
     }
-
 
 
     private void validateUpdatePassword(AuthChangePassword authChangePassword, User currentUser) {

@@ -16,5 +16,6 @@ public interface PermissionMapper {
 
     @Mapping(target = "email", source = "recipient.email")
     @Mapping(target = "itemId", source = "item.id")
+    @Mapping(target = "userId", source = "recipient.id")
     ItemPermissionResponse toItemPermissionResponse(Permission permission);
 }
