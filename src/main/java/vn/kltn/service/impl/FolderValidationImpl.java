@@ -10,8 +10,8 @@ import vn.kltn.entity.User;
 import vn.kltn.exception.ConflictResourceException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.service.IAuthenticationService;
-import vn.kltn.service.IFolderPermissionService;
 import vn.kltn.service.IFolderValidation;
+import vn.kltn.service.IPermissionValidatorService;
 
 @Component
 @Slf4j(topic = "FOLDER_VALIDATION_SERVICE")
@@ -19,7 +19,7 @@ import vn.kltn.service.IFolderValidation;
 public class FolderValidationImpl implements IFolderValidation {
     private final FolderCommonService folderCommonService;
     private final IAuthenticationService authenticationService;
-    private final IFolderPermissionService folderPermissionService;
+    private final IPermissionValidatorService permissionValidatorService;
 
     @Override
     public void validateConditionsToCreateFolder(FolderRequest folderRequest) {
@@ -32,7 +32,7 @@ public class FolderValidationImpl implements IFolderValidation {
         User currentUser = authenticationService.getCurrentUser();
         if (!folderParent.getOwner().getId().equals(currentUser.getId())) {
             // neu ko phai la chu so huu thi kiem tra xem co phai la editor hay khong
-            folderPermissionService.validateUserIsEditor(folderParent.getId(), currentUser.getId());
+            permissionValidatorService.validatePermissionManager(folderParent, currentUser);
         }
     }
 

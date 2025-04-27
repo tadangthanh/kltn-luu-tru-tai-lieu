@@ -1,7 +1,6 @@
 package vn.kltn.service.impl;
 
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -12,6 +11,7 @@ import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Folder;
 import vn.kltn.entity.Item;
 import vn.kltn.entity.User;
+import vn.kltn.exception.InvalidDataException;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.specification.SpecificationUtil;
 import vn.kltn.repository.util.PaginationUtils;
@@ -23,25 +23,34 @@ import java.util.List;
 @Service
 @Transactional
 public abstract class AbstractItemCommonService<T extends Item, R extends ItemResponse> implements IItemCommonService<T, R> {
-    protected final IDocumentPermissionService documentPermissionService;
-    protected final IFolderPermissionService folderPermissionService;
+//    protected final IDocumentPermissionService documentPermissionService;
+//    protected final IFolderPermissionService folderPermissionService;
     protected final IAuthenticationService authenticationService;
-    protected final AbstractPermissionService abstractPermissionService;
+//    protected final AbstractPermissionService abstractPermissionService;
     protected final FolderCommonService folderCommonService;
     protected final ItemValidator itemValidator;
     protected final IPermissionInheritanceService permissionInheritanceService;
     protected final IPermissionValidatorService permissionValidatorService;
+    protected final IPermissionService permissionService;
 
-    protected AbstractItemCommonService(IDocumentPermissionService documentPermissionService, IFolderPermissionService folderPermissionService, IAuthenticationService authenticationService, @Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, FolderCommonService folderCommonService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService) {
-        this.documentPermissionService = documentPermissionService;
-        this.folderPermissionService = folderPermissionService;
-        this.authenticationService = authenticationService;
-        this.abstractPermissionService = abstractPermissionService;
-        this.folderCommonService = folderCommonService;
-        this.itemValidator = itemValidator;
-        this.permissionInheritanceService = permissionInheritanceService;
-        this.permissionValidatorService = permissionValidatorService;
-    }
+//    protected AbstractItemCommonService(IDocumentPermissionService documentPermissionService, IFolderPermissionService folderPermissionService, IAuthenticationService authenticationService, @Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, FolderCommonService folderCommonService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService) {
+//        this.documentPermissionService = documentPermissionService;
+//        this.folderPermissionService = folderPermissionService;
+//        this.authenticationService = authenticationService;
+//        this.abstractPermissionService = abstractPermissionService;
+//        this.folderCommonService = folderCommonService;
+//        this.itemValidator = itemValidator;
+//        this.permissionInheritanceService = permissionInheritanceService;
+//        this.permissionValidatorService = permissionValidatorService;
+//    }
+protected AbstractItemCommonService(IAuthenticationService authenticationService, FolderCommonService folderCommonService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService, IPermissionService permissionService) {
+    this.authenticationService = authenticationService;
+    this.folderCommonService = folderCommonService;
+    this.itemValidator = itemValidator;
+    this.permissionInheritanceService = permissionInheritanceService;
+    this.permissionValidatorService = permissionValidatorService;
+    this.permissionService = permissionService;
+}
 
 
     @Override
@@ -99,7 +108,7 @@ public abstract class AbstractItemCommonService<T extends Item, R extends ItemRe
     public R moveItemToFolder(Long itemId, Long folderId) {
         T resourceToMove = getItemByIdOrThrow(itemId);
         //kiem tra xem nguoi dung hien tai co quyen di chuyen folder hay khong ( kiem tra quyen o folder cha)
-        itemValidator.validateCurrentUserIsOwnerOrEditorItem(resourceToMove.getParent());
+        itemValidator.validateCurrentUserHasAccessToItem(resourceToMove);
         // folder can di chuyen chua bi xoa
         itemValidator.validateItemNotDeleted(resourceToMove);
         Folder folderDestination = getFolderByIdOrThrow(folderId);
@@ -108,7 +117,7 @@ public abstract class AbstractItemCommonService<T extends Item, R extends ItemRe
         resourceToMove.setParent(folderDestination);
         resourceToMove = saveResource(resourceToMove);
         // xoa cac permission cu
-        folderPermissionService.deletePermissionByItemId(itemId);
+        permissionService.deletePermissionByItemId(itemId);
         // them cac permission moi cua folder cha moi
         permissionInheritanceService.inheritPermissionsFromParentFolder(resourceToMove);
         return mapToR(resourceToMove);
@@ -124,7 +133,7 @@ public abstract class AbstractItemCommonService<T extends Item, R extends ItemRe
     protected abstract void softDeleteResource(T resource);
 
     protected void deletePermissionResourceById(Long resourceId) {
-        abstractPermissionService.deletePermissionByItemId(resourceId);
+        permissionService.deletePermissionByItemId(resourceId);
     }
 
     protected abstract void hardDeleteResource(T resource);

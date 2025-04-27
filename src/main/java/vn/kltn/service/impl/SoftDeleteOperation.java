@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vn.kltn.entity.Folder;
 import vn.kltn.repository.FolderRepo;
-import vn.kltn.service.IDocumentCommonService;
+import vn.kltn.service.IDocumentService;
 import vn.kltn.service.IFolderOperation;
 
 import java.time.LocalDateTime;
@@ -15,7 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SoftDeleteOperation implements IFolderOperation {
     private final FolderRepo folderRepo;
-    private final IDocumentCommonService documentService;
+    private final IDocumentService documentService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
 

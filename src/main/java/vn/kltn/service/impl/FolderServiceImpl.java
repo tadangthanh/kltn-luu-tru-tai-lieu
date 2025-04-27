@@ -2,7 +2,6 @@ package vn.kltn.service.impl;
 
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -18,7 +17,7 @@ import vn.kltn.util.ItemValidator;
 @Service
 @Transactional
 @Slf4j(topic = "FOLDER_SERVICE")
-public class FolderCommonServiceImpl extends AbstractItemCommonService<Folder, FolderResponse> implements IFolderCommonService {
+public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderResponse> implements IFolderService {
     private final FolderRepo folderRepo;
     private final FolderCommonService folderCommonService;
     private final IFolderCreationService folderCreationService;
@@ -27,16 +26,26 @@ public class FolderCommonServiceImpl extends AbstractItemCommonService<Folder, F
     private final IFolderRestorationService folderRestorationService;
     private final ItemValidator itemValidator;
 
-    public FolderCommonServiceImpl(@Qualifier("folderPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IDocumentPermissionService documentPermissionService, FolderRepo folderRepo, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IFolderPermissionService folderPermissionService, IFolderCreationService folderCreationService, IFolderMapperService folderMapperService, IFolderDeletionService folderDeletionService, IFolderRestorationService folderRestorationService, ItemValidator itemValidator) {
-        super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService,itemValidator);
-        this.folderRepo = folderRepo;
-        this.folderCommonService = folderCommonService;
-        this.folderCreationService = folderCreationService;
-        this.folderMapperService = folderMapperService;
-        this.folderDeletionService = folderDeletionService;
-        this.folderRestorationService = folderRestorationService;
-        this.itemValidator = itemValidator;
-    }
+    //    public FolderCommonServiceImpl(@Qualifier("folderPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IDocumentPermissionService documentPermissionService, FolderRepo folderRepo, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IFolderPermissionService folderPermissionService, IFolderCreationService folderCreationService, IFolderMapperService folderMapperService, IFolderDeletionService folderDeletionService, IFolderRestorationService folderRestorationService, ItemValidator itemValidator) {
+//        super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService,itemValidator);
+//        this.folderRepo = folderRepo;
+//        this.folderCommonService = folderCommonService;
+//        this.folderCreationService = folderCreationService;
+//        this.folderMapperService = folderMapperService;
+//        this.folderDeletionService = folderDeletionService;
+//        this.folderRestorationService = folderRestorationService;
+//        this.itemValidator = itemValidator;
+//    }
+public FolderServiceImpl(FolderRepo folderRepo, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IFolderCreationService folderCreationService, IFolderMapperService folderMapperService, IFolderDeletionService folderDeletionService, IFolderRestorationService folderRestorationService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionService permissionService, IPermissionValidatorService permissionValidatorService) {
+    super(authenticationService,folderCommonService , itemValidator, permissionInheritanceService, permissionValidatorService,permissionService);
+    this.folderRepo = folderRepo;
+    this.folderCommonService = folderCommonService;
+    this.folderCreationService = folderCreationService;
+    this.folderMapperService = folderMapperService;
+    this.folderDeletionService = folderDeletionService;
+    this.folderRestorationService = folderRestorationService;
+    this.itemValidator = itemValidator;
+}
 
     @Override
     public FolderResponse createFolder(FolderRequest folderRequest) {

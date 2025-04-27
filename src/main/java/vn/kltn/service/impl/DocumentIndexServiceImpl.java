@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.Tag;
@@ -40,7 +39,6 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     private final DocumentIndexRepo documentIndexRepo;
     private final DocumentIndexMapper documentIndexMapper;
     private final IDocumentHasTagService documentHasTagService;
-    private final DocumentPermissionCommonService documentPermissionCommonService;
     private final CustomDocumentIndexRepo customDocumentIndexRepo;
     private final IAzureStorageService azureStorageService;
     private final DocumentCommonService documentCommonService;
@@ -96,8 +94,8 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     }
 
     @Override
-    public List<DocumentIndexResponse> getDocumentByMe(Set<Long> listDocumentSharedWith, String query, int page, int size) {
-        return customDocumentIndexRepo.getDocumentByMe(listDocumentSharedWith, query, page, size);
+    public List<DocumentIndexResponse> getDocumentShared(Set<Long> documentIds, String query, int page, int size) {
+        return customDocumentIndexRepo.getDocumentShared(documentIds, query, page, size);
     }
 
     @Override
@@ -199,16 +197,8 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     }
 
     private DocumentIndex mapDocumentIndex(Document document) {
-        DocumentIndex documentIndex = documentIndexMapper.toIndex(document);
-        List<String> tagsList = getTagsByDocumentId(document.getId());
-        List<Long> sharedWith = getUserIdsByDocumentShared(document.getId());
-        documentIndex.setTags(tagsList);
-        documentIndex.setSharedWith(sharedWith);
-        return documentIndex;
+        return documentIndexMapper.toIndex(document);
     }
 
-    private List<Long> getUserIdsByDocumentShared(Long documentId) {
-        return documentPermissionCommonService.getUserIdsByDocumentShared(documentId).stream().toList();
-    }
 
 }

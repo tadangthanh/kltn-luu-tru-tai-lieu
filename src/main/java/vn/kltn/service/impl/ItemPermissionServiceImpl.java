@@ -18,9 +18,9 @@ import vn.kltn.map.PermissionMapper;
 import vn.kltn.repository.PermissionRepo;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
-import vn.kltn.util.ItemValidator;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -31,7 +31,6 @@ public class ItemPermissionServiceImpl implements IPermissionService {
     private final PermissionMapper permissionMapper;
     private final IPermissionValidatorService permissionValidatorService;
     private final IItemService iItemService;
-    private final ItemValidator itemValidator;
     private final IPermissionDeletionService permissionDeletionService;
     private final IAuthenticationService authenticationService;
     private final IPermissionInheritanceService permissionInheritanceService;
@@ -108,6 +107,11 @@ public class ItemPermissionServiceImpl implements IPermissionService {
     @Override
     public void deletePermissionByItems(List<Long> itemIds) {
         permissionDeletionService.deletePermissionByItems(itemIds);
+    }
+
+    @Override
+    public Set<Long> getItemIdsByRecipientId(Long recipientId) {
+        return permissionRepo.findItemIdsByRecipientId(recipientId);
     }
 
     @Override

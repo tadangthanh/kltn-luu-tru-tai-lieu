@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.kltn.entity.Folder;
 import vn.kltn.repository.FolderRepo;
-import vn.kltn.service.IDocumentCommonService;
+import vn.kltn.service.IDocumentService;
 import vn.kltn.service.IFolderDeletionService;
 import vn.kltn.service.IFolderOperation;
 import vn.kltn.service.IFolderValidation;
@@ -19,7 +19,7 @@ public class FolderDeletionServiceImpl implements IFolderDeletionService {
     private final FolderRepo folderRepo;
     private final IFolderOperation softDeleteOperation;
     private final IFolderOperation hardDeleteOperation;
-    private final IDocumentCommonService documentService;
+    private final IDocumentService documentService;
     private final IFolderValidation folderValidation;
 
     @Override

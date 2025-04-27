@@ -16,7 +16,7 @@ import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.*;
 import vn.kltn.repository.util.FileUtil;
 import vn.kltn.service.IAzureStorageService;
-import vn.kltn.service.IDocumentCommonService;
+import vn.kltn.service.IDocumentService;
 import vn.kltn.service.impl.UploadTokenManager;
 import vn.kltn.validation.ValidFiles;
 
@@ -32,7 +32,7 @@ import java.util.*;
 @RestController
 @Validated
 public class DocumentRest {
-    private final IDocumentCommonService documentService;
+    private final IDocumentService documentService;
     private final UploadTokenManager uploadTokenManager;
     private final IAzureStorageService azureStorageService;
     @PostMapping

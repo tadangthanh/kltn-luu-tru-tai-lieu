@@ -14,11 +14,9 @@ import vn.kltn.repository.PermissionRepo;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IPermissionDeletionService;
 import vn.kltn.service.IPermissionValidatorService;
-import vn.kltn.service.event.publisher.PermissionEventPublisher;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 @Service
 @Transactional
@@ -26,7 +24,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class IPermissionDeletionServiceImpl implements IPermissionDeletionService {
     private final PermissionRepo permissionRepo;
-    private final PermissionEventPublisher permissionEventPublisher;
     private final FolderRepo folderRepo;
     private final DocumentCommonService documentCommonService;
     private final IPermissionValidatorService permissionValidatorService;
@@ -40,9 +37,7 @@ public class IPermissionDeletionServiceImpl implements IPermissionDeletionServic
         User currentUser = authenticationService.getCurrentUser();
         Item item = permission.getItem();
         permissionValidatorService.validatePermissionManager(item, currentUser);
-        if (item.getItemType().equals(ItemType.DOCUMENT)) {
-            permissionEventPublisher.publishDocumentUpdate(item.getId());
-        } else {
+        if (item.getItemType().equals(ItemType.FOLDER)) {
             // la folder, se xoa permission cho tat ca cac item con (co the tao 1 service rieng)
             Long parentId = permission.getItem().getId();
             Long recipientId = permission.getRecipient().getId();
@@ -56,7 +51,6 @@ public class IPermissionDeletionServiceImpl implements IPermissionDeletionServic
             resourceIdsToDelete.addAll(documentIds);
             // Xóa các permission liên quan đến user này cho các resource con
             permissionRepo.deleteAllByItemIdInAndRecipientId(resourceIdsToDelete, recipientId);
-            permissionEventPublisher.publishDocumentsUpdate(Set.copyOf(documentIds));
         }
         // Xóa permission
         permissionRepo.delete(permission);
@@ -86,6 +80,5 @@ public class IPermissionDeletionServiceImpl implements IPermissionDeletionServic
     public void deleteByItemId(Long itemId) {
         log.info("delete permission by itemId : {}", itemId);
         permissionRepo.deleteByItemId(itemId);
-        permissionEventPublisher.publishDocumentUpdate(itemId);
     }
 }

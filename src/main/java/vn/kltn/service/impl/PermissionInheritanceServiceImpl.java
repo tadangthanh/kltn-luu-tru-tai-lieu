@@ -14,7 +14,6 @@ import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IDocumentValidator;
 import vn.kltn.service.IPermissionInheritanceService;
 import vn.kltn.service.event.MultipleDocumentsUpdatedEvent;
-import vn.kltn.service.event.publisher.PermissionEventPublisher;
 import vn.kltn.util.ItemValidator;
 
 import java.util.ArrayList;
@@ -35,7 +34,6 @@ public class PermissionInheritanceServiceImpl implements IPermissionInheritanceS
     private final DocumentCommonService documentCommonService;
     private final ApplicationEventPublisher eventPublisher;
     private final FolderCommonService folderCommonService;
-    private final PermissionEventPublisher permissionEventPublisher;
     private final IAuthenticationService authenticationService;
     private final IDocumentValidator documentValidator;
     private final ItemValidator itemValidator;
@@ -144,12 +142,7 @@ public class PermissionInheritanceServiceImpl implements IPermissionInheritanceS
         // Thêm folder cha vào danh sách để xử lý các document con
         List<Long> folderIdsForDocument = new ArrayList<>(folderChildIds);
         folderIdsForDocument.add(parentResourceId);
-
         List<Long> documentChildIds = createPermissionForDocumentChild(folderIdsForDocument, permission, recipient);
-        if (!documentChildIds.isEmpty()) {
-            // update lai tron elasticsearch
-            permissionEventPublisher.publishDocumentsUpdate(new HashSet<>(documentChildIds));
-        }
     }
 
     private List<Long> createPermissionForDocumentChild(List<Long> parentIds, Permission permission, User recipient) {

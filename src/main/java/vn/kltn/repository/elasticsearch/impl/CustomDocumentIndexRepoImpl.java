@@ -123,7 +123,7 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
 
 
     @Override
-    public List<DocumentIndexResponse> getDocumentByMe(Set<Long> listDocumentSharedWith, String query, int page, int size) {
+    public List<DocumentIndexResponse> getDocumentShared(Set<Long> documentIds, String query, int page, int size) {
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
 
         try {
@@ -142,17 +142,27 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
                                                                             "content",
                                                                             "updatedBy",
                                                                             "createdBy")))
-                                                    .filter(f -> f.term(
-                                                            t -> t.field("isDeleted")
+
+                                                    .filter(f -> f
+                                                            .term(t -> t
+                                                                    .field("isDeleted")
                                                                     .value(false)))
-                                                    .should(sh1 -> sh1.term(t -> t
+
+                                                    // Đây mới là phần bạn cần: id ∈ documentIds hoặc createdBy == currentEmail
+                                                    .should(sh1 -> sh1.terms(t -> t
+                                                            .field("id")
+                                                            .terms(tq -> tq.value(documentIds.stream()
+                                                                    .map(String::valueOf)
+                                                                    .map(FieldValue::of)
+                                                                    .toList()))
+                                                    ))
+                                                    .should(sh2 -> sh2.term(t -> t
                                                             .field("createdBy")
-                                                            .value(currentEmail)))
-                                                    .should(sh2 -> sh2.terms(t -> t
-                                                            .field("sharedWith")
-                                                            .terms(tq -> tq.value(listDocumentSharedWith.stream()
-                                                                    .map(String::valueOf).map(FieldValue::of)
-                                                                    .toList())))).minimumShouldMatch("1")))
+                                                            .value(currentEmail)
+                                                    ))
+                                                    .minimumShouldMatch("1") // 👈 bắt buộc ít nhất 1 cái đúng
+                                            )
+                                    )
                                     .highlight(h -> h
                                             .preTags("<mark>")
                                             .postTags("</mark>")
@@ -170,17 +180,17 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
                     .map(hit -> {
                         DocumentIndexResponse dto = new DocumentIndexResponse();
                         dto.setDocument(hit.source());
-                        dto.setHighlights(hit.highlight()); // Map<String, List<String>>
+                        dto.setHighlights(hit.highlight());
                         return dto;
                     })
                     .toList();
-
 
         } catch (IOException e) {
             log.error("Error searching documents: {}", e.getMessage(), e);
             throw new CustomIOException("Failed to search documents");
         }
     }
+
 
     @Override
     public void bulkUpdate(List<DocumentIndex> indices) {

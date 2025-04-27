@@ -2,7 +2,6 @@ package vn.kltn.service.impl;
 
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -29,31 +28,43 @@ import java.util.List;
 @Service
 @Transactional
 @Slf4j(topic = "DOCUMENT_SERVICE")
-public class DocumentCommonServiceImpl extends AbstractItemCommonService<Document, DocumentResponse> implements IDocumentCommonService {
+public class DocumentServiceImpl extends AbstractItemCommonService<Document, DocumentResponse> implements IDocumentService {
     private final DocumentRepo documentRepo;
     private final IDocumentHasTagService documentHasTagService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
     private final IDocumentIndexService documentIndexService;
-    private final IDocumentPermissionService documentPermissionService;
+//    private final IDocumentPermissionService documentPermissionService;
     private final ApplicationEventPublisher eventPublisher;
     private final IDocumentStorageService documentStorageService;
     private final IDocumentMapperService documentMapperService;
     private final IDocumentSearchService documentSearchService;
     private final ItemValidator itemValidator;
-
-    public DocumentCommonServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator) {
-        super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService,itemValidator);
-        this.documentRepo = documentRepo;
-        this.documentHasTagService = documentHasTagService;
-        this.documentIndexService = documentIndexService;
-        this.documentPermissionService = documentPermissionService;
-        this.eventPublisher = eventPublisher;
-        this.documentStorageService = documentStorageService;
-        this.documentMapperService = documentMapperService;
-        this.documentSearchService = documentSearchService;
-        this.itemValidator = itemValidator;
-    }
+    private final IPermissionService permissionService;
+//    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService) {
+//        super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService, itemValidator, permissionInheritanceService, permissionValidatorService);
+//        this.documentRepo = documentRepo;
+//        this.documentHasTagService = documentHasTagService;
+//        this.documentIndexService = documentIndexService;
+//        this.documentPermissionService = documentPermissionService;
+//        this.eventPublisher = eventPublisher;
+//        this.documentStorageService = documentStorageService;
+//        this.documentMapperService = documentMapperService;
+//        this.documentSearchService = documentSearchService;
+//        this.itemValidator = itemValidator;
+//    }
+public DocumentServiceImpl(DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService,  IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService, IPermissionService permissionService) {
+    super(authenticationService,folderCommonService , itemValidator, permissionInheritanceService, permissionValidatorService,permissionService);
+    this.documentRepo = documentRepo;
+    this.documentHasTagService = documentHasTagService;
+    this.documentIndexService = documentIndexService;
+    this.permissionService = permissionService;
+    this.eventPublisher = eventPublisher;
+    this.documentStorageService = documentStorageService;
+    this.documentMapperService = documentMapperService;
+    this.documentSearchService = documentSearchService;
+    this.itemValidator = itemValidator;
+}
 
     @Override
     @Async("taskExecutor")
@@ -72,7 +83,7 @@ public class DocumentCommonServiceImpl extends AbstractItemCommonService<Documen
         // storage file to cloud
         documentStorageService.store(token, bufferedFiles, documents);
         // thua ke quyen cua parent
-        documentPermissionService.inheritPermissionsFromParent(documents);
+        permissionInheritanceService.inheritPermissionsFromParent(documents);
         // thong bao bang websocket
 
     }
@@ -82,7 +93,7 @@ public class DocumentCommonServiceImpl extends AbstractItemCommonService<Documen
         log.info("hard delete document with id {}", resource.getId());
         documentStorageService.deleteBlob(resource.getBlobName());
         documentHasTagService.deleteAllByDocumentId(resource.getId());
-        documentPermissionService.deletePermissionByItemId(resource.getId());
+        permissionService.deletePermissionByItemId(resource.getId());
         documentIndexService.deleteDocById(resource.getId());
         documentRepo.delete(resource);
     }

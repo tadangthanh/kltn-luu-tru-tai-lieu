@@ -2,6 +2,7 @@ package vn.kltn.util;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 import vn.kltn.common.Permission;
 import vn.kltn.entity.Item;
@@ -20,7 +21,7 @@ public class ItemValidator {
     /**
      * Kiểm tra người dùng hiện tại có phải chủ sở hữu của Item không.
      */
-    public  void validateCurrentUserIsOwner(Item item, User currentUser) {
+    public void validateCurrentUserIsOwner(Item item, User currentUser) {
         if (item.getOwner() == null || !item.getOwner().getId().equals(currentUser.getId())) {
             throw new InvalidDataException("Không có quyền thực hiện hành động này");
         }
@@ -29,7 +30,7 @@ public class ItemValidator {
     /**
      * Kiểm tra Item chưa bị xóa (deletedAt == null)
      */
-    public  void validateItemNotDeleted(Item item) {
+    public void validateItemNotDeleted(Item item) {
         if (item.getDeletedAt() != null) {
             throw new InvalidDataException("Resource đã bị xóa");
         }
@@ -38,29 +39,51 @@ public class ItemValidator {
     /**
      * Kiểm tra Item đã bị xóa (deletedAt != null)
      */
-    public  void validateItemDeleted(Item item) {
+    public void validateItemDeleted(Item item) {
         if (item.getDeletedAt() == null) {
             throw new InvalidDataException("Resource chưa bị xóa");
         }
 
     }
+
     /**
      * Kiểm tra người dùng hiện tại co quyen su huu hay k
      */
-    public  void validateCurrentUserIsOwnerItem(Item item) {
-        User currentUser =authenticationService.getCurrentUser();
+    public void validateCurrentUserIsOwnerItem(Item item) {
+        User currentUser = authenticationService.getCurrentUser();
         if (!item.getOwner().getId().equals(currentUser.getId())) {
             throw new InvalidDataException("Bạn không có quyền thực hiện thao tác này");
         }
     }
-    public  void validateCurrentUserIsOwnerOrEditorItem(Item item) {
+
+    public void validateCurrentUserHasAccessToItem(Item item) {
+        User currentUser = authenticationService.getCurrentUser();
+        // 1. Kiểm tra user có phải chủ sở hữu item không
+        if (item.getOwner().getId().equals(currentUser.getId())) {
+            return; // hợp lệ, không cần check thêm
+        }
+        // neu la chu so huu thi ko can kiem tra quyen editor
+        // 2. Nếu không phải owner → kiểm tra quyền trên parent folder
+        Item parent = item.getParent(); // assume item có trường parent
+        if (parent == null) {
+            throw new AccessDeniedException("You are not allowed to access this item");
+        }
+        // nếu khong là chu so huu thi kiem tra quyen editor
+        if (!permissionRepo.isEditorPermission(item.getId(), currentUser.getId())) {
+            log.info("User with id {} is not editor of resource with id {}", currentUser.getId(), item.getId());
+            throw new AccessDeniedException("Bạn không có quyền thực hiện thao tác này");
+        }
+
+    }
+
+    public void validateCurrentUserIsOwnerOrEditorItem(Item item) {
         User currentUser = authenticationService.getCurrentUser();
         // neu la chu so huu thi ko can kiem tra quyen editor
         if (item.getOwner().getId().equals(currentUser.getId())) {
             return;
         }
         // nếu khong là chu so huu thi kiem tra quyen editor
-        if(!permissionRepo.isEditorPermission(item.getId(),currentUser.getId())){
+        if (!permissionRepo.isEditorPermission(item.getId(), currentUser.getId())) {
             log.info("User with id {} is not editor of resource with id {}", currentUser.getId(), item.getId());
             throw new InvalidDataException("Bạn không có quyền thực hiện thao tác này");
         }

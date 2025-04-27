@@ -19,20 +19,27 @@ import java.util.List;
 @RequestMapping("/api/v1/permissions")
 @Validated
 public class PermissionRest {
-    private final IPermissionService itemPermissionServiceImpl;
+    private final IPermissionService permissionService;
 
     @GetMapping("/item/{itemId}")
     public ResponseData<PageResponse<List<ItemPermissionResponse>>> getPermissionsByItemId(@PathVariable Long itemId, Pageable pageable) {
-        return new ResponseData<>(200, "Thành công", itemPermissionServiceImpl.getPagePermissionByItemId(itemId, pageable));
+        return new ResponseData<>(200, "Thành công", permissionService.getPagePermissionByItemId(itemId, pageable));
     }
 
     @PostMapping("/item/{itemId}")
     public ResponseData<ItemPermissionResponse> addPermission(@PathVariable Long itemId, @Validated(Create.class) @RequestBody PermissionRequest permissionRequest) {
-        return new ResponseData<>(200, "Thành công", itemPermissionServiceImpl.addPermission(itemId, permissionRequest));
+        return new ResponseData<>(200, "Thành công", permissionService.addPermission(itemId, permissionRequest));
     }
 
     @PutMapping("/{permissionId}")
     public ResponseData<ItemPermissionResponse> updatePermission(@PathVariable Long permissionId, @Validated(Update.class) @RequestBody PermissionRequest permissionRequest) {
-        return new ResponseData<>(200, "Thành công", itemPermissionServiceImpl.updatePermission(permissionId, permissionRequest));
+        return new ResponseData<>(200, "Thành công", permissionService.updatePermission(permissionId, permissionRequest));
     }
+
+    @DeleteMapping("/{permissionId}")
+    public ResponseData<Void> deletePermission(@PathVariable Long permissionId) {
+        permissionService.deletePermissionById(permissionId);
+        return new ResponseData<>(200, "Thành công");
+    }
+
 }

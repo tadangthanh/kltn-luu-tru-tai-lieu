@@ -15,7 +15,7 @@ public interface IDocumentIndexService {
 
     void markDeleteDocument(Long indexId, boolean value);
 
-    List<DocumentIndexResponse> getDocumentByMe(Set<Long> listDocumentSharedWith, String query, int page, int size);
+    List<DocumentIndexResponse> getDocumentShared(Set<Long> documentIds, String query, int page, int size);
 
     void deleteIndexByIdList(List<Long> indexIds);
 

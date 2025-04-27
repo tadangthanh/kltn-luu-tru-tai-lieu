@@ -8,7 +8,7 @@ import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.dto.response.FolderResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
-import vn.kltn.service.IFolderCommonService;
+import vn.kltn.service.IFolderService;
 import vn.kltn.validation.Create;
 
 import java.util.List;
@@ -18,7 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Validated
 public class FolderRest {
-    private final IFolderCommonService folderService;
+    private final IFolderService folderService;
 
     @PostMapping
     public ResponseData<FolderResponse> createFolder(@RequestBody @Validated(Create.class) FolderRequest folderRequest) {

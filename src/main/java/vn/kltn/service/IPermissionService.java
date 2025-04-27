@@ -6,23 +6,22 @@ import vn.kltn.dto.response.ItemPermissionResponse;
 import vn.kltn.dto.response.PageResponse;
 
 import java.util.List;
+import java.util.Set;
 
 public interface IPermissionService {
-     ItemPermissionResponse addPermission(Long itemId, PermissionRequest permissionRequest);
+    ItemPermissionResponse addPermission(Long itemId, PermissionRequest permissionRequest);
 
     ItemPermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest);
-
-//    void inheritPermissions(Item item);
 
     void deletePermissionById(Long permissionId);
 
     PageResponse<List<ItemPermissionResponse>> getPagePermissionByItemId(Long itemId, Pageable pageable);
 
-//    void validateUserIsEditor(Long resourceId, Long userId);
-
     void deleteByItemAndRecipientId(Long resourceId, Long recipientId);
 
     void deletePermissionByItems(List<Long> resourceIds);
+
+    Set<Long> getItemIdsByRecipientId(Long recipientId);
 
     void deletePermissionByItemId(Long resourceId);
 
