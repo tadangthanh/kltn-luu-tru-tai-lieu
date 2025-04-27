@@ -82,7 +82,7 @@ public class DocumentCommonServiceImpl extends AbstractItemCommonService<Documen
         log.info("hard delete document with id {}", resource.getId());
         documentStorageService.deleteBlob(resource.getBlobName());
         documentHasTagService.deleteAllByDocumentId(resource.getId());
-        documentPermissionService.deletePermissionByResourceId(resource.getId());
+        documentPermissionService.deletePermissionByItemId(resource.getId());
         documentIndexService.deleteDocById(resource.getId());
         documentRepo.delete(resource);
     }

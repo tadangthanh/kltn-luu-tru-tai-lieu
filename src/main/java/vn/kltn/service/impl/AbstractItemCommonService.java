@@ -15,10 +15,7 @@ import vn.kltn.entity.User;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.specification.SpecificationUtil;
 import vn.kltn.repository.util.PaginationUtils;
-import vn.kltn.service.IAuthenticationService;
-import vn.kltn.service.IDocumentPermissionService;
-import vn.kltn.service.IFolderPermissionService;
-import vn.kltn.service.IItemCommonService;
+import vn.kltn.service.*;
 import vn.kltn.util.ItemValidator;
 
 import java.util.List;
@@ -32,14 +29,18 @@ public abstract class AbstractItemCommonService<T extends Item, R extends ItemRe
     protected final AbstractPermissionService abstractPermissionService;
     protected final FolderCommonService folderCommonService;
     protected final ItemValidator itemValidator;
+    protected final IPermissionInheritanceService permissionInheritanceService;
+    protected final IPermissionValidatorService permissionValidatorService;
 
-    protected AbstractItemCommonService(IDocumentPermissionService documentPermissionService, IFolderPermissionService folderPermissionService, IAuthenticationService authenticationService, @Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, FolderCommonService folderCommonService, ItemValidator itemValidator) {
+    protected AbstractItemCommonService(IDocumentPermissionService documentPermissionService, IFolderPermissionService folderPermissionService, IAuthenticationService authenticationService, @Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, FolderCommonService folderCommonService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService) {
         this.documentPermissionService = documentPermissionService;
         this.folderPermissionService = folderPermissionService;
         this.authenticationService = authenticationService;
         this.abstractPermissionService = abstractPermissionService;
         this.folderCommonService = folderCommonService;
         this.itemValidator = itemValidator;
+        this.permissionInheritanceService = permissionInheritanceService;
+        this.permissionValidatorService = permissionValidatorService;
     }
 
 
@@ -74,23 +75,23 @@ public abstract class AbstractItemCommonService<T extends Item, R extends ItemRe
 
     @Override
     public void deleteItemById(Long itemId) {
-        T resource = getItemByIdOrThrow(itemId);
+        T item = getItemByIdOrThrow(itemId);
         // resource chua bi xoa
-        itemValidator.validateItemNotDeleted(resource);
+        itemValidator.validateItemNotDeleted(item);
         // validate chu so huu hoac editor o resource cha
-        if (resource.getParent() != null) {
-            itemValidator.validateCurrentUserIsOwnerOrEditorItem(resource.getParent());
+        if (item.getParent() != null) {
+            itemValidator.validateCurrentUserIsOwnerOrEditorItem(item.getParent());
         }
         User currentUser = getCurrentUser();
-        User owner = resource.getOwner();
+        User owner = item.getOwner();
         if (currentUser.getId().equals(owner.getId())) {
             // neu la chu so huu thi chuyen vao thung rac
-            softDeleteResource(resource);
+            softDeleteResource(item);
         } else {
             // nguoi thuc hien co quyen editor
-            validateUserIsEditor(itemId, currentUser.getId());
+            permissionValidatorService.validatePermissionManager(item, currentUser);
             // set parent = null la se dua resource nay vao drive cua toi
-            resource.setParent(null);
+            item.setParent(null);
         }
     }
 
@@ -107,9 +108,9 @@ public abstract class AbstractItemCommonService<T extends Item, R extends ItemRe
         resourceToMove.setParent(folderDestination);
         resourceToMove = saveResource(resourceToMove);
         // xoa cac permission cu
-        folderPermissionService.deletePermissionByResourceId(itemId);
+        folderPermissionService.deletePermissionByItemId(itemId);
         // them cac permission moi cua folder cha moi
-        folderPermissionService.inheritPermissions(resourceToMove);
+        permissionInheritanceService.inheritPermissionsFromParentFolder(resourceToMove);
         return mapToR(resourceToMove);
     }
 
@@ -120,14 +121,10 @@ public abstract class AbstractItemCommonService<T extends Item, R extends ItemRe
     protected abstract T saveResource(T resource);
 
 
-    protected void validateUserIsEditor(Long resourceId, Long userId) {
-        abstractPermissionService.validateUserIsEditor(resourceId, userId);
-    }
-
     protected abstract void softDeleteResource(T resource);
 
     protected void deletePermissionResourceById(Long resourceId) {
-        abstractPermissionService.deletePermissionByResourceId(resourceId);
+        abstractPermissionService.deletePermissionByItemId(resourceId);
     }
 
     protected abstract void hardDeleteResource(T resource);

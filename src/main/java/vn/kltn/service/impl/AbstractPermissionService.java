@@ -21,11 +21,7 @@ import vn.kltn.service.IPermissionService;
 import vn.kltn.service.IUserService;
 import vn.kltn.util.ItemValidator;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-
-import static vn.kltn.common.Permission.EDITOR;
 
 @Service
 @Transactional
@@ -73,44 +69,30 @@ public abstract class AbstractPermissionService implements IPermissionService {
     }
 
     @Override
-    public void deletePermissionByResourceId(Long resourceId) {
+    public void deletePermissionByItemId(Long resourceId) {
         log.info("delete permission by resource id: {}", resourceId);
         permissionRepo.deleteByItemId(resourceId);
     }
 
-    @Override
-    public void validateUserIsEditor(Long resourceId, Long userId) {
-        log.info("validate user is editor by resourceId: {}, userId: {}", resourceId, userId);
-        if (!permissionRepo.isEditorPermission(resourceId, userId)) {
-            log.warn("User with id {} is not editor of resource with id {}", userId, resourceId);
-            throw new AccessDeniedException("Bạn không có quyền với tài nguyên này");
-        }
-    }
+//    @Override
+//    public void validateUserIsEditor(Long resourceId, Long userId) {
+//        log.info("validate user is editor by resourceId: {}, userId: {}", resourceId, userId);
+//        if (!permissionRepo.isEditorPermission(resourceId, userId)) {
+//            log.warn("User with id {} is not editor of resource with id {}", userId, resourceId);
+//            throw new AccessDeniedException("Bạn không có quyền với tài nguyên này");
+//        }
+//    }
 
     @Override
-    public void deleteByResourceAndRecipientId(Long resourceId, Long recipientId) {
+    public void deleteByItemAndRecipientId(Long resourceId, Long recipientId) {
         log.info("delete permission by resourceId: {}, recipientId: {}", resourceId, recipientId);
         permissionRepo.deleteByItemIdAndRecipientId(resourceId, recipientId);
     }
 
     @Override
-    public void deletePermissionByResourceIds(List<Long> resourceIds) {
+    public void deletePermissionByItems(List<Long> resourceIds) {
         log.info("delete permission by resourceIds: {}", resourceIds);
         permissionRepo.deleteAllByItemIds(resourceIds);
-    }
-
-    /***
-     *  folder con sẽ kế thừa quyền truy cập từ folder cha ( trong truong hop chu so huu folder cha tao)
-     *  trong trong hop nguoi tao folder la editor thi chu so huu se co quyen editor voi folder con ma thanh vien nay tao
-     * @param item : tài nguyên được tạo mới
-     */
-    @Override
-    public void inheritPermissions(Item item) {
-        // folder cha của tài nguyên được tạo mới, lấy các permission từ folder cha và gán cho tài nguyên mới
-        Item folderParent = item.getParent();
-        User currentUser = authenticationService.getCurrentUser();
-        boolean isOwner = folderParent.getOwner().getId().equals(currentUser.getId());
-        inheritPermission(item, isOwner);
     }
 
     protected Permission setPermission(Long resourceId, PermissionRequest permissionRequest) {
@@ -129,48 +111,6 @@ public abstract class AbstractPermissionService implements IPermissionService {
         return savePermission(permission);
     }
 
-    /***
-     * Thực hiện kế thừa quyền từ folder cha khi tạo folder con
-     * @param item: resource tạo mới
-     */
-    protected void inheritPermission(Item item, boolean isOwner) {
-        if (item == null || item.getParent() == null) return;
-        // Validate nếu resource bị xóa hoặc không có parent thì dừng lại
-        itemValidator.validateItemNotDeleted(item);
-        Set<Permission> parentPermissions = item.getParent().getPermissions();
-        if (parentPermissions == null || parentPermissions.isEmpty()) return;
-
-        List<Permission> newPermissions = new ArrayList<>(parentPermissions.stream()
-                .map(permission -> permission.copyForItem( item))
-                .toList());
-
-        if (newPermissions.isEmpty()) return;
-
-        // Nếu là Editor, thêm quyền cho chủ sở hữu folder chứa cái folder mà edior đang tạo
-        if (!isOwner) {
-            // Editor tạo tài liệu → gán thêm quyền EDITOR cho chủ folder cha
-            Permission extraPermission = createEditorPermissionFor( item, item.getParent().getOwner());
-            newPermissions.add(extraPermission);
-        }
-        // Lọc bỏ quyền của người dùng đã sở hữu tài liệu
-        newPermissions = newPermissions.stream().filter(permission -> !permission.getRecipient().getId().equals(item.getOwner().getId())).toList();
-        // Lưu tất cả permissions một lần
-        saveAllPermissions(newPermissions);
-    }
-
-    protected Permission createEditorPermissionFor(Item resource, User recipient) {
-        return new Permission()
-                .withRecipient(recipient)
-                .withItem(resource)
-                .withPermission(EDITOR);
-    }
-
-    protected void saveAllPermissions(List<Permission> permissions) {
-        if (permissions.isEmpty()) {
-            return;
-        }
-        permissionRepo.saveAll(permissions);
-    }
 
     protected void validatePermissionManager(Item resource) {
         User curentUser = authenticationService.getCurrentUser();

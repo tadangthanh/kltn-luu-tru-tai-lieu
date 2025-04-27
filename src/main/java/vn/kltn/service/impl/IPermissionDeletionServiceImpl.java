@@ -62,6 +62,18 @@ public class IPermissionDeletionServiceImpl implements IPermissionDeletionServic
         permissionRepo.delete(permission);
     }
 
+    @Override
+    public void deletePermissionByItems(List<Long> itemIds) {
+        log.info("delete permission by itemIds: {}", itemIds);
+        permissionRepo.deleteAllByItemIds(itemIds);
+    }
+
+    @Override
+    public void deleteByItemAndRecipientId(Long resourceId, Long recipientId) {
+        log.info("delete permission by resourceId: {}, recipientId: {}", resourceId, recipientId);
+        permissionRepo.deleteByItemIdAndRecipientId(resourceId, recipientId);
+    }
+
 
     private Permission getPermissionByIdOrThrow(Long permissionId) {
         return permissionRepo.findById(permissionId).orElseThrow(() -> {

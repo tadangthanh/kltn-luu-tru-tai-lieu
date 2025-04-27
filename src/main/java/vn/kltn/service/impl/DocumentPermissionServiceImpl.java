@@ -59,22 +59,22 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
     }
 
     @Override
-    public void deleteByResourceAndRecipientId(Long resourceId, Long recipientId) {
-        super.deleteByResourceAndRecipientId(resourceId, recipientId);
+    public void deleteByItemAndRecipientId(Long resourceId, Long recipientId) {
+        super.deleteByItemAndRecipientId(resourceId, recipientId);
         // update data trong elasticsearch
         permissionEventPublisher.publishDocumentUpdate(resourceId);
     }
 
     @Override
-    public void deletePermissionByResourceIds(List<Long> resourceIds) {
-        super.deletePermissionByResourceIds(resourceIds);
+    public void deletePermissionByItems(List<Long> resourceIds) {
+        super.deletePermissionByItems(resourceIds);
         // update data trong elasticsearch
         permissionEventPublisher.publishDocumentsUpdate(new HashSet<>(resourceIds));
     }
 
     @Override
-    public void deletePermissionByResourceId(Long resourceId) {
-        super.deletePermissionByResourceId(resourceId);
+    public void deletePermissionByItemId(Long resourceId) {
+        super.deletePermissionByItemId(resourceId);
         // update data trong elasticsearch
         permissionEventPublisher.publishDocumentUpdate(resourceId);
     }

@@ -5,13 +5,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import vn.kltn.entity.*;
+import vn.kltn.entity.Document;
+import vn.kltn.entity.Item;
+import vn.kltn.entity.Permission;
+import vn.kltn.entity.User;
 import vn.kltn.repository.PermissionRepo;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IDocumentValidator;
 import vn.kltn.service.IPermissionInheritanceService;
 import vn.kltn.service.event.MultipleDocumentsUpdatedEvent;
 import vn.kltn.service.event.publisher.PermissionEventPublisher;
+import vn.kltn.util.ItemValidator;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -34,6 +38,7 @@ public class PermissionInheritanceServiceImpl implements IPermissionInheritanceS
     private final PermissionEventPublisher permissionEventPublisher;
     private final IAuthenticationService authenticationService;
     private final IDocumentValidator documentValidator;
+    private final ItemValidator itemValidator;
 
     @Override
     public void propagatePermissions(Long parentId, Permission permission) {
@@ -65,6 +70,45 @@ public class PermissionInheritanceServiceImpl implements IPermissionInheritanceS
         permissionRepo.updateAllChildNotCustom(folderIdsForUpdatePermission, permission.getRecipient().getId(), permission.getPermission());
     }
 
+    @Override
+    public void inheritPermissionsFromParentFolder(Item item) {
+        log.info("Inheriting permissions for uploaded folder...");
+        // folder cha của tài nguyên được tạo mới, lấy các permission từ folder cha và gán cho tài nguyên mới
+        Item folderParent = item.getParent();
+        User currentUser = authenticationService.getCurrentUser();
+        boolean isOwner = folderParent.getOwner().getId().equals(currentUser.getId());
+        inheritPermission(item, isOwner);
+    }
+
+    /***
+     * Thực hiện kế thừa quyền từ folder cha khi tạo folder con
+     * @param item: resource tạo mới
+     */
+    private void inheritPermission(Item item, boolean isOwner) {
+        if (item == null || item.getParent() == null) return;
+        // Validate nếu resource bị xóa hoặc không có parent thì dừng lại
+        itemValidator.validateItemNotDeleted(item);
+        Set<Permission> parentPermissions = item.getParent().getPermissions();
+        if (parentPermissions == null || parentPermissions.isEmpty()) return;
+
+        List<Permission> newPermissions = new ArrayList<>(parentPermissions.stream()
+                .map(permission -> permission.copyForItem(item))
+                .toList());
+
+        if (newPermissions.isEmpty()) return;
+
+        // Nếu là Editor, thêm quyền cho chủ sở hữu folder chứa cái folder mà edior đang tạo
+        if (!isOwner) {
+            // Editor tạo tài liệu → gán thêm quyền EDITOR cho chủ folder cha
+            Permission extraPermission = createEditorPermissionFor(item, item.getParent().getOwner());
+            newPermissions.add(extraPermission);
+        }
+        // Lọc bỏ quyền của người dùng đã sở hữu tài liệu
+        newPermissions = newPermissions.stream().filter(permission -> !permission.getRecipient().getId().equals(item.getOwner().getId())).toList();
+        // Lưu tất cả permissions một lần
+        permissionRepo.saveAll(newPermissions);
+    }
+
     private void inheritPermissions(Document document, boolean isOwner) {
         Set<Permission> parentPermissions = document.getParent().getPermissions();
         if (parentPermissions == null || parentPermissions.isEmpty()) return;
@@ -86,10 +130,10 @@ public class PermissionInheritanceServiceImpl implements IPermissionInheritanceS
         permissionRepo.saveAll(newPermissions);
     }
 
-    private Permission createEditorPermissionFor(Document document, User recipient) {
+    private Permission createEditorPermissionFor(Item item, User recipient) {
         return new Permission()
                 .withRecipient(recipient)
-                .withItem(document)
+                .withItem(item)
                 .withPermission(EDITOR);
     }
 

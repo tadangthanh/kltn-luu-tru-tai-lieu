@@ -19,8 +19,8 @@ public class FolderCreationServiceImpl implements IFolderCreationService {
     private final IFolderMapperService folderMapperService;
     private final FolderRepo folderRepo;
     private final FolderCommonService folderCommonService;
-    private final IFolderPermissionService folderPermissionService;
     private final IFolderValidation folderValidation;
+    private final IPermissionInheritanceService permissionInheritanceService;
 
     @Override
     public Folder createFolder(FolderRequest request) {
@@ -31,7 +31,7 @@ public class FolderCreationServiceImpl implements IFolderCreationService {
         log.info("Creating folder with parentId {}", request.getFolderParentId());
         folderValidation.validateConditionsToCreateFolder(request);
         Folder folderSaved= createChildFolder(request);
-        folderPermissionService.inheritPermissions(folderSaved);
+        permissionInheritanceService.inheritPermissionsFromParentFolder(folderSaved);
         return folderSaved;
     }
 

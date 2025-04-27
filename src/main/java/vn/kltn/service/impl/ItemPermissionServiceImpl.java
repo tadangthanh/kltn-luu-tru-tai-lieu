@@ -2,6 +2,7 @@ package vn.kltn.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,9 +12,11 @@ import vn.kltn.dto.response.ItemPermissionResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Item;
 import vn.kltn.entity.Permission;
+import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.map.PermissionMapper;
 import vn.kltn.repository.PermissionRepo;
+import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
 import vn.kltn.util.ItemValidator;
 
@@ -76,42 +79,39 @@ public class ItemPermissionServiceImpl implements IPermissionService {
     }
 
     private Permission getPermissionByIdOrThrow(Long permissionId) {
-        return permissionRepo.findById(permissionId)
-                .orElseThrow(() -> new InvalidDataException("Không tìm thấy quyền với id này"));
+        return permissionRepo.findById(permissionId).orElseThrow(() -> new InvalidDataException("Không tìm thấy quyền với id này"));
     }
 
-    @Override
-    public void inheritPermissions(Item item) {
-
-    }
 
     @Override
     public void deletePermissionById(Long permissionId) {
-
+        permissionDeletionService.deleteByItemId(permissionId);
     }
 
     @Override
     public PageResponse<List<ItemPermissionResponse>> getPagePermissionByItemId(Long itemId, Pageable pageable) {
-        return null;
+        log.info("get page permission by resource id: {}", itemId);
+        Item item = iItemService.getItemByIdOrThrow(itemId);
+        // kiểm tra xem user hiện tại có permission với resource hiện tại hay k ?
+        User currentUser = authenticationService.getCurrentUser();
+        permissionValidatorService.validatePermissionManager(item, currentUser);
+        Page<Permission> pagePermission = permissionRepo.findAllByItemId(itemId, pageable);
+        return PaginationUtils.convertToPageResponse(pagePermission, pageable, permissionMapper::toItemPermissionResponse);
+    }
+
+
+    @Override
+    public void deleteByItemAndRecipientId(Long itemId, Long recipientId) {
+        permissionDeletionService.deleteByItemAndRecipientId(itemId, recipientId);
     }
 
     @Override
-    public void validateUserIsEditor(Long resourceId, Long userId) {
-
+    public void deletePermissionByItems(List<Long> itemIds) {
+        permissionDeletionService.deletePermissionByItems(itemIds);
     }
 
     @Override
-    public void deleteByResourceAndRecipientId(Long resourceId, Long recipientId) {
-
-    }
-
-    @Override
-    public void deletePermissionByResourceIds(List<Long> resourceIds) {
-
-    }
-
-    @Override
-    public void deletePermissionByResourceId(Long resourceId) {
-
+    public void deletePermissionByItemId(Long itemId) {
+        permissionDeletionService.deleteByItemId(itemId);
     }
 }
