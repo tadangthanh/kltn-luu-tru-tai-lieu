@@ -7,8 +7,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.PermissionRequest;
+import vn.kltn.dto.response.ItemPermissionResponse;
 import vn.kltn.dto.response.PageResponse;
-import vn.kltn.dto.response.PermissionResponse;
 import vn.kltn.entity.Item;
 import vn.kltn.entity.Permission;
 import vn.kltn.entity.User;
@@ -48,22 +48,22 @@ public abstract class AbstractPermissionService implements IPermissionService {
     }
 
     @Override
-    public PermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest) {
+    public ItemPermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest) {
         log.info("update permission for permissionId: {}, permissionRequest: {}", permissionId, permissionRequest);
         Permission permission = getPermissionByIdOrThrow(permissionId);
         permission.setPermission(permissionRequest.getPermission());
         permission = permissionRepo.save(permission);
-        return mapToPermissionResponse(permission);
+        return mapToItemPermissionResponse(permission);
     }
 
     @Override
-    public PageResponse<List<PermissionResponse>> getPagePermissionByResourceId(Long resourceId, Pageable pageable) {
-        log.info("get page permission by resource id: {}", resourceId);
-        Item resource = getResourceById(resourceId);
+    public PageResponse<List<ItemPermissionResponse>> getPagePermissionByItemId(Long itemId, Pageable pageable) {
+        log.info("get page permission by resource id: {}", itemId);
+        Item resource = getResourceById(itemId);
         // kiểm tra xem user hiện tại có permission với resource hiện tại hay k ?
-        validateEditorOrOwner(resource);
-        Page<Permission> pagePermission = permissionRepo.findAllByItemId(resourceId, pageable);
-        return PaginationUtils.convertToPageResponse(pagePermission, pageable, this::mapToPermissionResponse);
+        validatePermissionManager(resource);
+        Page<Permission> pagePermission = permissionRepo.findAllByItemId(itemId, pageable);
+        return PaginationUtils.convertToPageResponse(pagePermission, pageable, this::mapToItemPermissionResponse);
     }
 
     @Override
@@ -81,7 +81,7 @@ public abstract class AbstractPermissionService implements IPermissionService {
     @Override
     public void validateUserIsEditor(Long resourceId, Long userId) {
         log.info("validate user is editor by resourceId: {}, userId: {}", resourceId, userId);
-        if (!permissionRepo.existsByItemIdAndRecipientIdAndPermission(resourceId, userId, EDITOR)) {
+        if (!permissionRepo.isEditorPermission(resourceId, userId)) {
             log.warn("User with id {} is not editor of resource with id {}", userId, resourceId);
             throw new AccessDeniedException("Bạn không có quyền với tài nguyên này");
         }
@@ -123,7 +123,7 @@ public abstract class AbstractPermissionService implements IPermissionService {
         // validate xem resource co bi xoa hay chua
         itemValidator.validateItemNotDeleted(resource);
         // validate xem người dùng có quyền tạo permission hay không
-        validateEditorOrOwner(resource);
+        validatePermissionManager(resource);
         Permission permission = mapToPermission(permissionRequest);
         permission.setItem(resource);
         return savePermission(permission);
@@ -172,12 +172,12 @@ public abstract class AbstractPermissionService implements IPermissionService {
         permissionRepo.saveAll(permissions);
     }
 
-    protected void validateEditorOrOwner(Item resource) {
+    protected void validatePermissionManager(Item resource) {
         User curentUser = authenticationService.getCurrentUser();
         if (resource.getOwner().getId().equals(curentUser.getId())) {
             return;
         }
-        if (!permissionRepo.existsByItemIdAndRecipientIdAndPermission(resource.getId(), curentUser.getId(), EDITOR)) {
+        if (!permissionRepo.isEditorPermission(resource.getId(), curentUser.getId())) {
             throw new AccessDeniedException("Bạn không có quyền chỉnh sửa tài nguyên này");
         }
     }
@@ -190,8 +190,8 @@ public abstract class AbstractPermissionService implements IPermissionService {
         return permission;
     }
 
-    protected PermissionResponse mapToPermissionResponse(Permission permission) {
-        return permissionMapper.toPermissionResponse(permission);
+    protected ItemPermissionResponse mapToItemPermissionResponse(Permission permission) {
+        return permissionMapper.toItemPermissionResponse(permission);
     }
 
     /***

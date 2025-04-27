@@ -4,7 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.PermissionRequest;
-import vn.kltn.dto.response.PermissionResponse;
+import vn.kltn.dto.response.ItemPermissionResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.Item;
 import vn.kltn.entity.Permission;
@@ -42,11 +42,11 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
     }
 
     @Override
-    public PermissionResponse addPermission(Long resourceId, PermissionRequest permissionRequest) {
+    public ItemPermissionResponse addPermission(Long resourceId, PermissionRequest permissionRequest) {
         Permission response = super.setPermission(resourceId, permissionRequest);
         // update data trong elasticsearch
         permissionEventPublisher.publishDocumentUpdate(resourceId);
-        return mapToPermissionResponse(response);
+        return mapToItemPermissionResponse(response);
     }
 
     @Override
@@ -80,12 +80,12 @@ public class DocumentPermissionServiceImpl extends AbstractPermissionService imp
     }
 
     @Override
-    public PermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest) {
+    public ItemPermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest) {
         log.info("update permission for permissionId: {}, permissionRequest: {}", permissionId, permissionRequest);
         Permission permission = getPermissionByIdOrThrow(permissionId);
         permission.setPermission(permissionRequest.getPermission());
         permission = permissionRepo.save(permission);
-        return mapToPermissionResponse(permission);
+        return mapToItemPermissionResponse(permission);
     }
 
 

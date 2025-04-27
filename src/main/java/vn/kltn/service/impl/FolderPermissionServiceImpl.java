@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.request.PermissionRequest;
-import vn.kltn.dto.response.PermissionResponse;
+import vn.kltn.dto.response.ItemPermissionResponse;
 import vn.kltn.entity.Item;
 import vn.kltn.entity.Permission;
 import vn.kltn.map.PermissionMapper;
@@ -48,10 +48,10 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
     }
 
     @Override
-    public PermissionResponse addPermission(Long resourceId, PermissionRequest permissionRequest) {
+    public ItemPermissionResponse addPermission(Long resourceId, PermissionRequest permissionRequest) {
         Permission permission = super.setPermission(resourceId, permissionRequest);
         permissionInheritanceService.propagatePermissions(resourceId, permission);
-        return mapToPermissionResponse(permission);
+        return mapToItemPermissionResponse(permission);
     }
 
     @Override
@@ -76,13 +76,13 @@ public class FolderPermissionServiceImpl extends AbstractPermissionService imple
     }
 
     @Override
-    public PermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest) {
+    public ItemPermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest) {
         Permission permission = getPermissionByIdOrThrow(permissionId);
         permission.setPermission(permissionRequest.getPermission());
         permission = permissionRepo.save(permission);
         // cập nhật lại quyền cho các folder con và document con
         updateAllChildNotCustom(permission);
-        return mapToPermissionResponse(permission);
+        return mapToItemPermissionResponse(permission);
     }
 
     // update các folder/document con mà không phải là custom permission

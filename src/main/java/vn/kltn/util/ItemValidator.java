@@ -60,7 +60,7 @@ public class ItemValidator {
             return;
         }
         // nếu khong là chu so huu thi kiem tra quyen editor
-        if(!permissionRepo.existsByItemIdAndRecipientIdAndPermission(item.getId(),currentUser.getId(), Permission.EDITOR)){
+        if(!permissionRepo.isEditorPermission(item.getId(),currentUser.getId())){
             log.info("User with id {} is not editor of resource with id {}", currentUser.getId(), item.getId());
             throw new InvalidDataException("Bạn không có quyền thực hiện thao tác này");
         }

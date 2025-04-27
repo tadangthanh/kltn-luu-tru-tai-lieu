@@ -52,6 +52,11 @@ public class ItemServiceImpl implements IItemService {
     }
 
     @Override
+    public Item getItemByIdOrThrow(Long itemId) {
+        return itemRepo.findById(itemId).orElseThrow(() -> new ResourceNotFoundException("Item not found for itemId: " + itemId));
+    }
+
+    @Override
     public PageResponse<List<String>> getEmailsSharedWithMe(Pageable pageable, String keyword) {
         log.info("get emails shared with me page no: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
         Page<String> emailsSharedWithMe;
@@ -78,7 +83,7 @@ public class ItemServiceImpl implements IItemService {
 
     @Override
     public ItemResponse updateItem(Long itemId, ItemRequest itemRequest) {
-        Item itemExist= itemRepo.findById(itemId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy item với id: " + itemId));
+        Item itemExist = itemRepo.findById(itemId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy item với id: " + itemId));
         itemMapper.updateItem(itemExist, itemRequest);
         itemRepo.save(itemExist);
         return itemMapper.toResponse(itemExist);

@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vn.kltn.dto.request.PermissionRequest;
+import vn.kltn.dto.response.ItemPermissionResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.PermissionResponse;
 import vn.kltn.dto.response.ResponseData;
@@ -21,20 +22,20 @@ public class DocumentPermissionRest {
     private final IDocumentPermissionService documentPermissionService;
 
     @PostMapping("/{documentId}")
-    public ResponseData<PermissionResponse> addPermissionDocument(@PathVariable("documentId") Long documentId,
+    public ResponseData<ItemPermissionResponse> addPermissionDocument(@PathVariable("documentId") Long documentId,
                                                                   @Validated(Create.class) @RequestBody PermissionRequest permissionRequest) {
         return new ResponseData<>(200, "Thành công", documentPermissionService.addPermission(documentId, permissionRequest));
     }
 
     @PutMapping("/{permissionId}")
-    public ResponseData<PermissionResponse> updatePermission(@PathVariable("permissionId") Long permissionId,
+    public ResponseData<ItemPermissionResponse> updatePermission(@PathVariable("permissionId") Long permissionId,
                                                              @Validated(Update.class) @RequestBody PermissionRequest permissionRequest) {
         return new ResponseData<>(200, "Thành công", documentPermissionService.updatePermission(permissionId, permissionRequest));
     }
 
     @GetMapping("/{documentId}")
-    public ResponseData<PageResponse<List<PermissionResponse>>> getPagePermissionByResource(@PathVariable Long documentId, Pageable pageable) {
-        PageResponse<List<PermissionResponse>> pageResponse = documentPermissionService.getPagePermissionByResourceId(documentId, pageable);
+    public ResponseData<PageResponse<List<ItemPermissionResponse>>> getPagePermissionByResource(@PathVariable Long documentId, Pageable pageable) {
+        PageResponse<List<ItemPermissionResponse>> pageResponse = documentPermissionService.getPagePermissionByItemId(documentId, pageable);
         return new ResponseData<>(200, "Thành công", pageResponse);
     }
 }

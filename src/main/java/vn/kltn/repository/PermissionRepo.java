@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import vn.kltn.entity.Permission;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface PermissionRepo extends JpaRepository<Permission, Long> {
@@ -24,7 +25,16 @@ public interface PermissionRepo extends JpaRepository<Permission, Long> {
 
     Page<Permission> findAllByItemId(Long itemId, Pageable pageable);
 
-    boolean existsByItemIdAndRecipientIdAndPermission(Long itemId, Long recipientId, vn.kltn.common.Permission permission);
+    @Query("""
+                select count(p) > 0
+                from Permission p
+                where p.item.id = :itemId
+                  and p.recipient.id = :recipientId
+                  and p.permission = 'EDITOR'
+                  and p.isPermissionManager = true
+            """)
+    boolean isEditorPermission(@Param("itemId") Long itemId, @Param("recipientId") Long recipientId);
+
 
     @Query(value = """
             WITH RECURSIVE sub_folders AS (
@@ -64,4 +74,6 @@ public interface PermissionRepo extends JpaRepository<Permission, Long> {
     @Transactional
     @Query("delete from Permission p where p.item.id in ?1 and p.recipient.id = ?2")
     void deleteAllByItemIdInAndRecipientId(List<Long> folderChildIds, Long recipientId);
+
+    Optional<Permission> findByItemIdAndRecipientId(Long itemId, Long recipientId);
 }

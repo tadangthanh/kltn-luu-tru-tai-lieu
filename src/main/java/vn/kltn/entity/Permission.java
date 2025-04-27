@@ -24,13 +24,17 @@ public class Permission extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private vn.kltn.common.Permission permission;
 
+    @Column(name = "is_permission_manager")
+    private boolean isPermissionManager = false;
+
     private boolean isCustomPermission = false;
 
     public Permission(User recipient, Item item, vn.kltn.common.Permission permission) {
         this.recipient = recipient;
-        this.item =  item;
+        this.item = item;
         this.permission = permission;
     }
+
     public Permission copyForItem(Item item) {
         Permission copy = new Permission();
         copy.setPermission(this.getPermission());
@@ -38,6 +42,7 @@ public class Permission extends BaseEntity {
         copy.setItem(item);
         return copy;
     }
+
     public Permission withRecipient(User recipient) {
         this.setRecipient(recipient);
         return this;
