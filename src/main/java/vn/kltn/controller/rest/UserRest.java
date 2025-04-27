@@ -61,9 +61,9 @@ public class UserRest {
     }
 
     @GetMapping("/search")
-    public ResponseData<PageResponse<List<UserIndexResponse>>> searchUsers(@RequestParam(required = false) String email,
+    public ResponseData<PageResponse<List<UserIndexResponse>>> searchUsers(@RequestParam(required = false) String query,
                                                                            Pageable pageable) {
 
-        return new ResponseData<>(200, "thanh cong", userIndexService.searchUsersByEmail(email, pageable));
+        return new ResponseData<>(200, "thanh cong", userIndexService.searchUsersByEmail(query, pageable));
     }
 }

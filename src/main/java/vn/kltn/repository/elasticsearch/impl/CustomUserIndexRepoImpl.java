@@ -5,6 +5,7 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Repository;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.UserIndexResponse;
@@ -24,6 +25,7 @@ public class CustomUserIndexRepoImpl implements CustomUserIndexRepo {
 
     @Override
     public PageResponse<List<UserIndexResponse>> search(String query, Pageable pageable) {
+        String currentEmail= SecurityContextHolder.getContext().getAuthentication().getName();
         try {
             SearchResponse<UserIndex> response = elasticsearchClient.search(s -> s
                             .index("users_index")
@@ -39,6 +41,12 @@ public class CustomUserIndexRepoImpl implements CustomUserIndexRepo {
                                                     .term(t -> t
                                                             .field("status.keyword")
                                                             .value("ACTIVE")
+                                                    )
+                                            )
+                                            .mustNot(mn -> mn
+                                                    .term(t -> t
+                                                            .field("email.keyword")
+                                                            .value(currentEmail)  // Điều kiện email khác currentEmail
                                                     )
                                             )
                                     )

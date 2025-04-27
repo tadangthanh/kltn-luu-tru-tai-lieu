@@ -2,7 +2,6 @@ package vn.kltn.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.response.PageResponse;
@@ -10,10 +9,8 @@ import vn.kltn.dto.response.UserIndexResponse;
 import vn.kltn.entity.User;
 import vn.kltn.index.UserIndex;
 import vn.kltn.map.UserMapper;
-import vn.kltn.repository.UserRepo;
 import vn.kltn.repository.elasticsearch.CustomUserIndexRepo;
 import vn.kltn.repository.elasticsearch.UserIndexRepo;
-import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IUserIndexService;
 
 import java.util.List;
@@ -39,8 +36,8 @@ public class UserIndexServiceImpl implements IUserIndexService {
 
     @Override
     public PageResponse<List<UserIndexResponse>> searchUsersByEmail(String email, Pageable pageable) {
-        if(email == null || email.isEmpty()) {
-            email="";
+        if (email == null || email.isEmpty()) {
+            email = "";
         }
         // Tạo Pageable object từ thông tin phân trang
 
