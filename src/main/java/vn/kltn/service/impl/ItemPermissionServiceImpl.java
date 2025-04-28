@@ -59,31 +59,60 @@ public class ItemPermissionServiceImpl implements IPermissionService {
         List<Permission> permissionsToSave = new ArrayList<>();
 
         for (PermissionRequest request : permissionsRequest) {
+            // Xử lý xóa quyền nếu yêu cầu
             if (Boolean.TRUE.equals(request.getIsDelete())) {
                 if (request.getId() != null) {
-                    permissionRepo.deleteById(request.getId());
+                    permissionDeletionService.deleteByPermissionId(request.getId());
                 }
-                continue;
+                continue; // tiếp tục với quyền kế tiếp
             }
 
             User recipient = userService.getUserById(request.getRecipientId());
-            Permission permission = permissionRepo
-                    .findByRecipientAndItem(recipient.getId(), item.getId())
-                    .orElseGet(Permission::new);
 
-            permission.setItem(item);
-            permission.setRecipient(recipient);
-            permission.setPermission(request.getPermission());
+            // Tìm Permission hiện có
+            Optional<Permission> existingPermissionOpt = permissionRepo
+                    .findByRecipientAndItem(recipient.getId(), item.getId());
 
+            Permission permission;
+
+            if (existingPermissionOpt.isPresent()) {
+                // Nếu đã có Permission cho recipient và item, tiến hành cập nhật
+                permission = existingPermissionOpt.get();
+                log.info("Updating permission for recipient {} on item {}", recipient.getId(), item.getId());
+                permission.setPermission(request.getPermission());
+                // Nếu là folder, kế thừa quyền cho tất cả các item con (child items)
+                if (permission.getItem().getItemType() == ItemType.FOLDER) {
+                    permissionInheritanceService.updateAllChildNotCustom(permission);
+                }
+
+            } else {
+                // Nếu không có Permission, tạo mới
+                permission = new Permission();
+                log.info("Creating new permission for recipient {} on item {}", recipient.getId(), item.getId());
+                permission.setItem(item);
+                permission.setRecipient(recipient);
+                permission.setPermission(request.getPermission());
+                if (item.getItemType() == ItemType.FOLDER) {
+                    // Nếu là folder, propagate quyền xuống tất cả con cháu
+                    permissionInheritanceService.propagatePermissions(item.getId(), permission);
+                }
+            }
+
+            // Thêm vào danh sách để save
             permissionsToSave.add(permission);
+
+
         }
 
+        // Save tất cả các Permission (cả create mới và update)
         if (!permissionsToSave.isEmpty()) {
             permissionRepo.saveAll(permissionsToSave);
         }
 
+        // Chuyển đổi thành các response để trả về
         return permissionMapper.toListItemPermissionResponse(permissionsToSave);
     }
+
 
 
     private void handlePermissionUpdateAfterSave(Item item, Permission permission) {

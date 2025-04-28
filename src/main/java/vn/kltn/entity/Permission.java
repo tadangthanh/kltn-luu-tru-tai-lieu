@@ -28,6 +28,8 @@ public class Permission extends BaseEntity {
     private boolean isPermissionManager = false;
 
     private boolean isCustomPermission = false;
+    @Version
+    private Integer version;  // Trường version giúp Hibernate quản lý locking
 
     public Permission(User recipient, Item item, vn.kltn.common.Permission permission) {
         this.recipient = recipient;
