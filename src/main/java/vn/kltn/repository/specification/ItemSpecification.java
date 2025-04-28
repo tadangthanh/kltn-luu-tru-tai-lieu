@@ -31,4 +31,8 @@ public class ItemSpecification {
     public static Specification<Item> ofType(ItemType type) {
         return (root, query, cb) -> cb.equal(root.get("itemType"), type);
     }
+
+    public static Specification<Item> hasParentId() {
+        return (root, query, cb) -> cb.isNotNull(root.get("parent"));
+    }
 }

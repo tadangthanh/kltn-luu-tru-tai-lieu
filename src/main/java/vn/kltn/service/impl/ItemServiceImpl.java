@@ -23,6 +23,7 @@ import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IItemService;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -40,14 +41,22 @@ public class ItemServiceImpl implements IItemService {
         EntitySpecificationsBuilder<Item> builder = new EntitySpecificationsBuilder<>();
         User currentUser = authenticationService.getCurrentUser();
         Specification<Item> spec = Specification.where(ItemSpecification.notDeleted());
-        spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdBy"), currentUser.getEmail()));
+        spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("owner").get("id"), currentUser.getId()));
         spec = spec.or(ItemSpecification.hasPermissionForUser(currentUser.getId()));
-
         if (items != null && items.length > 0) {
+            boolean hasParentId = Arrays.stream(items)
+                    .anyMatch(item -> item.startsWith("parent.id"));
+
+            if (!hasParentId) {
+                spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("parent")));
+            }
             spec = spec.and(SpecificationUtil.buildSpecificationFromFilters(items, builder));
             Page<Item> pageAccessByResource = itemRepo.findAll(spec, pageable);
             return PaginationUtils.convertToPageResponse(pageAccessByResource, pageable, itemMapper::toResponse);
+        } else {
+            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("parent")));
         }
+
         return PaginationUtils.convertToPageResponse(itemRepo.findAll(spec, pageable), pageable, itemMapper::toResponse);
     }
 
