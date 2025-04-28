@@ -19,8 +19,7 @@ import vn.kltn.repository.PermissionRepo;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.*;
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @Transactional
@@ -46,6 +45,49 @@ public class ItemPermissionServiceImpl implements IPermissionService {
         Permission savedPermission = permissionRepo.save(permission);
         handlePermissionUpdateAfterSave(permission.getItem(), savedPermission);
         return permissionMapper.toItemPermissionResponse(savedPermission);
+    }
+
+    @Override
+    public List<ItemPermissionResponse> addOrUpdatePermission(Long itemId, List<PermissionRequest> permissionsRequest) {
+        log.info("add or update permission for itemId: {}", itemId);
+        if (permissionsRequest == null || permissionsRequest.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Item item = iItemService.getItemByIdOrThrow(itemId);
+        List<Permission> resultPermissions = new ArrayList<>();
+
+        for (PermissionRequest permissionRequest : permissionsRequest) {
+            if (permissionRequest.getIsDelete()) {
+                permissionRepo.deleteById(permissionRequest.getId());
+                continue;
+            }
+            User recipient = userService.getUserById(permissionRequest.getRecipientId());
+
+            // Check đã tồn tại Permission hay chưa
+            Optional<Permission> existingPermissionOpt = permissionRepo.findByRecipientAndItem(recipient.getId(), item.getId());
+
+            Permission permission;
+            if (existingPermissionOpt.isPresent()) {
+                // Nếu đã tồn tại => update
+                permission = existingPermissionOpt.get();
+                permission.setPermission(permissionRequest.getPermission());
+                // các field khác nếu có
+            } else {
+                // Nếu chưa có => tạo mới
+                permission = new Permission();
+                permission.setItem(item);
+                permission.setRecipient(recipient);
+                permission.setPermission(permissionRequest.getPermission());
+            }
+
+            resultPermissions.add(permission);
+        }
+
+        // saveAll sẽ tự động insert hoặc update tùy theo id
+        permissionRepo.saveAll(resultPermissions);
+
+        return permissionMapper.toListItemPermissionResponse(resultPermissions);
     }
 
     private void handlePermissionUpdateAfterSave(Item item, Permission permission) {

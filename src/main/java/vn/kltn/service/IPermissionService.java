@@ -11,6 +11,8 @@ import java.util.Set;
 public interface IPermissionService {
     ItemPermissionResponse addPermission(Long itemId, PermissionRequest permissionRequest);
 
+    List<ItemPermissionResponse> addOrUpdatePermission(Long itemId, List<PermissionRequest> permissionsRequest);
+
     ItemPermissionResponse updatePermission(Long permissionId, PermissionRequest permissionRequest);
 
     void deletePermissionById(Long permissionId);

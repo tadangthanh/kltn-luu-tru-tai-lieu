@@ -28,7 +28,12 @@ public class PermissionRest {
 
     @PostMapping("/item/{itemId}")
     public ResponseData<ItemPermissionResponse> addPermission(@PathVariable Long itemId, @Validated(Create.class) @RequestBody PermissionRequest permissionRequest) {
-        return new ResponseData<>(200, "Thành công", permissionService.addPermission(itemId, permissionRequest));
+        return new ResponseData<>(201, "Thành công", permissionService.addPermission(itemId, permissionRequest));
+    }
+
+    @PostMapping("/item/{itemId}/batch")
+    public ResponseData<List<ItemPermissionResponse>> addOrUpdateList(@PathVariable Long itemId, @Validated(Create.class) @RequestBody List<PermissionRequest> permissionsRequest) {
+        return new ResponseData<>(201, "Thành công", permissionService.addOrUpdatePermission(itemId, permissionsRequest));
     }
 
     @PutMapping("/{permissionId}")

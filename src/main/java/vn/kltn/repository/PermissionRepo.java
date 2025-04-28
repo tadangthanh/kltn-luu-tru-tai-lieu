@@ -7,7 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import vn.kltn.entity.Item;
 import vn.kltn.entity.Permission;
+import vn.kltn.entity.User;
 
 import java.util.List;
 import java.util.Optional;
@@ -80,4 +82,8 @@ public interface PermissionRepo extends JpaRepository<Permission, Long> {
 
     @Query("select p.item.id from Permission p where p.recipient.id = ?1")
     Set<Long> findItemIdsByRecipientId(Long recipientId);
+
+    @Query("select p from Permission p where p.recipient.id = ?1 and p.item.id = ?2")
+    Optional<Permission> findByRecipientAndItem(Long recipientId, Long itemId);
+
 }
