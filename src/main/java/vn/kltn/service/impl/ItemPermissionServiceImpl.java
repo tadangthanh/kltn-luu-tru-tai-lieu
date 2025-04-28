@@ -49,46 +49,42 @@ public class ItemPermissionServiceImpl implements IPermissionService {
 
     @Override
     public List<ItemPermissionResponse> addOrUpdatePermission(Long itemId, List<PermissionRequest> permissionsRequest) {
-        log.info("add or update permission for itemId: {}", itemId);
+        log.info("Add or update permission for itemId: {}", itemId);
+
         if (permissionsRequest == null || permissionsRequest.isEmpty()) {
             return Collections.emptyList();
         }
 
         Item item = iItemService.getItemByIdOrThrow(itemId);
-        List<Permission> resultPermissions = new ArrayList<>();
+        List<Permission> permissionsToSave = new ArrayList<>();
 
-        for (PermissionRequest permissionRequest : permissionsRequest) {
-            if (permissionRequest.getIsDelete()) {
-                permissionRepo.deleteById(permissionRequest.getId());
+        for (PermissionRequest request : permissionsRequest) {
+            if (Boolean.TRUE.equals(request.getIsDelete())) {
+                if (request.getId() != null) {
+                    permissionRepo.deleteById(request.getId());
+                }
                 continue;
             }
-            User recipient = userService.getUserById(permissionRequest.getRecipientId());
 
-            // Check đã tồn tại Permission hay chưa
-            Optional<Permission> existingPermissionOpt = permissionRepo.findByRecipientAndItem(recipient.getId(), item.getId());
+            User recipient = userService.getUserById(request.getRecipientId());
+            Permission permission = permissionRepo
+                    .findByRecipientAndItem(recipient.getId(), item.getId())
+                    .orElseGet(Permission::new);
 
-            Permission permission;
-            if (existingPermissionOpt.isPresent()) {
-                // Nếu đã tồn tại => update
-                permission = existingPermissionOpt.get();
-                permission.setPermission(permissionRequest.getPermission());
-                // các field khác nếu có
-            } else {
-                // Nếu chưa có => tạo mới
-                permission = new Permission();
-                permission.setItem(item);
-                permission.setRecipient(recipient);
-                permission.setPermission(permissionRequest.getPermission());
-            }
+            permission.setItem(item);
+            permission.setRecipient(recipient);
+            permission.setPermission(request.getPermission());
 
-            resultPermissions.add(permission);
+            permissionsToSave.add(permission);
         }
 
-        // saveAll sẽ tự động insert hoặc update tùy theo id
-        permissionRepo.saveAll(resultPermissions);
+        if (!permissionsToSave.isEmpty()) {
+            permissionRepo.saveAll(permissionsToSave);
+        }
 
-        return permissionMapper.toListItemPermissionResponse(resultPermissions);
+        return permissionMapper.toListItemPermissionResponse(permissionsToSave);
     }
+
 
     private void handlePermissionUpdateAfterSave(Item item, Permission permission) {
         if (item.getItemType() == ItemType.FOLDER) {
