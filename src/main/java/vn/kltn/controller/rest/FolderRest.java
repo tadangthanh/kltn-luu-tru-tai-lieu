@@ -10,12 +10,15 @@ import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.dto.response.FolderResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
+import vn.kltn.entity.Folder;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IFolderService;
 import vn.kltn.validation.Create;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -67,10 +70,14 @@ public class FolderRest {
 
     @GetMapping("/{folderId}/download")
     public void downloadFolder(@PathVariable Long folderId, HttpServletResponse response) throws IOException {
+        Folder folder = folderService.getFolderByIdOrThrow(folderId);
         List<FolderContent> contents = folderService.getAllContents(folderId, "");
 
         response.setContentType("application/zip");
-        response.setHeader("Content-Disposition", "attachment; filename=\"folder.zip\"");
+        String rawFileName = folder.getName() + ".zip";
+        String encodedFileName = URLEncoder.encode(rawFileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + rawFileName + "\"; filename*=UTF-8''" + encodedFileName);
 
         try (ZipOutputStream zipOut = new ZipOutputStream(response.getOutputStream())) {
             for (FolderContent content : contents) {

@@ -112,9 +112,6 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
     public List<FolderContent> getAllContents(Long folderId, String currentPath) {
         List<FolderContent> results = new ArrayList<>();
 
-        folderRepo.findById(folderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Folder not found"));
-
         // Lấy tất cả document của folder này
         List<Document> documents = documentRepo.findByParentId(folderId);
         for (Document doc : documents) {
