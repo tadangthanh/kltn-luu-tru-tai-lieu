@@ -16,6 +16,7 @@ import vn.kltn.entity.Tag;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.service.*;
 
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -201,6 +202,12 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
         documents.forEach(document -> document.setItemType(ItemType.DOCUMENT));
         documents = documentRepo.saveAll(documents);
         return documents;
+    }
+
+    @Override
+    public InputStream download(String blobName) {
+        log.info("download blob from cloud: {}", blobName);
+        return azureStorageService.downloadBlobInputStream(blobName);
     }
 
 }

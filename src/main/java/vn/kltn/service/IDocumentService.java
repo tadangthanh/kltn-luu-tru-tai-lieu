@@ -10,12 +10,15 @@ import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.dto.response.ItemResponse;
 import vn.kltn.entity.Document;
 
+import java.io.InputStream;
 import java.util.List;
 
 public interface IDocumentService extends IItemCommonService<Document, DocumentResponse> {
     void uploadDocumentEmptyParent(List<FileBuffer> bufferedFiles, CancellationToken token);
 
     void softDeleteDocumentById(Long documentId); // xoa tam document
+
+    InputStream download(Long documentId);
 
     void uploadDocumentWithParent(Long folderId, List<FileBuffer> bufferedFiles, CancellationToken token);
 

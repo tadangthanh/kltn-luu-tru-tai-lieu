@@ -67,6 +67,8 @@ public class SecurityConfig implements WebMvcConfigurer {
         configuration.setAllowedMethods(List.of("*"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setMaxAge(3600L);
+        // Expose Content-Disposition header
+        configuration.addExposedHeader("Content-Disposition");
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         source.registerCorsConfiguration("/ws/**", configuration);

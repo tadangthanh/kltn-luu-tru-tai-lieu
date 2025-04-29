@@ -4,6 +4,7 @@ import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.FileBuffer;
 import vn.kltn.entity.Document;
 
+import java.io.InputStream;
 import java.util.List;
 
 public interface IDocumentStorageService {
@@ -28,4 +29,6 @@ public interface IDocumentStorageService {
     String copyBlob(String blobName);
 
     List<Document> saveDocuments(List<FileBuffer> bufferedFiles);
+
+    InputStream download(String blobName);
 }

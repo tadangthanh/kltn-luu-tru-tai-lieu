@@ -1,5 +1,6 @@
 package vn.kltn.controller.rest;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
@@ -14,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.*;
+import vn.kltn.entity.Document;
 import vn.kltn.repository.util.FileUtil;
 import vn.kltn.service.IDocumentService;
 import vn.kltn.service.impl.UploadTokenManager;
@@ -24,6 +26,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @RequiredArgsConstructor
@@ -194,5 +198,32 @@ public class DocumentRest {
                 .contentType(MediaType.parseMediaType(documentDataResponse.getType()))
                 .body(new InputStreamResource(new ByteArrayInputStream(documentDataResponse.getData())));
     }
+
+
+    @GetMapping("/{documentId}/download")
+    public void downloadDoc(@PathVariable Long documentId, HttpServletResponse response) throws IOException {
+        Document document = documentService.getItemByIdOrThrow(documentId);
+        try (InputStream inputStream = documentService.download(documentId)) {
+            String fileName = generateFileName(document.getBlobName());
+
+            response.setContentType("application/octet-stream");
+            response.setHeader(
+                    "Content-Disposition",
+                    "attachment; filename*=UTF-8''" + URLEncoder.encode(fileName, StandardCharsets.UTF_8)
+            );
+
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                response.getOutputStream().write(buffer, 0, bytesRead);
+            }
+            response.flushBuffer();
+        }
+    }
+
+    private String generateFileName(String blobName) {
+        return blobName.substring(blobName.lastIndexOf("_") + 1);
+    }
+
 
 }

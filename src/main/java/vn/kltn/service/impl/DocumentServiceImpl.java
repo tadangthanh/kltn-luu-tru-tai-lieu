@@ -24,6 +24,7 @@ import vn.kltn.service.*;
 import vn.kltn.service.event.DocumentUpdatedEvent;
 import vn.kltn.util.ItemValidator;
 
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -108,6 +109,12 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
         document.setDeletedAt(LocalDateTime.now());
         document.setPermanentDeleteAt(LocalDateTime.now().plusDays(documentRetentionDays));
         documentIndexService.markDeleteDocument(document.getId(), true);
+    }
+
+    @Override
+    public InputStream download(Long documentId) {
+        Document document = getItemByIdOrThrow(documentId);
+        return documentStorageService.download(document.getBlobName());
     }
 
     @Override
