@@ -1,17 +1,24 @@
 package vn.kltn.controller.rest;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import vn.kltn.dto.FolderContent;
 import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.dto.response.FolderResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
+import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IFolderService;
 import vn.kltn.validation.Create;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @RequestMapping("/api/v1/folders")
 @RestController
@@ -19,17 +26,12 @@ import java.util.List;
 @Validated
 public class FolderRest {
     private final IFolderService folderService;
+    private final IAzureStorageService azureStorageService;
 
     @PostMapping
     public ResponseData<FolderResponse> createFolder(@RequestBody @Validated(Create.class) FolderRequest folderRequest) {
         return new ResponseData<>(201, "Thành công", folderService.createFolder(folderRequest));
     }
-
-//    @DeleteMapping("/{folderId}")
-//    public ResponseData<Void> softDeleteFolder(@PathVariable Long folderId) {
-//        folderService.deleteItemById(folderId);
-//        return new ResponseData<>(204, "Xóa thành công", null);
-//    }
 
     @DeleteMapping("/{folderId}/hard")
     public ResponseData<Void> hardDeleteFolder(@PathVariable Long folderId) {
@@ -60,6 +62,40 @@ public class FolderRest {
     @GetMapping("/{folderId}")
     public ResponseData<FolderResponse> getFolder(@PathVariable Long folderId) {
         return new ResponseData<>(200, "Thành công", folderService.getItemById(folderId));
+    }
+
+
+    @GetMapping("/{folderId}/download")
+    public void downloadFolder(@PathVariable Long folderId, HttpServletResponse response) throws IOException {
+        List<FolderContent> contents = folderService.getAllContents(folderId, "");
+
+        response.setContentType("application/zip");
+        response.setHeader("Content-Disposition", "attachment; filename=\"folder.zip\"");
+
+        try (ZipOutputStream zipOut = new ZipOutputStream(response.getOutputStream())) {
+            for (FolderContent content : contents) {
+                if (content.isFolder()) {
+                    // nếu là folder => tạo entry folder
+                    ZipEntry folderEntry = new ZipEntry(content.getPath());
+                    zipOut.putNextEntry(folderEntry);
+                    zipOut.closeEntry();
+                } else {
+                    // nếu là file => tải từ Azure rồi ghi vào zip
+                    InputStream fileInputStream = azureStorageService.downloadBlobInputStream(content.getBlobName());
+                    ZipEntry fileEntry = new ZipEntry(content.getPath());
+                    zipOut.putNextEntry(fileEntry);
+
+                    byte[] buffer = new byte[4096];
+                    int bytesRead;
+                    while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+                        zipOut.write(buffer, 0, bytesRead);
+                    }
+                    zipOut.closeEntry();
+                    fileInputStream.close();
+                }
+            }
+            zipOut.finish();
+        }
     }
 
 

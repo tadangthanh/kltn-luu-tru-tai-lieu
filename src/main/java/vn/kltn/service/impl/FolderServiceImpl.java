@@ -6,13 +6,19 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import vn.kltn.dto.FolderContent;
 import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.dto.response.FolderResponse;
+import vn.kltn.entity.Document;
 import vn.kltn.entity.Folder;
 import vn.kltn.exception.ResourceNotFoundException;
+import vn.kltn.repository.DocumentRepo;
 import vn.kltn.repository.FolderRepo;
 import vn.kltn.service.*;
 import vn.kltn.util.ItemValidator;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @Transactional
@@ -25,18 +31,9 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
     private final IFolderDeletionService folderDeletionService;
     private final IFolderRestorationService folderRestorationService;
     private final ItemValidator itemValidator;
+    private final DocumentRepo documentRepo;
 
-    //    public FolderCommonServiceImpl(@Qualifier("folderPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IDocumentPermissionService documentPermissionService, FolderRepo folderRepo, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IFolderPermissionService folderPermissionService, IFolderCreationService folderCreationService, IFolderMapperService folderMapperService, IFolderDeletionService folderDeletionService, IFolderRestorationService folderRestorationService, ItemValidator itemValidator) {
-//        super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService,itemValidator);
-//        this.folderRepo = folderRepo;
-//        this.folderCommonService = folderCommonService;
-//        this.folderCreationService = folderCreationService;
-//        this.folderMapperService = folderMapperService;
-//        this.folderDeletionService = folderDeletionService;
-//        this.folderRestorationService = folderRestorationService;
-//        this.itemValidator = itemValidator;
-//    }
-    public FolderServiceImpl(FolderRepo folderRepo, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IFolderCreationService folderCreationService, IFolderMapperService folderMapperService, IFolderDeletionService folderDeletionService, IFolderRestorationService folderRestorationService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionService permissionService, IPermissionValidatorService permissionValidatorService) {
+    public FolderServiceImpl(FolderRepo folderRepo, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IFolderCreationService folderCreationService, IFolderMapperService folderMapperService, IFolderDeletionService folderDeletionService, IFolderRestorationService folderRestorationService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionService permissionService, IPermissionValidatorService permissionValidatorService, DocumentRepo documentRepo) {
         super(authenticationService, folderCommonService, itemValidator, permissionInheritanceService, permissionValidatorService, permissionService);
         this.folderRepo = folderRepo;
         this.folderCommonService = folderCommonService;
@@ -45,6 +42,7 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
         this.folderDeletionService = folderDeletionService;
         this.folderRestorationService = folderRestorationService;
         this.itemValidator = itemValidator;
+        this.documentRepo = documentRepo;
     }
 
     @Override
@@ -108,6 +106,38 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
         itemValidator.validateItemNotDeleted(folder);
         folderMapperService.updateFolder(folder, folderRequest);
         return folderMapperService.mapToResponse(folderRepo.save(folder));
+    }
+
+    @Override
+    public List<FolderContent> getAllContents(Long folderId, String currentPath) {
+        List<FolderContent> results = new ArrayList<>();
+
+        Folder folder = folderRepo.findById(folderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Folder not found"));
+
+        // Lấy tất cả document của folder này
+        List<Document> documents = documentRepo.findByParentId(folderId);
+        for (Document doc : documents) {
+            results.add(new FolderContent(
+                    currentPath + "/" + doc.getName(),
+                    false,
+                    doc.getBlobName()
+            ));
+        }
+
+        // Lấy tất cả folder con
+        List<Folder> subFolders = folderRepo.findByParentId(folderId);
+        for (Folder sub : subFolders) {
+            results.add(new FolderContent(
+                    currentPath + "/" + sub.getName() + "/",
+                    true,
+                    null
+            ));
+            // đệ quy xuống folder con
+            results.addAll(getAllContents(sub.getId(), currentPath + "/" + sub.getName()));
+        }
+
+        return results;
     }
 
 }

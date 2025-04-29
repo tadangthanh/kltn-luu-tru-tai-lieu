@@ -66,4 +66,5 @@ public interface FolderRepo extends JpaRepository<Folder, Long>, JpaSpecificatio
     void setDeleteForFolders(@Param("folderIds") List<Long> folderIds, @Param("deletedAt") LocalDateTime deletedAt, @Param("permanentDeletedAt") LocalDateTime permanentDeletedAt);
 
 
+    List<Folder> findByParentId(Long folderId);
 }

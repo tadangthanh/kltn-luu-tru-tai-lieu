@@ -63,4 +63,5 @@ public interface DocumentRepo extends JpaRepository<Document, Long>, JpaSpecific
     @Query("select d from Document d where d.id in (select p.item.id from Permission p where p.recipient.id = ?1)")
     List<Document> findAllDocumentByResourceAndRecipient(Long resourceId, Long recipientId);
 
+    List<Document> findByParentId(Long folderId);
 }
