@@ -15,7 +15,6 @@ import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.*;
 import vn.kltn.repository.util.FileUtil;
-import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IDocumentService;
 import vn.kltn.service.impl.UploadTokenManager;
 import vn.kltn.validation.ValidFiles;
@@ -34,7 +33,7 @@ import java.util.*;
 public class DocumentRest {
     private final IDocumentService documentService;
     private final UploadTokenManager uploadTokenManager;
-    private final IAzureStorageService azureStorageService;
+
     @PostMapping
     public ResponseData<String> uploadWithoutParent(@ValidFiles @RequestPart("files") MultipartFile[] files) {
         // Tạo token mới cho mỗi yêu cầu upload
@@ -61,7 +60,7 @@ public class DocumentRest {
     }
 
     @PostMapping("/folder/{folderId}")
-    public ResponseData<String> upload(@PathVariable Long folderId,@ValidFiles  @RequestPart("files") MultipartFile[] files) {
+    public ResponseData<String> upload(@PathVariable Long folderId, @ValidFiles @RequestPart("files") MultipartFile[] files) {
         // Tạo token mới cho mỗi yêu cầu upload
         CancellationToken token = new CancellationToken();
         // Đăng ký token vào registry và lấy uploadId
@@ -72,11 +71,6 @@ public class DocumentRest {
         return new ResponseData<>(200, "Đang tải lên...", uploadId);
     }
 
-    @DeleteMapping("/{documentId}")
-    public ResponseData<Void> softDelete(@PathVariable Long documentId) {
-        documentService.deleteItemById(documentId);
-        return new ResponseData<>(204, "Xóa thành công", null);
-    }
 
     @DeleteMapping("/{documentId}/hard")
     public ResponseData<Void> hardDelete(@PathVariable Long documentId) {
@@ -85,7 +79,7 @@ public class DocumentRest {
     }
 
     @PostMapping("/{documentId}/copy")
-    public ResponseData<DocumentResponse> copy(@PathVariable Long documentId) {
+    public ResponseData<ItemResponse> copy(@PathVariable Long documentId) {
         return new ResponseData<>(201, "Thành công", documentService.copyDocumentById(documentId));
     }
 
@@ -174,8 +168,6 @@ public class DocumentRest {
             return null;
         }
     }
-
-
 
 
     @GetMapping("/open")

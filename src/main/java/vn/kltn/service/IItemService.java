@@ -13,6 +13,8 @@ public interface IItemService {
 
     Item getItemByIdOrThrow(Long itemId);
 
+    void softDeleteItemById(Long itemId);
+
     PageResponse<List<String>> getEmailsSharedWithMe(Pageable pageable, String keyword);
 
     ItemResponse updateItem(Long itemId, ItemRequest itemRequest);

@@ -7,6 +7,7 @@ import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.dto.response.DocumentResponse;
+import vn.kltn.dto.response.ItemResponse;
 import vn.kltn.entity.Document;
 
 import java.util.List;
@@ -14,13 +15,15 @@ import java.util.List;
 public interface IDocumentService extends IItemCommonService<Document, DocumentResponse> {
     void uploadDocumentEmptyParent(List<FileBuffer> bufferedFiles, CancellationToken token);
 
+    void softDeleteDocumentById(Long documentId); // xoa tam document
+
     void uploadDocumentWithParent(Long folderId, List<FileBuffer> bufferedFiles, CancellationToken token);
 
     void softDeleteDocumentsByFolderIds(List<Long> folderIds); // xóa document theo danh sach folder id nhưng chưa xóa vĩnh viễn
 
     void hardDeleteDocumentByFolderIds(List<Long> folderIds); // xoa vinh vien document theo danh sach folder id
 
-    DocumentResponse copyDocumentById(Long documentId); //tao ban sao document
+    ItemResponse copyDocumentById(Long documentId); //tao ban sao document
 
     DocumentResponse updateDocumentById(Long documentId, DocumentRequest documentRequest); //cap nhat document
 

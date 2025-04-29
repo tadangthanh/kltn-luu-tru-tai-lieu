@@ -9,6 +9,8 @@ public interface IFolderService extends IItemCommonService<Folder, FolderRespons
 
     Folder getFolderByIdOrThrow(Long folderId);
 
+    void softDeleteFolderById(Long folderId);
+
     FolderResponse updateFolderById(Long folderId, FolderRequest folderRequest);
 
 }

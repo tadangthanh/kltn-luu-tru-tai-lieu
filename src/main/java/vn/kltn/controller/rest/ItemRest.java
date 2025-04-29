@@ -26,11 +26,18 @@ public class ItemRest {
     }
 
     @GetMapping("/emails")
-    public ResponseData<PageResponse<List<String>>> getEmailsSharedWithMe(Pageable pageable,@RequestParam(required = false, value = "keyword") String keyword) {
-        return new ResponseData<>(200, "Thành công", itemService.getEmailsSharedWithMe(pageable,keyword));
+    public ResponseData<PageResponse<List<String>>> getEmailsSharedWithMe(Pageable pageable, @RequestParam(required = false, value = "keyword") String keyword) {
+        return new ResponseData<>(200, "Thành công", itemService.getEmailsSharedWithMe(pageable, keyword));
     }
+
     @PutMapping("/{itemId}")
-    public ResponseData<ItemResponse> updateItem(@PathVariable Long itemId,@Valid @RequestBody ItemRequest itemRequest) {
+    public ResponseData<ItemResponse> updateItem(@PathVariable Long itemId, @Valid @RequestBody ItemRequest itemRequest) {
         return new ResponseData<>(200, "Thành công", itemService.updateItem(itemId, itemRequest));
+    }
+
+    @DeleteMapping("/{itemId}")
+    public ResponseData<Void> deleteItem(@PathVariable Long itemId) {
+        itemService.softDeleteItemById(itemId);
+        return new ResponseData<>(200, "Xóa thành công");
     }
 }

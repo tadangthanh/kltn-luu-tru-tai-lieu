@@ -10,7 +10,6 @@ import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.repository.PermissionRepo;
 import vn.kltn.service.IAuthenticationService;
-import vn.kltn.service.IItemService;
 import vn.kltn.service.IPermissionValidatorService;
 import vn.kltn.util.ItemValidator;
 
@@ -19,7 +18,7 @@ import vn.kltn.util.ItemValidator;
 @RequiredArgsConstructor
 public class PermissionValidatorServiceImpl implements IPermissionValidatorService {
     private final PermissionRepo permissionRepo;
-    private final IItemService iItemService;
+    private final ItemGetterService itemGetterService;
     private final ItemValidator itemValidator;
     private final IAuthenticationService authenticationService;
 
@@ -45,7 +44,7 @@ public class PermissionValidatorServiceImpl implements IPermissionValidatorServi
         // Check if permission already exists
         validatePermissionItemNotExists(permissionRequest.getRecipientId(), itemId);
 
-        Item item = iItemService.getItemByIdOrThrow(itemId);
+        Item item = itemGetterService.getItemByIdOrThrow(itemId);
 
         // Validate ownership
         itemValidator.validateCurrentUserIsOwnerItem(item);

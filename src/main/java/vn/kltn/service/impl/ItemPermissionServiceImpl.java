@@ -29,7 +29,7 @@ public class ItemPermissionServiceImpl implements IPermissionService {
     private final PermissionRepo permissionRepo;
     private final PermissionMapper permissionMapper;
     private final IPermissionValidatorService permissionValidatorService;
-    private final IItemService iItemService;
+    private final ItemGetterService itemGetterService;
     private final IPermissionDeletionService permissionDeletionService;
     private final IAuthenticationService authenticationService;
     private final IPermissionInheritanceService permissionInheritanceService;
@@ -55,7 +55,7 @@ public class ItemPermissionServiceImpl implements IPermissionService {
             return Collections.emptyList();
         }
 
-        Item item = iItemService.getItemByIdOrThrow(itemId);
+        Item item = itemGetterService.getItemByIdOrThrow(itemId);
         List<Permission> permissionsToSave = new ArrayList<>();
 
         for (PermissionRequest request : permissionsRequest) {
@@ -123,7 +123,7 @@ public class ItemPermissionServiceImpl implements IPermissionService {
     }
 
     private Permission createPermissionFromRequest(PermissionRequest permissionRequest, Long itemId) {
-        Item item = iItemService.getItemByIdOrThrow(itemId);
+        Item item = itemGetterService.getItemByIdOrThrow(itemId);
         Permission permission = new Permission();
         permission.setPermission(permissionRequest.getPermission());
         permission.setRecipient(userService.getUserById(permissionRequest.getRecipientId()));
@@ -157,7 +157,7 @@ public class ItemPermissionServiceImpl implements IPermissionService {
     @Override
     public PageResponse<List<ItemPermissionResponse>> getPagePermissionByItemId(Long itemId, Pageable pageable) {
         log.info("get page permission by resource id: {}", itemId);
-        Item item = iItemService.getItemByIdOrThrow(itemId);
+        Item item = itemGetterService.getItemByIdOrThrow(itemId);
         // kiểm tra xem user hiện tại có permission với resource hiện tại hay k ?
         User currentUser = authenticationService.getCurrentUser();
         permissionValidatorService.validatePermissionManager(item, currentUser);

@@ -7,6 +7,7 @@ import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentResponse;
+import vn.kltn.dto.response.ItemResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.User;
 import vn.kltn.exception.CustomIOException;
@@ -37,6 +38,7 @@ public class DocumentMapperServiceImpl implements IDocumentMapperService {
     public DocumentResponse mapToDocumentResponse(Document document) {
         return documentMapper.toDocumentResponse(document);
     }
+
 
     @Override
     public void updateDocument(Document docExists, DocumentRequest documentRequest) {

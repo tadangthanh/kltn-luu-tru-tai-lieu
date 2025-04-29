@@ -10,7 +10,7 @@ import java.util.List;
 // T là kiểu dữ liệu của entity resource(document or folder), R là kiểu dữ liệu của response (DocumentResponse or FolderResponse)
 public interface IItemCommonService<T extends Item, R extends ItemResponse> {
 
-    void deleteItemById(Long itemId);
+//    void deleteItemById(Long itemId);
 
     R restoreItemById(Long itemId);
 

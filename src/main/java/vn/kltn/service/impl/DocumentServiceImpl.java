@@ -15,8 +15,10 @@ import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.dto.response.DocumentResponse;
+import vn.kltn.dto.response.ItemResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.exception.ResourceNotFoundException;
+import vn.kltn.map.ItemMapper;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.service.*;
 import vn.kltn.service.event.DocumentUpdatedEvent;
@@ -34,37 +36,27 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
     private final IDocumentIndexService documentIndexService;
-//    private final IDocumentPermissionService documentPermissionService;
     private final ApplicationEventPublisher eventPublisher;
     private final IDocumentStorageService documentStorageService;
     private final IDocumentMapperService documentMapperService;
     private final IDocumentSearchService documentSearchService;
     private final ItemValidator itemValidator;
     private final IPermissionService permissionService;
-//    public DocumentServiceImpl(@Qualifier("documentPermissionServiceImpl") AbstractPermissionService abstractPermissionService, IFolderPermissionService folderPermissionService, DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentPermissionService documentPermissionService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService) {
-//        super(documentPermissionService, folderPermissionService, authenticationService, abstractPermissionService, folderCommonService, itemValidator, permissionInheritanceService, permissionValidatorService);
-//        this.documentRepo = documentRepo;
-//        this.documentHasTagService = documentHasTagService;
-//        this.documentIndexService = documentIndexService;
-//        this.documentPermissionService = documentPermissionService;
-//        this.eventPublisher = eventPublisher;
-//        this.documentStorageService = documentStorageService;
-//        this.documentMapperService = documentMapperService;
-//        this.documentSearchService = documentSearchService;
-//        this.itemValidator = itemValidator;
-//    }
-public DocumentServiceImpl(DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService,  IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService, IPermissionService permissionService) {
-    super(authenticationService,folderCommonService , itemValidator, permissionInheritanceService, permissionValidatorService,permissionService);
-    this.documentRepo = documentRepo;
-    this.documentHasTagService = documentHasTagService;
-    this.documentIndexService = documentIndexService;
-    this.permissionService = permissionService;
-    this.eventPublisher = eventPublisher;
-    this.documentStorageService = documentStorageService;
-    this.documentMapperService = documentMapperService;
-    this.documentSearchService = documentSearchService;
-    this.itemValidator = itemValidator;
-}
+    private final ItemMapper itemMapper;
+
+    public DocumentServiceImpl(DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService, IPermissionService permissionService, ItemMapper itemMapper) {
+        super(authenticationService, folderCommonService, itemValidator, permissionInheritanceService, permissionValidatorService, permissionService);
+        this.documentRepo = documentRepo;
+        this.documentHasTagService = documentHasTagService;
+        this.documentIndexService = documentIndexService;
+        this.permissionService = permissionService;
+        this.eventPublisher = eventPublisher;
+        this.documentStorageService = documentStorageService;
+        this.documentMapperService = documentMapperService;
+        this.documentSearchService = documentSearchService;
+        this.itemValidator = itemValidator;
+        this.itemMapper = itemMapper;
+    }
 
     @Override
     @Async("taskExecutor")
@@ -110,8 +102,9 @@ public DocumentServiceImpl(DocumentRepo documentRepo, IDocumentHasTagService doc
     }
 
     @Override
-    protected void softDeleteResource(Document document) {
-        log.info("soft delete document with id {}", document.getId());
+    public void softDeleteDocumentById(Long documentId) {
+        log.info("soft delete document with id {}", documentId);
+        Document document = getItemByIdOrThrow(documentId);
         document.setDeletedAt(LocalDateTime.now());
         document.setPermanentDeleteAt(LocalDateTime.now().plusDays(documentRetentionDays));
         documentIndexService.markDeleteDocument(document.getId(), true);
@@ -173,11 +166,11 @@ public DocumentServiceImpl(DocumentRepo documentRepo, IDocumentHasTagService doc
 
 
     @Override
-    public DocumentResponse copyDocumentById(Long documentId) {
+    public ItemResponse copyDocumentById(Long documentId) {
         log.info("copy document by id: {}", documentId);
         Document document = getItemByIdOrThrow(documentId);
         Document copied = documentStorageService.copyDocument(document);
-        return documentMapperService.mapToDocumentResponse(copied);
+        return itemMapper.toResponse(copied);
     }
 
 

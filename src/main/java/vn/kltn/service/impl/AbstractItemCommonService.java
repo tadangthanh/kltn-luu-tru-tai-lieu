@@ -82,27 +82,27 @@ protected AbstractItemCommonService(IAuthenticationService authenticationService
         return mapToR(getItemByIdOrThrow(itemId));
     }
 
-    @Override
-    public void deleteItemById(Long itemId) {
-        T item = getItemByIdOrThrow(itemId);
-        // resource chua bi xoa
-        itemValidator.validateItemNotDeleted(item);
-        // validate chu so huu hoac editor o resource cha
-        if (item.getParent() != null) {
-            itemValidator.validateCurrentUserIsOwnerOrEditorItem(item.getParent());
-        }
-        User currentUser = getCurrentUser();
-        User owner = item.getOwner();
-        if (currentUser.getId().equals(owner.getId())) {
-            // neu la chu so huu thi chuyen vao thung rac
-            softDeleteResource(item);
-        } else {
-            // nguoi thuc hien co quyen editor
-            permissionValidatorService.validatePermissionManager(item, currentUser);
-            // set parent = null la se dua resource nay vao drive cua toi
-            item.setParent(null);
-        }
-    }
+//    @Override
+//    public void deleteItemById(Long itemId) {
+//        T item = getItemByIdOrThrow(itemId);
+//        // resource chua bi xoa
+//        itemValidator.validateItemNotDeleted(item);
+//        // validate chu so huu hoac editor o resource cha
+//        if (item.getParent() != null) {
+//            itemValidator.validateCurrentUserIsOwnerOrEditorItem(item.getParent());
+//        }
+//        User currentUser = getCurrentUser();
+//        User owner = item.getOwner();
+//        if (currentUser.getId().equals(owner.getId())) {
+//            // neu la chu so huu thi chuyen vao thung rac
+//            softDeleteResource(item);
+//        } else {
+//            // nguoi thuc hien co quyen editor
+//            permissionValidatorService.validatePermissionManager(item, currentUser);
+//            // set parent = null la se dua resource nay vao drive cua toi
+//            item.setParent(null);
+//        }
+//    }
 
     @Override
     public R moveItemToFolder(Long itemId, Long folderId) {
@@ -130,7 +130,7 @@ protected AbstractItemCommonService(IAuthenticationService authenticationService
     protected abstract T saveResource(T resource);
 
 
-    protected abstract void softDeleteResource(T resource);
+//    protected abstract void softDeleteResource(T resource);
 
     protected void deletePermissionResourceById(Long resourceId) {
         permissionService.deletePermissionByItemId(resourceId);

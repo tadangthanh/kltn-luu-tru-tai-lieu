@@ -8,6 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import vn.kltn.common.ItemType;
 import vn.kltn.dto.request.ItemRequest;
 import vn.kltn.dto.response.ItemResponse;
 import vn.kltn.dto.response.PageResponse;
@@ -20,8 +21,8 @@ import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.specification.ItemSpecification;
 import vn.kltn.repository.specification.SpecificationUtil;
 import vn.kltn.repository.util.PaginationUtils;
-import vn.kltn.service.IAuthenticationService;
-import vn.kltn.service.IItemService;
+import vn.kltn.service.*;
+import vn.kltn.util.ItemValidator;
 
 import java.util.Arrays;
 import java.util.List;
@@ -34,6 +35,10 @@ public class ItemServiceImpl implements IItemService {
     private final ItemRepo itemRepo;
     private final ItemMapper itemMapper;
     private final IAuthenticationService authenticationService;
+    private final ItemValidator itemValidator;
+    private final IDocumentService documentService;
+    private final IFolderService folderService;
+    private final IPermissionValidatorService permissionValidatorService;
 
     @Override
     public PageResponse<List<ItemResponse>> searchByCurrentUser(Pageable pageable, String[] items) {
@@ -63,6 +68,32 @@ public class ItemServiceImpl implements IItemService {
     @Override
     public Item getItemByIdOrThrow(Long itemId) {
         return itemRepo.findById(itemId).orElseThrow(() -> new ResourceNotFoundException("Item not found for itemId: " + itemId));
+    }
+
+    @Override
+    public void softDeleteItemById(Long itemId) {
+        Item item = getItemByIdOrThrow(itemId);
+        // resource chua bi xoa
+        itemValidator.validateItemNotDeleted(item);
+        // validate chu so huu hoac editor o resource cha
+        if (item.getParent() != null) {
+            itemValidator.validateCurrentUserIsOwnerOrEditorItem(item.getParent());
+        }
+        User currentUser = authenticationService.getCurrentUser();
+        User owner = item.getOwner();
+        if (currentUser.getId().equals(owner.getId())) {
+            // neu la chu so huu thi chuyen vao thung rac
+            if (item.getItemType().equals(ItemType.DOCUMENT)) {
+                documentService.softDeleteDocumentById(item.getId());
+            } else if (item.getItemType().equals(ItemType.FOLDER)) {
+                folderService.softDeleteFolderById(item.getId());
+            }
+        } else {
+            // nguoi thuc hien co quyen editor
+            permissionValidatorService.validatePermissionManager(item, currentUser);
+            // set parent = null la se dua resource nay vao drive cua toi
+            item.setParent(null);
+        }
     }
 
     @Override

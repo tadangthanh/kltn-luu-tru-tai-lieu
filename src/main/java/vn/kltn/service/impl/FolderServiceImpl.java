@@ -36,16 +36,16 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
 //        this.folderRestorationService = folderRestorationService;
 //        this.itemValidator = itemValidator;
 //    }
-public FolderServiceImpl(FolderRepo folderRepo, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IFolderCreationService folderCreationService, IFolderMapperService folderMapperService, IFolderDeletionService folderDeletionService, IFolderRestorationService folderRestorationService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionService permissionService, IPermissionValidatorService permissionValidatorService) {
-    super(authenticationService,folderCommonService , itemValidator, permissionInheritanceService, permissionValidatorService,permissionService);
-    this.folderRepo = folderRepo;
-    this.folderCommonService = folderCommonService;
-    this.folderCreationService = folderCreationService;
-    this.folderMapperService = folderMapperService;
-    this.folderDeletionService = folderDeletionService;
-    this.folderRestorationService = folderRestorationService;
-    this.itemValidator = itemValidator;
-}
+    public FolderServiceImpl(FolderRepo folderRepo, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IFolderCreationService folderCreationService, IFolderMapperService folderMapperService, IFolderDeletionService folderDeletionService, IFolderRestorationService folderRestorationService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionService permissionService, IPermissionValidatorService permissionValidatorService) {
+        super(authenticationService, folderCommonService, itemValidator, permissionInheritanceService, permissionValidatorService, permissionService);
+        this.folderRepo = folderRepo;
+        this.folderCommonService = folderCommonService;
+        this.folderCreationService = folderCreationService;
+        this.folderMapperService = folderMapperService;
+        this.folderDeletionService = folderDeletionService;
+        this.folderRestorationService = folderRestorationService;
+        this.itemValidator = itemValidator;
+    }
 
     @Override
     public FolderResponse createFolder(FolderRequest folderRequest) {
@@ -64,7 +64,9 @@ public FolderServiceImpl(FolderRepo folderRepo, IAuthenticationService authentic
     }
 
     @Override
-    protected void softDeleteResource(Folder folder) {
+    public void softDeleteFolderById(Long folderId) {
+        log.info("Soft delete folder: folderId={}", folderId);
+        Folder folder = getFolderByIdOrThrow(folderId);
         folderDeletionService.softDelete(folder);
     }
 

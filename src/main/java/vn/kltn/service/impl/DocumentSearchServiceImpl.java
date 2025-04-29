@@ -32,7 +32,6 @@ public class DocumentSearchServiceImpl implements IDocumentSearchService {
     private final IAuthenticationService authenticationService;
     private final IDocumentIndexService documentIndexService;
     private final IPermissionService permissionService;
-//    private final IDocumentPermissionService documentPermissionService;
 
     @Override
     public PageResponse<List<DocumentResponse>> searchByCurrentUser(Pageable pageable, String[] documents) {
@@ -54,6 +53,6 @@ public class DocumentSearchServiceImpl implements IDocumentSearchService {
         log.info("Get document by me: query={}, page={}, size={}", query, page, size);
         User currentUser = authenticationService.getCurrentUser();
         Set<Long> itemIdsAllowAccess = permissionService.getItemIdsByRecipientId(currentUser.getId());
-        return documentIndexService.getDocumentShared(itemIdsAllowAccess,query,page,size);
+        return documentIndexService.getDocumentShared(itemIdsAllowAccess, query, page, size);
     }
 }
