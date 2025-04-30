@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.FileBuffer;
@@ -17,6 +18,8 @@ import vn.kltn.dto.response.DocumentIndexResponse;
 import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.dto.response.ItemResponse;
 import vn.kltn.entity.Document;
+import vn.kltn.entity.Folder;
+import vn.kltn.entity.User;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.ItemMapper;
 import vn.kltn.repository.DocumentRepo;
@@ -44,8 +47,9 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     private final ItemValidator itemValidator;
     private final IPermissionService permissionService;
     private final ItemMapper itemMapper;
-
-    public DocumentServiceImpl(DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService, IPermissionService permissionService, ItemMapper itemMapper) {
+    private final IPermissionValidatorService permissionValidatorService;
+    private final WebSocketService webSocketService;
+    public DocumentServiceImpl(DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService, IPermissionService permissionService, ItemMapper itemMapper, IPermissionValidatorService permissionValidatorService1, WebSocketService webSocketService) {
         super(authenticationService, folderCommonService, itemValidator, permissionInheritanceService, permissionValidatorService, permissionService);
         this.documentRepo = documentRepo;
         this.documentHasTagService = documentHasTagService;
@@ -57,6 +61,8 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
         this.documentSearchService = documentSearchService;
         this.itemValidator = itemValidator;
         this.itemMapper = itemMapper;
+        this.permissionValidatorService = permissionValidatorService1;
+        this.webSocketService = webSocketService;
     }
 
     @Override
@@ -71,15 +77,26 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     @Override
     @Async("taskExecutor")
     public void uploadDocumentWithParent(Long parentId, List<FileBuffer> bufferedFiles, CancellationToken token) {
-        // luu db
-        List<Document> documents = documentStorageService.saveDocumentsWithFolder(bufferedFiles, parentId);
-        // storage file to cloud
-        documentStorageService.store(token, bufferedFiles, documents);
-        // thua ke quyen cua parent
-        permissionInheritanceService.inheritPermissionsFromParent(documents);
-        // thong bao bang websocket
+        User currentUser = authenticationService.getCurrentUser();
+        try {
+            log.info("upload document with parent id {}", parentId);
+            Folder parent = folderCommonService.getFolderByIdOrThrow(parentId);
+            permissionValidatorService.validatePermissionManager(parent, currentUser);
 
+            List<Document> documents = documentStorageService.saveDocumentsWithFolder(bufferedFiles, parentId);
+            documentStorageService.store(token, bufferedFiles, documents);
+            permissionInheritanceService.inheritPermissionsFromParent(documents);
+
+            // Gửi websocket hoặc notification nếu cần
+
+        } catch (AccessDeniedException e) {
+            log.warn("Permission denied: {}", e.getMessage());
+            // Có thể gửi message về client bằng WebSocket hoặc lưu log, hoặc trạng thái vào DB nếu cần
+            webSocketService.sendUploadError(currentUser.getEmail(), "Bạn không có quyền upload vào thư mục này.");
+
+        }
     }
+
 
     @Override
     protected void hardDeleteResource(Document resource) {

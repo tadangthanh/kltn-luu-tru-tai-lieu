@@ -39,6 +39,7 @@ public class PermissionValidatorServiceImpl implements IPermissionValidatorServi
         }
     }
 
+
     @Override
     public void validateAddPermissionRequest(Long itemId, PermissionRequest permissionRequest) {
         // Check if permission already exists
@@ -55,5 +56,15 @@ public class PermissionValidatorServiceImpl implements IPermissionValidatorServi
         // Validate user has permission to manage permissions
         User currentUser = authenticationService.getCurrentUser();
         validatePermissionManager(item, currentUser);
+    }
+
+    @Override
+    public void validatePermissionViewer(Item item, User currentUser) {
+        if (item.getOwner().getId().equals(currentUser.getId())) {
+            return;
+        }
+        if (!permissionRepo.isViewerPermission(item.getId(), currentUser.getId())) {
+            throw new AccessDeniedException("Bạn không có quyền truy cập tài nguyên này");
+        }
     }
 }

@@ -2,7 +2,6 @@ package vn.kltn.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.FileBuffer;
@@ -32,7 +31,7 @@ public class UploadProcessorImpl implements IUploadProcessor {
     private final IDocumentMapperService documentMapperService;
     private final IDocumentIndexService documentIndexService;
     private final UploadFinalizerService uploadFinalizerService;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final WebSocketService webSocketService;
 
     @Override
     public List<String> process(List<FileBuffer> bufferedFiles) {
@@ -56,9 +55,7 @@ public class UploadProcessorImpl implements IUploadProcessor {
             uploadFinalizerService.finalizeUpload(context.getToken());
             documentMapperService.mapBlobNamesToDocuments(context.getDocuments(), blobNames);
             List<DocumentResponse> documentResponses = documentMapperService.mapToDocumentResponseList(context.getDocuments());
-            messagingTemplate.convertAndSendToUser(
-                    SecurityContextHolder.getContext().getAuthentication().getName(),
-                    "/topic/upload-documents-completed",
+            webSocketService.sendUploadSuccess(SecurityContextHolder.getContext().getAuthentication().getName(),
                     new ProcessUploadResult(false, documentResponses));
             List<DocumentIndex> indices = documentIndexService.insertAllDoc(context.getDocuments()).join();
             context.setDocumentIndices(indices);
