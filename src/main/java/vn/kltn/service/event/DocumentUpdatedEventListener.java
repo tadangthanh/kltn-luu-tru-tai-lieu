@@ -22,4 +22,8 @@ public class DocumentUpdatedEventListener {
     public void handleMultipleDocumentsUpdated(MultipleDocumentsUpdatedEvent event) {
         documentIndexService.syncDocuments(event.getDocumentIds());
     }
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleMultipleDocumentsUpdated(DocumentUpdateContent event) {
+        documentIndexService.syncContentDocument(event.getDocumentId());
+    }
 }

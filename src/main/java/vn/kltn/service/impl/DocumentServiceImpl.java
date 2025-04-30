@@ -16,19 +16,22 @@ import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.*;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.Folder;
+import vn.kltn.entity.Permission;
 import vn.kltn.entity.User;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.ItemMapper;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.service.*;
+import vn.kltn.service.event.DocumentUpdateContent;
 import vn.kltn.service.event.DocumentUpdatedEvent;
 import vn.kltn.util.DocumentTypeUtil;
 import vn.kltn.util.ItemValidator;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 import static vn.kltn.repository.util.FileUtil.getFileExtension;
 
@@ -77,6 +80,38 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
         // upload file to cloud
         documentStorageService.store(token, bufferedFiles, documents);
     }
+
+    @Override
+    public void updateDocumentEditor(Long documentId, byte[] data) {
+        Document document = getItemByIdOrThrow(documentId);
+        permissionValidatorService.validatePermissionManager(document, authenticationService.getCurrentUser());
+        String oldBlobName = document.getBlobName(); // tên blob cũ
+        String originalFileName = document.getName(); // Lấy tên file gốc
+        long fileSize = data.length;
+        int chunkSize = 1024 * 1024; // 1MB
+
+        try (InputStream inputStream = new ByteArrayInputStream(data)) {
+            // Upload và lấy tên blob mới
+            String newBlobName = azureStorageService.uploadChunkedWithContainerDefault(
+                    inputStream, originalFileName, fileSize, chunkSize
+            );
+
+            // Cập nhật lại document với blob mới (nếu cần versioning, thì xử lý tại đây)
+            document.setBlobName(newBlobName);
+            documentRepo.saveAndFlush(document);
+            log.info(" Cập nhật documentId={} thành công với blobName={}", documentId, newBlobName);
+        } catch (IOException e) {
+            throw new RuntimeException("Lỗi khi đọc dữ liệu tài liệu", e);
+        } finally {
+            // Xóa blob cũ nếu không cần thiết nữa
+            if (oldBlobName != null && !oldBlobName.equals(document.getBlobName())) {
+                azureStorageService.deleteBlob(oldBlobName);
+                log.info("Xóa blob cũ với tên: {}", oldBlobName);
+            }
+            eventPublisher.publishEvent(new DocumentUpdateContent(this, documentId));
+        }
+    }
+
 
     @Override
     @Async("taskExecutor")
@@ -195,6 +230,15 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     @Override
     public OnlyOfficeConfig getOnlyOfficeConfig(Long documentId) {
         Document document = getItemByIdOrThrow(documentId);
+        User currentUser = authenticationService.getCurrentUser();
+        boolean isEdit=false;
+        if(document.getOwner().getId().equals(currentUser.getId())) {
+            isEdit=true;
+        }else{
+            // Kiểm tra quyền của người dùng hiện tại với tài liệu
+            Permission permission = permissionService.getPermissionItemByRecipientId(document.getId(), currentUser.getId());
+            isEdit = permission.getPermission().equals(vn.kltn.common.Permission.EDITOR);
+        }
         // Lấy phần mở rộng file từ tên file
         String fileExtension = getFileExtension(document.getName());
 
@@ -203,7 +247,8 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
         // Tạo cấu hình cho OnlyOffice
         OnlyOfficeConfig config = new OnlyOfficeConfig();
         config.setDocumentId(document.getId());
-        config.setDocumentKey(UUID.randomUUID().toString());  // Hoặc sinh key riêng
+        String documentKey = document.getId() + "-" + document.getUpdatedAt().getTime();
+        config.setDocumentKey(documentKey);
         config.setDocumentTitle(document.getName());
         config.setFileType(documentTypeInfo.getFileType());
         config.setDocumentType(documentTypeInfo.getDocumentType());
@@ -212,7 +257,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
 
         // Thông tin quyền truy cập người dùng
         OnlyOfficeConfig.Permissions permissions = new OnlyOfficeConfig.Permissions();
-        permissions.setEdit(true); // Quyền chỉnh sửa (có thể tùy chỉnh)
+        permissions.setEdit(isEdit); // Quyền chỉnh sửa (có thể tùy chỉnh)
         permissions.setComment(true); // Quyền bình luận
         permissions.setDownload(false); // Quyền tải xuống
 
@@ -220,7 +265,6 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
 
         // Thông tin người dùng
         OnlyOfficeConfig.User user = new OnlyOfficeConfig.User();
-        User currentUser = authenticationService.getCurrentUser();
         user.setId(currentUser.getId().toString()); // Lấy từ context hoặc JWT của người dùng
         user.setName(currentUser.getFullName());
         config.setUser(user);

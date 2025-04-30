@@ -3,25 +3,34 @@ package vn.kltn.controller.rest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import vn.kltn.common.CancellationToken;
+import vn.kltn.common.TokenType;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.*;
 import vn.kltn.entity.Document;
+import vn.kltn.entity.User;
 import vn.kltn.repository.util.FileUtil;
+import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IDocumentService;
+import vn.kltn.service.IJwtService;
+import vn.kltn.service.IUserService;
 import vn.kltn.service.impl.UploadTokenManager;
 import vn.kltn.validation.ValidFiles;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -34,9 +43,12 @@ import java.util.*;
 @RequestMapping("/api/v1/documents")
 @RestController
 @Validated
+@Slf4j(topic = "DOCUMENT_REST")
 public class DocumentRest {
     private final IDocumentService documentService;
     private final UploadTokenManager uploadTokenManager;
+    private final IJwtService jwtService;
+    private final IUserService userService;
 
     @PostMapping
     public ResponseData<String> uploadWithoutParent(@ValidFiles @RequestPart("files") MultipartFile[] files) {
@@ -117,43 +129,57 @@ public class DocumentRest {
         return new ResponseData<>(200, "Thành công", documentService.getItemById(documentId));
     }
 
-    @PostMapping("/save-editor")
-    public ResponseEntity<Map<String, Object>> saveDocument(@RequestBody Map<String, Object> documentRequest) {
-        System.out.println("📥 Callback received from OnlyOffice:");
-        System.out.println(documentRequest); // Log để kiểm tra body OnlyOffice gửi lên
-
-        // Kiểm tra xem có tồn tại "key" (documentId) không
-        String documentId = (String) documentRequest.get("key");
-        if (documentId == null) {
-            System.out.println("⚠️ Missing documentId (key), nhưng vẫn trả về thành công để tránh lỗi OnlyOffice.");
-            return ResponseEntity.ok(Map.of("error", 0));  // Vẫn trả về thành công!
+    @PostMapping("/save-editor/{accessToken}")
+    public ResponseEntity<Map<String, Object>> saveDocument(@RequestBody Map<String, Object> documentRequest, @PathVariable String accessToken) {
+        log.info("saveDocument: {}", documentRequest);
+        String email = jwtService.extractEmail(accessToken, TokenType.ACCESS_TOKEN);
+        User user = userService.getUserByEmail(email);
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String documentIdStr = (String) documentRequest.get("key");
+        Long documentId = null;
+        try {
+            documentId = Long.parseLong(documentIdStr.split("-")[0]);
+        } catch (NumberFormatException e) {
+            log.error(" Không thể parse documentId từ key: " + documentIdStr);
+            return ResponseEntity.ok(Map.of("error", 0)); // Trả về thành công để tránh lỗi OnlyOffice
         }
 
-        // Lấy thông tin status từ OnlyOffice callback
         Integer status = (Integer) documentRequest.get("status");
+        String fileUrl = (String) documentRequest.get("url");
 
-        // Kiểm tra nếu status là 6 (hoàn thành) hoặc 2 (chỉnh sửa)
-        if (status != null && (status == 6 || status == 2)) {
-//            // TODO: Xử lý lưu file khi status = 6 hoặc 2
-//            // Trong trường hợp status = 6, bạn có thể tải file từ OnlyOffice về và lưu vào Azure Blob Storage.
-//
-//            String fileUrl = (String) documentRequest.get("url"); // URL tải tài liệu sau khi chỉnh sửa
-//            if (fileUrl != null) {
-//                // Ví dụ bạn có thể tải file về từ URL này và lưu lại trên Azure
-//                byte[] fileData = downloadFile(fileUrl); // Hàm tải file từ URL (cần implement)
-//
-//                // Gọi service để lưu file lên Azure Blob
-//                azureStorageService.uploadChunkedWithContainerDefault(fileData, "documents/" + documentId + ".docx");
-//
-//                System.out.println("📤 File đã được lưu lên Azure Blob Storage.");
-//            } else {
-//                System.out.println("⚠️ Không có URL file trong callback.");
-//            }
+        if ((status == 2) && fileUrl != null) {
+            try {
+                // Tải file từ OnlyOffice server
+                byte[] fileData = downloadFileFromOnlyOffice(fileUrl);
+                documentService.updateDocumentEditor(documentId, fileData);
+            } catch (IOException e) {
+                // Tuyệt đối không trả lỗi cho OnlyOffice, chỉ log
+            }
+        } else {
+            System.out.println("ℹ️ Không xử lý lưu vì status = " + status + " hoặc thiếu fileUrl.");
         }
 
-        // Trả về thành công dù có lỗi hay không, tránh lỗi OnlyOffice
         return ResponseEntity.ok(Map.of("error", 0));
     }
+
+    private byte[] downloadFileFromOnlyOffice(String fileUrl) throws IOException {
+        URL url = new URL(fileUrl);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+
+        try (InputStream in = connection.getInputStream(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = in.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+            }
+            return out.toByteArray();
+        }
+    }
+
 
     // Hàm tải file từ URL
     private byte[] downloadFile(String fileUrl) {
@@ -175,8 +201,7 @@ public class DocumentRest {
 
 
     @GetMapping("/open")
-    public ResponseEntity<InputStreamResource> openDoc(@RequestParam(value = "documentId") Long documentId,
-                                                       @RequestHeader(value = HttpHeaders.RANGE, defaultValue = "") String range) {
+    public ResponseEntity<InputStreamResource> openDoc(@RequestParam(value = "documentId") Long documentId, @RequestHeader(value = HttpHeaders.RANGE, defaultValue = "") String range) {
         DocumentDataResponse documentDataResponse = documentService.openDocumentById(documentId);
 
         if (!range.isEmpty()) {
@@ -186,17 +211,10 @@ public class DocumentRest {
             long end = rangeParts.length > 1 ? Long.parseLong(rangeParts[1]) : documentDataResponse.getData().length - 1;
             byte[] dataRange = Arrays.copyOfRange(documentDataResponse.getData(), (int) start, (int) end + 1);
 
-            return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + documentDataResponse.getName() + "\"")
-                    .header(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + documentDataResponse.getData().length)
-                    .contentType(MediaType.parseMediaType(documentDataResponse.getType()))
-                    .body(new InputStreamResource(new ByteArrayInputStream(dataRange)));
+            return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + documentDataResponse.getName() + "\"").header(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + documentDataResponse.getData().length).contentType(MediaType.parseMediaType(documentDataResponse.getType())).body(new InputStreamResource(new ByteArrayInputStream(dataRange)));
         }
 
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + documentDataResponse.getName() + "\"")
-                .contentType(MediaType.parseMediaType(documentDataResponse.getType()))
-                .body(new InputStreamResource(new ByteArrayInputStream(documentDataResponse.getData())));
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + documentDataResponse.getName() + "\"").contentType(MediaType.parseMediaType(documentDataResponse.getType())).body(new InputStreamResource(new ByteArrayInputStream(documentDataResponse.getData())));
     }
 
 
@@ -207,10 +225,7 @@ public class DocumentRest {
             String fileName = generateFileName(document.getBlobName());
 
             response.setContentType("application/octet-stream");
-            response.setHeader(
-                    "Content-Disposition",
-                    "attachment; filename*=UTF-8''" + URLEncoder.encode(fileName, StandardCharsets.UTF_8)
-            );
+            response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
 
             byte[] buffer = new byte[4096];
             int bytesRead;
@@ -232,10 +247,7 @@ public class DocumentRest {
         InputStream inputStream = documentService.download(documentId);
 
         // 3. Trả về stream cho OnlyOffice
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + document.getName() + "\"")
-                .body(new InputStreamResource(inputStream));
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM).header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + document.getName() + "\"").body(new InputStreamResource(inputStream));
     }
 
     @GetMapping("/{documentId}/onlyoffice-config")

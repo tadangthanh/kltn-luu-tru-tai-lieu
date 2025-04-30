@@ -27,6 +27,8 @@ public interface IDocumentIndexService {
 
     void syncDocument(Long docId);
 
+    void syncContentDocument(Long docId);
+
     void syncDocuments(Set<Long> documentIds);
 
 }

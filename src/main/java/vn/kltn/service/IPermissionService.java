@@ -4,6 +4,7 @@ import org.springframework.data.domain.Pageable;
 import vn.kltn.dto.request.PermissionRequest;
 import vn.kltn.dto.response.ItemPermissionResponse;
 import vn.kltn.dto.response.PageResponse;
+import vn.kltn.entity.Permission;
 
 import java.util.List;
 import java.util.Set;
@@ -26,5 +27,7 @@ public interface IPermissionService {
     Set<Long> getItemIdsByRecipientId(Long recipientId);
 
     void deletePermissionByItemId(Long resourceId);
+
+    Permission getPermissionItemByRecipientId(Long itemId, Long recipientId);
 
 }

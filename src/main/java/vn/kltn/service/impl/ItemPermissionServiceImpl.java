@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.kltn.common.ItemType;
@@ -184,5 +185,13 @@ public class ItemPermissionServiceImpl implements IPermissionService {
     @Override
     public void deletePermissionByItemId(Long itemId) {
         permissionDeletionService.deleteByItemId(itemId);
+    }
+
+    @Override
+    public Permission getPermissionItemByRecipientId(Long itemId, Long recipientId) {
+        return permissionRepo.findByItemIdAndRecipientId(itemId, recipientId).orElseThrow(()->{
+            log.warn("Permission not found for itemId: {}, recipientId: {}", itemId, recipientId);
+            return new AccessDeniedException("Bạn không có quyền truy cập tài liệu này");
+        });
     }
 }

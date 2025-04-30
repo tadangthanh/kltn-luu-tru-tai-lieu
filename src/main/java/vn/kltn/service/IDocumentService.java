@@ -13,6 +13,8 @@ import java.util.List;
 public interface IDocumentService extends IItemCommonService<Document, DocumentResponse> {
     void uploadDocumentEmptyParent(List<FileBuffer> bufferedFiles, CancellationToken token);
 
+    void updateDocumentEditor(Long documentId, byte[] data); // cap nhat noi dung document
+
     void softDeleteDocumentById(Long documentId); // xoa tam document
 
     InputStream download(Long documentId);

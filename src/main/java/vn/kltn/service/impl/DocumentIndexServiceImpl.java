@@ -177,16 +177,20 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     }
 
     @Override
+    public void syncContentDocument(Long docId) {
+        log.info("sync content documentId: {}", docId);
+        Document document = documentCommonService.getDocumentById(docId);
+        if (document == null) return;
+        customDocumentIndexRepo.updateDocument(mapDocContent(document));
+    }
+
+    @Override
     @Async("taskExecutor")
     public void syncDocuments(Set<Long> documentIds) {
         log.info("sync list document");
-        List<Document> documents = documentIds.stream()
-                .map(documentCommonService::getDocumentById)
-                .toList();
+        List<Document> documents = documentIds.stream().map(documentCommonService::getDocumentById).toList();
 
-        List<DocumentIndex> indices = documents.stream()
-                .map(this::mapDocumentIndex)
-                .toList();
+        List<DocumentIndex> indices = documents.stream().map(this::mapDocumentIndex).toList();
         customDocumentIndexRepo.bulkUpdate(indices);
 
     }
@@ -198,6 +202,17 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
 
     private DocumentIndex mapDocumentIndex(Document document) {
         return documentIndexMapper.toIndex(document);
+    }
+
+    private DocumentIndex mapDocContent(Document document) {
+        DocumentIndex documentIndex = documentIndexMapper.toIndex(document);
+        try (InputStream inputStream = azureStorageService.downloadBlobInputStream(document.getBlobName())) {
+            String content = FileUtil.extractTextByType(document.getType(), inputStream);
+            documentIndex.setContent(content);
+        } catch (IOException e) {
+            log.error("Error downloading blob for document {}: {}", document.getId(), e.getMessage());
+        }
+        return documentIndex;
     }
 
 
