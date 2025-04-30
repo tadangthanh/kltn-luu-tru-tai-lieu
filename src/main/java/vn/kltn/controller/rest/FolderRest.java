@@ -19,7 +19,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -71,7 +73,7 @@ public class FolderRest {
     @GetMapping("/{folderId}/download")
     public void downloadFolder(@PathVariable Long folderId, HttpServletResponse response) throws IOException {
         Folder folder = folderService.getFolderByIdOrThrow(folderId);
-        List<FolderContent> contents = folderService.getAllContents(folderId, "");
+        List<FolderContent> contents = folderService.getAllContents(folderId, folder.getName());
 
         response.setContentType("application/zip");
         String rawFileName = folder.getName() + ".zip";
@@ -80,29 +82,33 @@ public class FolderRest {
         response.setHeader("Content-Disposition", "attachment; filename=\"" + rawFileName + "\"; filename*=UTF-8''" + encodedFileName);
 
         try (ZipOutputStream zipOut = new ZipOutputStream(response.getOutputStream())) {
-            for (FolderContent content : contents) {
-                if (content.isFolder()) {
-                    // nếu là folder => tạo entry folder
-                    ZipEntry folderEntry = new ZipEntry(content.getPath());
-                    zipOut.putNextEntry(folderEntry);
-                    zipOut.closeEntry();
-                } else {
-                    // nếu là file => tải từ Azure rồi ghi vào zip
-                    InputStream fileInputStream = azureStorageService.downloadBlobInputStream(content.getBlobName());
-                    ZipEntry fileEntry = new ZipEntry(content.getPath());
-                    zipOut.putNextEntry(fileEntry);
+            Set<String> addedPaths = new HashSet<>();
 
-                    byte[] buffer = new byte[4096];
-                    int bytesRead;
-                    while ((bytesRead = fileInputStream.read(buffer)) != -1) {
-                        zipOut.write(buffer, 0, bytesRead);
+            for (FolderContent content : contents) {
+                String path = content.getPath();
+
+                // Bỏ qua nếu path đã được thêm vào trước đó
+                if (!addedPaths.add(path)) continue;
+
+                ZipEntry entry = new ZipEntry(path);
+                zipOut.putNextEntry(entry);
+
+                if (!content.isFolder()) {
+                    try (InputStream fileInputStream = azureStorageService.downloadBlobInputStream(content.getBlobName())) {
+                        byte[] buffer = new byte[4096];
+                        int bytesRead;
+                        while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+                            zipOut.write(buffer, 0, bytesRead);
+                        }
                     }
-                    zipOut.closeEntry();
-                    fileInputStream.close();
                 }
+
+                zipOut.closeEntry();
             }
+
             zipOut.finish();
         }
+
     }
 
 
