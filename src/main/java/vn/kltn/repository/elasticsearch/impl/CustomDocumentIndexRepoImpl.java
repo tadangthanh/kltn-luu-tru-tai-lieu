@@ -171,8 +171,7 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
                                                             .numberOfFragments(3))
                                             .fields("name", f -> f)
                                             .fields("description", f -> f)
-                                            .fields("updatedBy", f -> f)
-                                            .fields("createdBy", f -> f)),
+                                            .fields("updatedBy", f -> f)),
                     DocumentIndex.class);
 
             return response.hits().hits().stream()
