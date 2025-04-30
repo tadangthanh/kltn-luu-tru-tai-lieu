@@ -4,6 +4,8 @@ import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.models.BlobStorageException;
+import com.azure.storage.blob.sas.BlobSasPermission;
+import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
 import com.azure.storage.blob.specialized.BlockBlobClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -198,6 +201,33 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
         } catch (Exception e) {
             log.error("Lỗi khi tải file từ Azure Blob: {}", e.getMessage());
             throw new CustomBlobStorageException("Không thể tải file từ Azure Blob: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public String getBlobUrl(String blobName) {
+        try {
+            // Kết nối tới blob container
+            BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerNameDefault);
+            BlobClient blobClient = blobContainerClient.getBlobClient(blobName);
+
+            // Xác định thời gian hết hạn cho SAS token (ví dụ 1 giờ)
+            OffsetDateTime expiryTime = OffsetDateTime.now().plusHours(1);
+
+            // Tạo quyền truy cập SAS cho blob (chỉ phép đọc)
+            BlobSasPermission permission = new BlobSasPermission()
+                    .setReadPermission(true);
+
+            // Tạo SAS token cho blob
+            BlobServiceSasSignatureValues sasSignatureValues = new BlobServiceSasSignatureValues(expiryTime, permission);
+            String sasToken = blobClient.generateSas(sasSignatureValues);
+
+            // Tạo và trả về URL với SAS token
+            String blobUrlWithSas = blobClient.getBlobUrl() + "?" + sasToken;
+            return blobUrlWithSas;
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy URL của blob: {}", e.getMessage());
+            throw new CustomBlobStorageException("Không thể lấy URL của blob: " + e.getMessage());
         }
     }
 

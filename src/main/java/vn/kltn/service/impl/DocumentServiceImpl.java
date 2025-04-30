@@ -13,10 +13,7 @@ import org.springframework.stereotype.Service;
 import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.request.DocumentRequest;
-import vn.kltn.dto.response.DocumentDataResponse;
-import vn.kltn.dto.response.DocumentIndexResponse;
-import vn.kltn.dto.response.DocumentResponse;
-import vn.kltn.dto.response.ItemResponse;
+import vn.kltn.dto.response.*;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.Folder;
 import vn.kltn.entity.User;
@@ -25,11 +22,15 @@ import vn.kltn.map.ItemMapper;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.service.*;
 import vn.kltn.service.event.DocumentUpdatedEvent;
+import vn.kltn.util.DocumentTypeUtil;
 import vn.kltn.util.ItemValidator;
 
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
+
+import static vn.kltn.repository.util.FileUtil.getFileExtension;
 
 @Service
 @Transactional
@@ -49,7 +50,9 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     private final ItemMapper itemMapper;
     private final IPermissionValidatorService permissionValidatorService;
     private final WebSocketService webSocketService;
-    public DocumentServiceImpl(DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService, IPermissionService permissionService, ItemMapper itemMapper, IPermissionValidatorService permissionValidatorService1, WebSocketService webSocketService) {
+    private final IAzureStorageService azureStorageService;
+
+    public DocumentServiceImpl(DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService, IPermissionService permissionService, ItemMapper itemMapper, IPermissionValidatorService permissionValidatorService1, WebSocketService webSocketService, IAzureStorageService azureStorageService) {
         super(authenticationService, folderCommonService, itemValidator, permissionInheritanceService, permissionValidatorService, permissionService);
         this.documentRepo = documentRepo;
         this.documentHasTagService = documentHasTagService;
@@ -63,6 +66,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
         this.itemMapper = itemMapper;
         this.permissionValidatorService = permissionValidatorService1;
         this.webSocketService = webSocketService;
+        this.azureStorageService = azureStorageService;
     }
 
     @Override
@@ -186,6 +190,41 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     public DocumentDataResponse openDocumentById(Long documentId) {
         Document document = getItemByIdOrThrow(documentId);
         return documentMapperService.mapDocToDocDataResponse(document);
+    }
+
+    @Override
+    public OnlyOfficeConfig getOnlyOfficeConfig(Long documentId) {
+        Document document = getItemByIdOrThrow(documentId);
+        // Lấy phần mở rộng file từ tên file
+        String fileExtension = getFileExtension(document.getName());
+
+        // Sử dụng hàm util để lấy fileType và documentType
+        DocumentTypeUtil.DocumentTypeInfo documentTypeInfo = DocumentTypeUtil.getDocumentTypeInfo(fileExtension);
+        // Tạo cấu hình cho OnlyOffice
+        OnlyOfficeConfig config = new OnlyOfficeConfig();
+        config.setDocumentId(document.getId());
+        config.setDocumentKey(UUID.randomUUID().toString());  // Hoặc sinh key riêng
+        config.setDocumentTitle(document.getName());
+        config.setFileType(documentTypeInfo.getFileType());
+        config.setDocumentType(documentTypeInfo.getDocumentType());
+        config.setDocumentUrl(azureStorageService.getBlobUrl(document.getBlobName())); // SAS URL để tải tài liệu
+        config.setCallbackUrl("https://localhost:8080/api/v1/documents/save-editor");
+
+        // Thông tin quyền truy cập người dùng
+        OnlyOfficeConfig.Permissions permissions = new OnlyOfficeConfig.Permissions();
+        permissions.setEdit(true); // Quyền chỉnh sửa (có thể tùy chỉnh)
+        permissions.setComment(true); // Quyền bình luận
+        permissions.setDownload(false); // Quyền tải xuống
+
+        config.setPermissions(permissions);
+
+        // Thông tin người dùng
+        OnlyOfficeConfig.User user = new OnlyOfficeConfig.User();
+        User currentUser = authenticationService.getCurrentUser();
+        user.setId(currentUser.getId().toString()); // Lấy từ context hoặc JWT của người dùng
+        user.setName(currentUser.getFullName());
+        config.setUser(user);
+        return config;
     }
 
 

@@ -4,10 +4,7 @@ import org.springframework.data.domain.Pageable;
 import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.request.DocumentRequest;
-import vn.kltn.dto.response.DocumentDataResponse;
-import vn.kltn.dto.response.DocumentIndexResponse;
-import vn.kltn.dto.response.DocumentResponse;
-import vn.kltn.dto.response.ItemResponse;
+import vn.kltn.dto.response.*;
 import vn.kltn.entity.Document;
 
 import java.io.InputStream;
@@ -35,4 +32,6 @@ public interface IDocumentService extends IItemCommonService<Document, DocumentR
     List<DocumentIndexResponse> searchMetadata(String query, Pageable pageable);
 
     DocumentDataResponse openDocumentById(Long documentId);
+
+    OnlyOfficeConfig getOnlyOfficeConfig(Long documentId); // lay thong tin config onlyoffice
 }

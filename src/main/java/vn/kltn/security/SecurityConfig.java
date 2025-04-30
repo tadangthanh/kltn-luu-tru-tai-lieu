@@ -52,6 +52,7 @@ public class SecurityConfig implements WebMvcConfigurer {
             "/repository/invitation/**",
             "/api/v1/documents/open/**",
             "/api/v1/documents/save-editor/**",
+            "/api/v1/documents/*/view",
     };
     //quan ly cac roles, user truy cap he thong
     @Bean
@@ -81,8 +82,6 @@ public class SecurityConfig implements WebMvcConfigurer {
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
                                 .requestMatchers(WHITE_LIST).permitAll()
-                                .requestMatchers(HttpMethod.GET, "/api/v1/file/view/*").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/api/v1/file/download/*").permitAll()
                                 .anyRequest().authenticated()
                 ).sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(provider()).addFilterBefore(requestFilter, UsernamePasswordAuthenticationFilter.class);

@@ -225,5 +225,22 @@ public class DocumentRest {
         return blobName.substring(blobName.lastIndexOf("_") + 1);
     }
 
+    @GetMapping("/{documentId}/view")
+    public ResponseEntity<InputStreamResource> download(@PathVariable Long documentId) {
+        // 2. Lấy dữ liệu từ Azure Blob
+        Document document = documentService.getItemByIdOrThrow(documentId);
+        InputStream inputStream = documentService.download(documentId);
+
+        // 3. Trả về stream cho OnlyOffice
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + document.getName() + "\"")
+                .body(new InputStreamResource(inputStream));
+    }
+
+    @GetMapping("/{documentId}/onlyoffice-config")
+    public ResponseData<OnlyOfficeConfig> getOnlyOfficeConfig(@PathVariable Long documentId) {
+        return new ResponseData<>(200, "Thành công", documentService.getOnlyOfficeConfig(documentId));
+    }
 
 }
