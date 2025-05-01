@@ -7,13 +7,10 @@ import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.DocumentDataResponse;
 import vn.kltn.dto.response.DocumentResponse;
-import vn.kltn.dto.response.ItemResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.User;
 import vn.kltn.exception.CustomIOException;
-import vn.kltn.exception.InvalidDataException;
 import vn.kltn.map.DocumentMapper;
-import vn.kltn.repository.DocumentRepo;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IDocumentMapperService;
@@ -22,9 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j(topic = "DOCUMENT_MAPPER_SERVICE")
@@ -32,8 +26,8 @@ import java.util.stream.Collectors;
 public class DocumentMapperServiceImpl implements IDocumentMapperService {
     private final DocumentMapper documentMapper;
     private final IAuthenticationService authenticationService;
-    private final DocumentRepo documentRepo;
     private final IAzureStorageService azureStorageService;
+
     @Override
     public DocumentResponse mapToDocumentResponse(Document document) {
         return documentMapper.toDocumentResponse(document);
@@ -42,7 +36,7 @@ public class DocumentMapperServiceImpl implements IDocumentMapperService {
 
     @Override
     public void updateDocument(Document docExists, DocumentRequest documentRequest) {
-        documentMapper.updateDocument(docExists,documentRequest);
+        documentMapper.updateDocument(docExists, documentRequest);
     }
 
     @Override
@@ -64,33 +58,12 @@ public class DocumentMapperServiceImpl implements IDocumentMapperService {
     public List<Document> mapFilesBufferToListDocument(List<FileBuffer> bufferList) {
         List<Document> documents = new ArrayList<>();
         User uploader = authenticationService.getCurrentUser();
-        // Lấy tên file upload
-        List<String> listFileName = bufferList.stream().map(FileBuffer::getFileName).toList();
-
-        // Tìm các document đã tồn tại theo tên
-        List<Document> existingDocuments = documentRepo.findAllByListName(listFileName);
-
-        // Map tên -> Document đã tồn tại, để tra nhanh
-        Map<String, Document> existingMap = existingDocuments.stream().collect(Collectors.toMap(Document::getName, Function.identity(), (d1, d2) -> d1.getVersion() >= d2.getVersion() ? d1 : d2 // giữ document có version cao hơn
-        ));
-
-
         // Duyệt từng file
         for (FileBuffer buffer : bufferList) {
-            String fileName = buffer.getFileName();
             Document document = this.mapFileBufferToDocument(buffer);
             document.setOwner(uploader);
-            // Nếu file trùng tên với file cũ → tăng version
-            if (existingMap.containsKey(fileName)) {
-                int oldVersion = existingMap.get(fileName).getVersion();
-                document.setVersion(oldVersion + 1);
-            } else {
-                document.setVersion(1); // File mới hoàn toàn
-            }
-
             documents.add(document);
         }
-
         return documents;
     }
 

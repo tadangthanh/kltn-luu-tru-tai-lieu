@@ -19,6 +19,7 @@ public interface DocumentMapper {
     @Mapping(target = "ownerName", source = "owner.fullName")
     @Mapping(target = "ownerEmail", source = "owner.email")
     @Mapping(target = "parentId", source = "parent.id")
+    @Mapping(target = "version", source = "currentVersion.version")
     DocumentResponse toDocumentResponse(Document document);
 
     List<DocumentResponse> toDocumentResponseList(List<Document> documents);

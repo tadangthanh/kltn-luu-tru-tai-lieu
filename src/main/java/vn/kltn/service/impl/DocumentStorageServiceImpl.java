@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import vn.kltn.common.CancellationToken;
 import vn.kltn.common.ItemType;
 import vn.kltn.dto.FileBuffer;
-import vn.kltn.dto.ProcessUploadResult;
 import vn.kltn.dto.UploadContext;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.Folder;
@@ -166,9 +165,9 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
     }
 
     @Override
-    public void store(CancellationToken token, List<FileBuffer> bufferedFiles, List<Document> documents) {
+    public List<String> store(CancellationToken token, List<FileBuffer> bufferedFiles, List<Document> documents) {
         UploadContext context = new UploadContext(token, documents);
-        ProcessUploadResult result = uploadProcessor.processUpload(context, bufferedFiles);
+        return uploadProcessor.processUpload(context, bufferedFiles);
     }
 
     @Override

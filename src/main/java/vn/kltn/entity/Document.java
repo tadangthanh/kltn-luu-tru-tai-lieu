@@ -3,7 +3,6 @@ package vn.kltn.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import vn.kltn.common.ItemType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +14,13 @@ import java.util.List;
 public class Document extends Item {
     private String type;
     private String blobName;
-    private Integer version;
     @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PreviewImage> previewImages = new ArrayList<>();
+
+    @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DocumentVersion> versions = new ArrayList<>();
+
+    @OneToOne
+    @JoinColumn(name = "current_version_id")
+    private DocumentVersion currentVersion;
 }

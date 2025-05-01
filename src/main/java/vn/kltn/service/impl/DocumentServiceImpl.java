@@ -19,6 +19,7 @@ import vn.kltn.entity.Folder;
 import vn.kltn.entity.Permission;
 import vn.kltn.entity.User;
 import vn.kltn.exception.ResourceNotFoundException;
+import vn.kltn.index.DocumentIndex;
 import vn.kltn.map.ItemMapper;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.service.*;
@@ -31,6 +32,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import static vn.kltn.repository.util.FileUtil.getFileExtension;
@@ -54,8 +56,9 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     private final IPermissionValidatorService permissionValidatorService;
     private final WebSocketService webSocketService;
     private final IAzureStorageService azureStorageService;
+    private final IDocumentVersionService documentVersionService;
 
-    public DocumentServiceImpl(DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService, IPermissionService permissionService, ItemMapper itemMapper, IPermissionValidatorService permissionValidatorService1, WebSocketService webSocketService, IAzureStorageService azureStorageService) {
+    public DocumentServiceImpl(DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService, IPermissionService permissionService, ItemMapper itemMapper, IPermissionValidatorService permissionValidatorService1, WebSocketService webSocketService, IAzureStorageService azureStorageService, IDocumentVersionService documentVersionService) {
         super(authenticationService, folderCommonService, itemValidator, permissionInheritanceService, permissionValidatorService, permissionService);
         this.documentRepo = documentRepo;
         this.documentHasTagService = documentHasTagService;
@@ -70,6 +73,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
         this.permissionValidatorService = permissionValidatorService1;
         this.webSocketService = webSocketService;
         this.azureStorageService = azureStorageService;
+        this.documentVersionService = documentVersionService;
     }
 
     @Override
@@ -77,8 +81,23 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     public void uploadDocumentEmptyParent(List<FileBuffer> bufferedFiles, CancellationToken token) {
         // luu db
         List<Document> documents = documentStorageService.saveDocuments(bufferedFiles);
-        // upload file to cloud
-        documentStorageService.store(token, bufferedFiles, documents);
+        List<String> blobsName = new ArrayList<>();
+        List<DocumentIndex> documentIndexList = new ArrayList<>();
+        try {
+            // upload file to cloud
+            blobsName.addAll(documentStorageService.store(token, bufferedFiles, documents));
+            documentMapperService.mapBlobNamesToDocuments(documents, blobsName);
+            // luu index
+            documentIndexList.addAll(documentIndexService.insertAllDoc(documents).join());
+            documentVersionService.increaseVersions(documents);
+        } catch (Exception e) {
+            log.error("Error uploading document: {}", e.getMessage());
+            // Gửi thông báo lỗi về client
+            webSocketService.sendUploadError(authenticationService.getCurrentUser().getEmail(), "Có lỗi xảy ra khi upload tài liệu.");
+            documentStorageService.deleteBlobsFromCloud(blobsName);
+            documentIndexService.deleteAll(documentIndexList);
+            throw e;
+        }
     }
 
     @Override
@@ -117,22 +136,31 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     @Async("taskExecutor")
     public void uploadDocumentWithParent(Long parentId, List<FileBuffer> bufferedFiles, CancellationToken token) {
         User currentUser = authenticationService.getCurrentUser();
+        List<String> blobsName = new ArrayList<>();
+        List<DocumentIndex> documentIndexList = new ArrayList<>();
         try {
             log.info("upload document with parent id {}", parentId);
             Folder parent = folderCommonService.getFolderByIdOrThrow(parentId);
             permissionValidatorService.validatePermissionManager(parent, currentUser);
-
             List<Document> documents = documentStorageService.saveDocumentsWithFolder(bufferedFiles, parentId);
-            documentStorageService.store(token, bufferedFiles, documents);
+            // upload file to cloud
+            blobsName.addAll(documentStorageService.store(token, bufferedFiles, documents));
+            documentMapperService.mapBlobNamesToDocuments(documents, blobsName);
+            // luu index
+            documentIndexList.addAll(documentIndexService.insertAllDoc(documents).join());
+            documentVersionService.increaseVersions(documents);
             permissionInheritanceService.inheritPermissionsFromParent(documents);
-
             // Gửi websocket hoặc notification nếu cần
-
         } catch (AccessDeniedException e) {
             log.warn("Permission denied: {}", e.getMessage());
             // Có thể gửi message về client bằng WebSocket hoặc lưu log, hoặc trạng thái vào DB nếu cần
             webSocketService.sendUploadError(currentUser.getEmail(), "Bạn không có quyền upload vào thư mục này.");
-
+        } catch (Exception e) {
+            log.error("Error uploading document: {}", e.getMessage());
+            // Gửi thông báo lỗi về client
+            webSocketService.sendUploadError(currentUser.getEmail(), "Có lỗi xảy ra khi upload tài liệu.");
+            documentStorageService.deleteBlobsFromCloud(blobsName);
+            documentIndexService.deleteAll(documentIndexList);
         }
     }
 
@@ -231,10 +259,10 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     public OnlyOfficeConfig getOnlyOfficeConfig(Long documentId) {
         Document document = getItemByIdOrThrow(documentId);
         User currentUser = authenticationService.getCurrentUser();
-        boolean isEdit=false;
-        if(document.getOwner().getId().equals(currentUser.getId())) {
-            isEdit=true;
-        }else{
+        boolean isEdit = false;
+        if (document.getOwner().getId().equals(currentUser.getId())) {
+            isEdit = true;
+        } else {
             // Kiểm tra quyền của người dùng hiện tại với tài liệu
             Permission permission = permissionService.getPermissionItemByRecipientId(document.getId(), currentUser.getId());
             isEdit = permission.getPermission().equals(vn.kltn.common.Permission.EDITOR);

@@ -39,31 +39,31 @@ public class UploadProcessorImpl implements IUploadProcessor {
     }
 
     @Override
-    public ProcessUploadResult processUpload(UploadContext context, List<FileBuffer> files) {
+    public List<String> processUpload(UploadContext context, List<FileBuffer> files) {
         try {
             // Upload files
             if (checkCancellation(context)) {
-                return createCancelledResult();
+                return List.of();
             }
             List<String> blobNames = uploadBufferedFilesToCloud(files);
             context.setBlobNames(blobNames);
 
             // Map blobs to documents
             if (checkCancellation(context)) {
-                return createCancelledResult();
+                return List.of();
             }
             uploadFinalizerService.finalizeUpload(context.getToken());
-            documentMapperService.mapBlobNamesToDocuments(context.getDocuments(), blobNames);
+//            documentMapperService.mapBlobNamesToDocuments(context.getDocuments(), blobNames);
             List<DocumentResponse> documentResponses = documentMapperService.mapToDocumentResponseList(context.getDocuments());
             webSocketService.sendUploadSuccess(SecurityContextHolder.getContext().getAuthentication().getName(),
                     new ProcessUploadResult(false, documentResponses));
-            List<DocumentIndex> indices = documentIndexService.insertAllDoc(context.getDocuments()).join();
-            context.setDocumentIndices(indices);
 
-            return new ProcessUploadResult(false, documentResponses);
+//            List<DocumentIndex> indices = documentIndexService.insertAllDoc(context.getDocuments()).join();
+//            context.setDocumentIndices(indices);
+
+            return blobNames;
         } finally {
             uploadFinalizerService.finalizeUpload(context.getToken());
-
         }
     }
 

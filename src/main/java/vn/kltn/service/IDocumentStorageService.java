@@ -20,7 +20,7 @@ public interface IDocumentStorageService {
 
     void deleteDocuments(List<Document> documents);
 
-    void store(CancellationToken token, List<FileBuffer> bufferedFiles, List<Document> documents);
+    List<String> store(CancellationToken token, List<FileBuffer> bufferedFiles, List<Document> documents);
 
     void deleteBlob(String blobName);
 

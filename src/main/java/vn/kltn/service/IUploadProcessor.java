@@ -1,7 +1,6 @@
 package vn.kltn.service;
 
 import vn.kltn.dto.FileBuffer;
-import vn.kltn.dto.ProcessUploadResult;
 import vn.kltn.dto.UploadContext;
 
 import java.util.List;
@@ -11,6 +10,6 @@ public interface IUploadProcessor {
     /**
      * Process file upload with cancellation support
      */
-    ProcessUploadResult processUpload(UploadContext context, List<FileBuffer> files);
+    List<String> processUpload(UploadContext context, List<FileBuffer> files);
 
 }
