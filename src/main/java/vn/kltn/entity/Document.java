@@ -13,7 +13,6 @@ import java.util.List;
 @Table(name = "document")
 public class Document extends Item {
     private String type;
-    private Long size = 0L;
     @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PreviewImage> previewImages = new ArrayList<>();
 

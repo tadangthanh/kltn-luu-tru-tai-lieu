@@ -57,12 +57,20 @@ public class ItemServiceImpl implements IItemService {
             }
             spec = spec.and(SpecificationUtil.buildSpecificationFromFilters(items, builder));
             Page<Item> pageAccessByResource = itemRepo.findAll(spec, pageable);
-            return PaginationUtils.convertToPageResponse(pageAccessByResource, pageable, itemMapper::toResponse);
+            return PaginationUtils.convertToPageResponse(pageAccessByResource, pageable, this::mapToItemResponse );
         } else {
             spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("parent")));
         }
 
-        return PaginationUtils.convertToPageResponse(itemRepo.findAll(spec, pageable), pageable, itemMapper::toResponse);
+        return PaginationUtils.convertToPageResponse(itemRepo.findAll(spec, pageable), pageable, this::mapToItemResponse );
+    }
+
+    private ItemResponse mapToItemResponse(Item item) {
+        ItemResponse itemResponse = itemMapper.toResponse(item);
+        if (item.getItemType().equals(ItemType.DOCUMENT)) {
+            itemResponse.setSize(documentService.getItemByIdOrThrow(item.getId()).getCurrentVersion().getSize());
+        }
+        return itemResponse;
     }
 
     @Override
@@ -126,7 +134,7 @@ public class ItemServiceImpl implements IItemService {
         Item itemExist = itemRepo.findById(itemId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy item với id: " + itemId));
         itemMapper.updateItem(itemExist, itemRequest);
         itemRepo.save(itemExist);
-        return itemMapper.toResponse(itemExist);
+        return mapToItemResponse(itemExist);
     }
 
 }

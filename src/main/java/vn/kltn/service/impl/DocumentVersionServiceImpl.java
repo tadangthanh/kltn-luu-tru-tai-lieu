@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.LatestVersion;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.DocumentVersion;
@@ -53,8 +54,8 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
 
 
     @Override
-    public void increaseVersions(List<Document> documents) {
-        if (documents.isEmpty()) return;
+    public List<DocumentVersion> increaseVersions(List<Document> documents) {
+        if (documents.isEmpty()) return List.of();
 
         // 1) Lấy map documentId → latest version
         List<Long> ids = documents.stream().map(Document::getId).toList();
@@ -75,11 +76,44 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
             doc.setCurrentVersion(dv);
             toSave.add(dv);
         }
-        documentVersionRepo.saveAll(toSave);
+        List<DocumentVersion> result=documentVersionRepo.saveAll(toSave);
 
         // 3) Xóa các version cũ để chỉ giữ 10 bản mỗi document
         //    (dùng window-function native query)
         documentVersionRepo.deleteOldVersionsBeyondLimit(10);
+        return result;
+    }
+
+    @Override
+    public List<DocumentVersion> increaseVersions(List<Document> documents, Map<Long, FileBuffer> bufferMap) {
+        if (documents.isEmpty()) return List.of();
+
+        // 1) Lấy map documentId → latest version
+        List<Long> ids = documents.stream().map(Document::getId).toList();
+        Map<Long, Integer> latestMap = documentVersionRepo
+                .findLatestVersionNumbers(ids)
+                .stream()
+                .collect(Collectors.toMap(LatestVersion::getDocumentId, LatestVersion::getVersion));
+
+        // 2) Tạo batch các version mới
+        List<DocumentVersion> toSave = new ArrayList<>(documents.size());
+        LocalDateTime now = LocalDateTime.now();
+        for (Document doc : documents) {
+            int newVer = latestMap.getOrDefault(doc.getId(), 0) + 1;
+            DocumentVersion dv = documentVersionMapper.toDocumentVersion(doc);
+            dv.setDocument(doc);
+            dv.setVersion(newVer);
+            dv.setSize(bufferMap.get(doc.getId()).getSize());
+            dv.setExpiredAt(now.plusDays(7));
+            doc.setCurrentVersion(dv);
+            toSave.add(dv);
+        }
+        List<DocumentVersion> result=documentVersionRepo.saveAll(toSave);
+
+        // 3) Xóa các version cũ để chỉ giữ 10 bản mỗi document
+        //    (dùng window-function native query)
+        documentVersionRepo.deleteOldVersionsBeyondLimit(10);
+        return result;
     }
 
     @Override

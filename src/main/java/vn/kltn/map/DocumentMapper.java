@@ -20,6 +20,7 @@ public interface DocumentMapper {
     @Mapping(target = "ownerEmail", source = "owner.email")
     @Mapping(target = "parentId", source = "parent.id")
     @Mapping(target = "version", source = "currentVersion.version")
+    @Mapping(target = "size", source = "currentVersion.size")
     DocumentResponse toDocumentResponse(Document document);
 
     List<DocumentResponse> toDocumentResponseList(List<Document> documents);
@@ -29,7 +30,6 @@ public interface DocumentMapper {
 
     @Mapping(target = "name", source = "fileName")
     @Mapping(target = "type", source = "contentType")
-    @Mapping(target = "size", source = "size")
     Document mapFileBufferToDocument(FileBuffer fileBuffer);
 
     void updateDocument(@MappingTarget Document document, DocumentRequest documentRequest);

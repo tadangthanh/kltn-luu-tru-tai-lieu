@@ -78,7 +78,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     public void uploadDocumentEmptyParent(List<FileBuffer> bufferedFiles, CancellationToken token) {
         // luu db
         List<Document> documents = documentStorageService.saveDocuments(bufferedFiles);
-        documentVersionService.increaseVersions(documents);
+//        documentVersionService.increaseVersions(documents);
         List<String> blobsName = new ArrayList<>();
         List<DocumentIndex> documentIndexList = new ArrayList<>();
         try {
@@ -268,7 +268,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
         // Tạo cấu hình cho OnlyOffice
         OnlyOfficeConfig config = new OnlyOfficeConfig();
         config.setDocumentId(document.getId());
-        String documentKey = document.getId() + "-" + document.getUpdatedAt().getTime();
+        String documentKey = document.getId() + "-" + document.getUpdatedAt().getTime()+"-" + document.getCurrentVersion().getBlobName();
         config.setDocumentKey(documentKey);
         config.setDocumentTitle(document.getName());
         config.setFileType(documentTypeInfo.getFileType());

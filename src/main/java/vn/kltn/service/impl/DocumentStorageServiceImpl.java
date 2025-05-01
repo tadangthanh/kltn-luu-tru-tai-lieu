@@ -10,16 +10,16 @@ import vn.kltn.common.ItemType;
 import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.UploadContext;
 import vn.kltn.entity.Document;
+import vn.kltn.entity.DocumentVersion;
 import vn.kltn.entity.Folder;
 import vn.kltn.entity.Tag;
 import vn.kltn.repository.DocumentRepo;
+import vn.kltn.repository.DocumentVersionRepo;
 import vn.kltn.service.*;
 
 import java.io.InputStream;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @Transactional
@@ -35,6 +35,8 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
     private final IDocumentHasTagService documentHasTagService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
+    private final IDocumentVersionService documentVersionService;
+    private final DocumentVersionRepo documentVersionRepo;
 
 
     @Override
@@ -205,8 +207,23 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
     @Override
     public List<Document> saveDocuments(List<FileBuffer> bufferedFiles) {
         List<Document> documents = documentMapperService.mapFilesBufferToListDocument(bufferedFiles);
-        documents.forEach(document -> document.setItemType(ItemType.DOCUMENT));
         documents = documentRepo.saveAll(documents);
+
+        // Map từ documentId sang FileBuffer để truyền size
+        Map<Long, FileBuffer> bufferMap = new HashMap<>();
+        for (int i = 0; i < documents.size(); i++) {
+            bufferMap.put(documents.get(i).getId(), bufferedFiles.get(i));
+        }
+
+        // Tạo versions
+        List<DocumentVersion> documentVersions = documentVersionService.increaseVersions(documents, bufferMap);
+
+        // Set lại currentVersion
+        for (int i = 0; i < documents.size(); i++) {
+            documents.get(i).setCurrentVersion(documentVersions.get(i));
+            documents.get(i).setItemType(ItemType.DOCUMENT);
+        }
+
         return documents;
     }
 
