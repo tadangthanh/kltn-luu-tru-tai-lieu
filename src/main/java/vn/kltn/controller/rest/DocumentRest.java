@@ -22,7 +22,6 @@ import vn.kltn.dto.response.*;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.User;
 import vn.kltn.repository.util.FileUtil;
-import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IDocumentService;
 import vn.kltn.service.IJwtService;
 import vn.kltn.service.IUserService;
@@ -145,6 +144,7 @@ public class DocumentRest {
             log.error(" Không thể parse documentId từ key: " + documentIdStr);
             return ResponseEntity.ok(Map.of("error", 0)); // Trả về thành công để tránh lỗi OnlyOffice
         }
+        System.out.println("document request: " + documentRequest);
 
         Integer status = (Integer) documentRequest.get("status");
         String fileUrl = (String) documentRequest.get("url");
@@ -180,24 +180,6 @@ public class DocumentRest {
         }
     }
 
-
-    // Hàm tải file từ URL
-    private byte[] downloadFile(String fileUrl) {
-        // Sử dụng HttpClient hoặc thư viện thích hợp để tải file về
-        // Đây chỉ là một ví dụ đơn giản, bạn cần triển khai lại phương thức này theo cách của mình.
-        try {
-            URL url = new URL(fileUrl);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-            connection.setDoInput(true);
-            InputStream inputStream = connection.getInputStream();
-
-            return inputStream.readAllBytes(); // Đọc toàn bộ nội dung của file
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 
 
     @GetMapping("/open")
