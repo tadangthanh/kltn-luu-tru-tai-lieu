@@ -25,7 +25,6 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
     private final DocumentVersionRepo documentVersionRepo;
     private final DocumentVersionMapper documentVersionMapper;
 
-
     @Override
     public DocumentVersion increaseVersion(Document document) {
         DocumentVersion newVersion;
@@ -34,10 +33,9 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
             newVersion = documentVersionMapper.toDocumentVersion(document);
             newVersion.setVersion(1); // version đầu tiên
         } else {
-            log.info("Create next version for document: documentId={}", document.getId());
+            log.info("Create next version for document: documentId={}", document);
             DocumentVersion latestVersion = documentVersionRepo.findLatestVersion(document.getId());
             newVersion = new DocumentVersion();
-            newVersion.setDocument(document);
             newVersion.setVersion(latestVersion.getVersion() + 1);
             newVersion.setBlobName(document.getBlobName());
         }
@@ -47,6 +45,8 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
         if (!oldVersions.isEmpty()) {
             documentVersionRepo.deleteAll(oldVersions);
         }
+        newVersion.setDocument(document);
+        document.setCurrentVersion(newVersion);
         newVersion.setExpiredAt(LocalDateTime.now().plusDays(7));
         return documentVersionRepo.save(newVersion);
     }

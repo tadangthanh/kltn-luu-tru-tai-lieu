@@ -103,6 +103,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     @Override
     public void updateDocumentEditor(Long documentId, byte[] data) {
         Document document = getItemByIdOrThrow(documentId);
+        documentVersionService.increaseVersion(document);
         permissionValidatorService.validatePermissionManager(document, authenticationService.getCurrentUser());
         String oldBlobName = document.getBlobName(); // tên blob cũ
         String originalFileName = document.getName(); // Lấy tên file gốc
@@ -123,10 +124,10 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
             throw new RuntimeException("Lỗi khi đọc dữ liệu tài liệu", e);
         } finally {
             // Xóa blob cũ nếu không cần thiết nữa
-            if (oldBlobName != null && !oldBlobName.equals(document.getBlobName())) {
-                azureStorageService.deleteBlob(oldBlobName);
-                log.info("Xóa blob cũ với tên: {}", oldBlobName);
-            }
+//            if (oldBlobName != null && !oldBlobName.equals(document.getBlobName())) {
+//                azureStorageService.deleteBlob(oldBlobName);
+//                log.info("Xóa blob cũ với tên: {}", oldBlobName);
+//            }
             eventPublisher.publishEvent(new DocumentUpdateContent(this, documentId));
         }
     }
