@@ -86,8 +86,8 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
         copyDocumentTags(source, target);
 
         // Copy blob
-        String newBlobName = copyBlob(source.getBlobName());
-        target.setBlobName(newBlobName);
+        String newBlobName = copyBlob(source.getCurrentVersion().getBlobName());
+        target.getCurrentVersion().setBlobName(newBlobName);
 
         // Index document
         documentIndexService.insertDoc(target);
@@ -161,7 +161,14 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
     }
 
     private List<String> extractBlobNames(List<Document> documents) {
-        return documents.stream().map(Document::getBlobName).filter(Objects::nonNull).toList();
+        return documents.stream().map(
+                document -> {
+                    if (document.getCurrentVersion() != null) {
+                        return document.getCurrentVersion().getBlobName();
+                    }
+                    return null;
+                }
+        ).filter(Objects::nonNull).toList();
     }
 
     @Override

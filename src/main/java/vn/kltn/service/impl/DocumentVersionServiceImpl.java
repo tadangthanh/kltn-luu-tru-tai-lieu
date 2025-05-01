@@ -37,7 +37,7 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
             DocumentVersion latestVersion = documentVersionRepo.findLatestVersion(document.getId());
             newVersion = new DocumentVersion();
             newVersion.setVersion(latestVersion.getVersion() + 1);
-            newVersion.setBlobName(document.getBlobName());
+            newVersion.setBlobName(document.getCurrentVersion().getBlobName());
         }
         // Bước 3: Xoá các version cũ ngoài top 10
         List<DocumentVersion> oldVersions = documentVersionRepo
@@ -50,6 +50,7 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
         newVersion.setExpiredAt(LocalDateTime.now().plusDays(7));
         return documentVersionRepo.save(newVersion);
     }
+
 
     @Override
     public void increaseVersions(List<Document> documents) {
@@ -71,6 +72,7 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
             dv.setDocument(doc);
             dv.setVersion(newVer);
             dv.setExpiredAt(now.plusDays(7));
+            doc.setCurrentVersion(dv);
             toSave.add(dv);
         }
         documentVersionRepo.saveAll(toSave);
@@ -78,6 +80,22 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
         // 3) Xóa các version cũ để chỉ giữ 10 bản mỗi document
         //    (dùng window-function native query)
         documentVersionRepo.deleteOldVersionsBeyondLimit(10);
+    }
+
+    @Override
+    public DocumentVersion createNewVersion(Document document, String blobName, long size) {
+        int latestVersion = documentVersionRepo
+                .findLatestVersionNumber(document.getId())
+                .orElse(0);
+
+        DocumentVersion newVersion = documentVersionMapper.toDocumentVersion(document);
+        newVersion.setVersion(latestVersion + 1);
+        newVersion.setExpiredAt(LocalDateTime.now().plusDays(7));
+        newVersion.setBlobName(blobName);
+        newVersion.setSize(size);
+        newVersion.setDocument(document);
+
+        return documentVersionRepo.save(newVersion);
     }
 
 

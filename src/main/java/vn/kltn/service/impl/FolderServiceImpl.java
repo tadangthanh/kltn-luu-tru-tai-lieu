@@ -118,7 +118,7 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
             results.add(new FolderContent(
                     currentPath + "/" + doc.getName(),
                     false,
-                    doc.getBlobName()
+                    doc.getCurrentVersion().getBlobName()
             ));
         }
 

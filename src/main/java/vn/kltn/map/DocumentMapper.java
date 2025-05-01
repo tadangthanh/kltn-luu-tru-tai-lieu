@@ -29,6 +29,7 @@ public interface DocumentMapper {
 
     @Mapping(target = "name", source = "fileName")
     @Mapping(target = "type", source = "contentType")
+    @Mapping(target = "size", source = "size")
     Document mapFileBufferToDocument(FileBuffer fileBuffer);
 
     void updateDocument(@MappingTarget Document document, DocumentRequest documentRequest);

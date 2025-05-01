@@ -16,5 +16,6 @@ public interface DocumentVersionMapper {
 
     @Mapping(target = "document", ignore = true)
     @Mapping(target = "id", ignore = true)
+
     DocumentVersion toDocumentVersion(Document document);
 }

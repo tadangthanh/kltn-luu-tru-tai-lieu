@@ -22,8 +22,6 @@ public class DocumentVersion extends BaseEntity {
 
     private String blobName;
 
-    private String type; // docx, pdf...
-
     private Long size;
 
     private LocalDateTime expiredAt; // xóa sau 7 ngày

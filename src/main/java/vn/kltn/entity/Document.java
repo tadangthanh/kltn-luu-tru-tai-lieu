@@ -13,14 +13,16 @@ import java.util.List;
 @Table(name = "document")
 public class Document extends Item {
     private String type;
-    private String blobName;
+    private Long size = 0L;
     @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PreviewImage> previewImages = new ArrayList<>();
 
     @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DocumentVersion> versions = new ArrayList<>();
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "current_version_id")
     private DocumentVersion currentVersion;
+
+
 }

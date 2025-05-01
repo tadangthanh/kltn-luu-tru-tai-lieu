@@ -15,8 +15,6 @@ import java.util.Set;
 @Inheritance(strategy = InheritanceType.JOINED)
 public abstract class Item extends BaseEntity {
     private String name;
-    @Column(name = "size")
-    private Long size = 0L;
     @ManyToOne
     @JoinColumn(name = "parent_id")
     private Folder parent;

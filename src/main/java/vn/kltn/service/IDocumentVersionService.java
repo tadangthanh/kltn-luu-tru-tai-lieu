@@ -10,5 +10,7 @@ public interface IDocumentVersionService {
 
     void increaseVersions(List<Document> documents);
 
+    DocumentVersion createNewVersion(Document document, String blobName, long size);
+
     List<DocumentVersion> getVersionsByDocumentId(Long documentId);
 }

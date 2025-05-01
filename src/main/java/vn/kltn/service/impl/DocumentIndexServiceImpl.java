@@ -51,7 +51,7 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     public void insertDoc(Document document) {
         log.info("insert document Id: {}", document.getId());
         CompletableFuture<Void> future = CompletableFuture.runAsync(() -> RetryUtil.runWithRetry(() -> {
-            try (InputStream inputStream = azureStorageService.downloadBlobInputStream(document.getBlobName())) {
+            try (InputStream inputStream = azureStorageService.downloadBlobInputStream(document.getCurrentVersion().getBlobName())) {
                 String content = FileUtil.extractTextByType(document.getType(), inputStream);
                 DocumentIndex documentIndex = mapDocumentIndex(document);
                 documentIndex.setContent(content);
@@ -125,7 +125,7 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
 
         for (Document document : documents) {
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                try (InputStream inputStream = azureStorageService.downloadBlobInputStream(document.getBlobName())) {
+                try (InputStream inputStream = azureStorageService.downloadBlobInputStream(document.getCurrentVersion().getBlobName())) {
 
                     String content = FileUtil.extractTextByType(document.getType(), inputStream);
                     DocumentIndex documentIndex = mapDocumentIndex(document);
@@ -195,18 +195,13 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
 
     }
 
-
-    private List<String> getTagsByDocumentId(Long documentId) {
-        return documentHasTagService.getTagsByDocumentId(documentId).stream().map(Tag::getName).toList();
-    }
-
     private DocumentIndex mapDocumentIndex(Document document) {
         return documentIndexMapper.toIndex(document);
     }
 
     private DocumentIndex mapDocContent(Document document) {
         DocumentIndex documentIndex = documentIndexMapper.toIndex(document);
-        try (InputStream inputStream = azureStorageService.downloadBlobInputStream(document.getBlobName())) {
+        try (InputStream inputStream = azureStorageService.downloadBlobInputStream(document.getCurrentVersion().getBlobName())) {
             String content = FileUtil.extractTextByType(document.getType(), inputStream);
             documentIndex.setContent(content);
         } catch (IOException e) {

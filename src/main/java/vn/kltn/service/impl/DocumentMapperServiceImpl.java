@@ -69,12 +69,12 @@ public class DocumentMapperServiceImpl implements IDocumentMapperService {
 
     @Override
     public DocumentDataResponse mapDocToDocDataResponse(Document document) {
-        String blobName = document.getBlobName();
+        String blobName = document.getCurrentVersion().getBlobName();
         try (InputStream inputStream = azureStorageService.downloadBlobInputStream(blobName)) {
             return DocumentDataResponse.builder()
                     .data(inputStream.readAllBytes())
-                    .name(document.getName() + document.getBlobName()
-                            .substring(document.getBlobName()
+                    .name(document.getName() + document.getCurrentVersion().getBlobName()
+                            .substring(document.getCurrentVersion().getBlobName()
                                     .lastIndexOf('.')))
                     .type(document.getType()).documentId(document.getId()).build();
         } catch (IOException e) {
@@ -86,7 +86,7 @@ public class DocumentMapperServiceImpl implements IDocumentMapperService {
     @Override
     public void mapBlobNamesToDocuments(List<Document> documents, List<String> blobNames) {
         for (int i = 0; i < documents.size(); i++) {
-            documents.get(i).setBlobName(blobNames.get(i));
+            documents.get(i).getCurrentVersion().setBlobName(blobNames.get(i));
         }
     }
 }

@@ -164,7 +164,7 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
 
         try {
             // 1. Tải file PDF từ Azure Blob Storage
-            blobFile = azureStorageService.downloadToFile(document.getBlobName(), tempDir);
+            blobFile = azureStorageService.downloadToFile(document.getCurrentVersion().getBlobName(), tempDir);
             if (!blobFile.getName().toLowerCase().endsWith(".pdf")) {
                 blobFile = convertToPdf(blobFile);
             }

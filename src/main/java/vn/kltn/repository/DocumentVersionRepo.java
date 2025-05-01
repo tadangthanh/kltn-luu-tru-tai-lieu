@@ -36,13 +36,9 @@ public interface DocumentVersionRepo extends JpaRepository<DocumentVersion, Long
 
     List<DocumentVersion> findAllByDocumentId(Long documentId);
 
-    @Query("""
-                SELECT dv.version
-                FROM DocumentVersion dv
-                WHERE dv.document.id = :id
-                ORDER BY dv.version DESC
-            """)
+    @Query("SELECT MAX(dv.version) FROM DocumentVersion dv WHERE dv.document.id = :id")
     Optional<Integer> findLatestVersionNumber(Long id);
+
 
     @Query("SELECT new vn.kltn.dto.LatestVersion(v.document.id, MAX(v.version)) " +
            "FROM DocumentVersion v WHERE v.document.id IN :documentIds " +

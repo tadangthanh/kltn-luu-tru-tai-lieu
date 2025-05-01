@@ -50,16 +50,12 @@ public class UploadProcessorImpl implements IUploadProcessor {
 
             // Map blobs to documents
             if (checkCancellation(context)) {
-                return List.of();
+                return blobNames;
             }
             uploadFinalizerService.finalizeUpload(context.getToken());
-//            documentMapperService.mapBlobNamesToDocuments(context.getDocuments(), blobNames);
-            List<DocumentResponse> documentResponses = documentMapperService.mapToDocumentResponseList(context.getDocuments());
-            webSocketService.sendUploadSuccess(SecurityContextHolder.getContext().getAuthentication().getName(),
-                    new ProcessUploadResult(false, documentResponses));
 
-//            List<DocumentIndex> indices = documentIndexService.insertAllDoc(context.getDocuments()).join();
-//            context.setDocumentIndices(indices);
+            List<DocumentResponse> documentResponses = documentMapperService.mapToDocumentResponseList(context.getDocuments());
+            webSocketService.sendUploadSuccess(SecurityContextHolder.getContext().getAuthentication().getName(), new ProcessUploadResult(false, documentResponses));
 
             return blobNames;
         } finally {
@@ -68,12 +64,7 @@ public class UploadProcessorImpl implements IUploadProcessor {
     }
 
     private boolean checkCancellation(UploadContext context) {
-        return uploadFinalizerService.checkCancelledAndFinalize(
-                context.getToken(),
-                context.getDocuments(),
-                context.getDocumentIndices(),
-                context.getBlobNames()
-        );
+        return uploadFinalizerService.checkCancelledAndFinalize(context.getToken(), context.getDocuments(), context.getDocumentIndices(), context.getBlobNames());
     }
 
     private ProcessUploadResult createCancelledResult() {
@@ -85,16 +76,14 @@ public class UploadProcessorImpl implements IUploadProcessor {
         List<CompletableFuture<String>> futures = new ArrayList<>();
         for (FileBuffer file : files) {
             try (InputStream inputStream = new ByteArrayInputStream(file.getData())) {
-                CompletableFuture<String> future = azureStorageService.uploadChunkedWithContainerDefaultAsync(inputStream,
-                                file.getFileName(), file.getSize(), 1024 * 1024)
-                        .handle((blobName, ex) -> {
-                            if (ex != null) {
-                                log.error("Upload failed for file {}: {}", file.getFileName(), ex.getMessage());
-                                return null; // hoặc return "" nếu bạn muốn tránh null
-                            }
-                            log.info("Upload thành công file: {}", file.getFileName());
-                            return blobName;
-                        });
+                CompletableFuture<String> future = azureStorageService.uploadChunkedWithContainerDefaultAsync(inputStream, file.getFileName(), file.getSize(), 1024 * 1024).handle((blobName, ex) -> {
+                    if (ex != null) {
+                        log.error("Upload failed for file {}: {}", file.getFileName(), ex.getMessage());
+                        return null; // hoặc return "" nếu bạn muốn tránh null
+                    }
+                    log.info("Upload thành công file: {}", file.getFileName());
+                    return blobName;
+                });
                 futures.add(future);
             } catch (IOException e) {
                 log.error("IOException khi đọc file {}: {}", file.getFileName(), e.getMessage());
@@ -105,12 +94,8 @@ public class UploadProcessorImpl implements IUploadProcessor {
         CompletableFuture<Void> allDoneFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 
         // Collect kết quả
-        CompletableFuture<List<String>> resultsFuture = allDoneFuture.thenApply(v ->
-                futures.stream()
-                        .map(CompletableFuture::join)
-                        .filter(Objects::nonNull) // bỏ những cái bị null do lỗi upload
-                        .toList()
-        );
+        CompletableFuture<List<String>> resultsFuture = allDoneFuture.thenApply(v -> futures.stream().map(CompletableFuture::join).filter(Objects::nonNull) // bỏ những cái bị null do lỗi upload
+                .toList());
         return resultsFuture.join(); // chỉ block 1 lần ở đây khi đã xong hết
     }
 }

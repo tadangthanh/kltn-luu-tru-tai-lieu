@@ -19,14 +19,6 @@ public interface DocumentRepo extends JpaRepository<Document, Long>, JpaSpecific
     @Query("update Document d set d.deletedAt=?2, d.permanentDeleteAt=?3  where d.parent.id in ?1")
     void setDeleteDocument(List<Long> parentIds, LocalDateTime deletedAt, LocalDateTime permanentDeletedAt);
 
-    @Modifying
-    @Transactional
-    @Query("delete from Document d where d.parent.id in ?1 ")
-    void deleteDocumentByListParentId(List<Long> parentIds);
-
-
-    @Query("select d.blobName from Document d where d.parent.id in ?1")
-    List<String> getBlobNameDocumentsByParentIds(List<Long> parentIds);
 
     @Query(value = """
             select d.id from document d
@@ -45,20 +37,6 @@ public interface DocumentRepo extends JpaRepository<Document, Long>, JpaSpecific
     @Modifying
     @Query("select d.id from Document d where d.parent.id in ?1")
     List<Long> findDocumentIdsWithParentIds(List<Long> folderIds);
-
-    @Query("select d from Document d where d.name in ?1")
-    List<Document> findAllByListName(List<String> listFileName);
-
-    @Query(value = """
-            select d from document d
-                            inner join item i on d.id=i.id
-                                    where i.parent_id in (:parentResourceIds)
-                        and i.deleted_at is null
-                        and not exists(select 1 from permission p
-                                        where p.recipient_id = :recipientId
-                                        and p.item_id = i.id)
-            """, nativeQuery = true)
-    List<Document> findDocumentChildEmptyPermission(@Param("parentResourceIds") List<Long> parentResourceIds, @Param("recipientId") Long recipientId);
 
     @Query("select d from Document d where d.id in (select p.item.id from Permission p where p.recipient.id = ?1)")
     List<Document> findAllDocumentByResourceAndRecipient(Long resourceId, Long recipientId);

@@ -14,10 +14,7 @@ import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.*;
-import vn.kltn.entity.Document;
-import vn.kltn.entity.Folder;
-import vn.kltn.entity.Permission;
-import vn.kltn.entity.User;
+import vn.kltn.entity.*;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.index.DocumentIndex;
 import vn.kltn.map.ItemMapper;
@@ -81,6 +78,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     public void uploadDocumentEmptyParent(List<FileBuffer> bufferedFiles, CancellationToken token) {
         // luu db
         List<Document> documents = documentStorageService.saveDocuments(bufferedFiles);
+        documentVersionService.increaseVersions(documents);
         List<String> blobsName = new ArrayList<>();
         List<DocumentIndex> documentIndexList = new ArrayList<>();
         try {
@@ -89,7 +87,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
             documentMapperService.mapBlobNamesToDocuments(documents, blobsName);
             // luu index
             documentIndexList.addAll(documentIndexService.insertAllDoc(documents).join());
-            documentVersionService.increaseVersions(documents);
+
         } catch (Exception e) {
             log.error("Error uploading document: {}", e.getMessage());
             // Gửi thông báo lỗi về client
@@ -103,33 +101,27 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     @Override
     public void updateDocumentEditor(Long documentId, byte[] data) {
         Document document = getItemByIdOrThrow(documentId);
-        documentVersionService.increaseVersion(document);
         permissionValidatorService.validatePermissionManager(document, authenticationService.getCurrentUser());
-        String oldBlobName = document.getBlobName(); // tên blob cũ
-        String originalFileName = document.getName(); // Lấy tên file gốc
+
+        String originalFileName = document.getName();
         long fileSize = data.length;
         int chunkSize = 1024 * 1024; // 1MB
+        String newBlobName;
 
         try (InputStream inputStream = new ByteArrayInputStream(data)) {
-            // Upload và lấy tên blob mới
-            String newBlobName = azureStorageService.uploadChunkedWithContainerDefault(
+            newBlobName = azureStorageService.uploadChunkedWithContainerDefault(
                     inputStream, originalFileName, fileSize, chunkSize
             );
-
-            // Cập nhật lại document với blob mới (nếu cần versioning, thì xử lý tại đây)
-            document.setBlobName(newBlobName);
-            documentRepo.saveAndFlush(document);
-            log.info(" Cập nhật documentId={} thành công với blobName={}", documentId, newBlobName);
         } catch (IOException e) {
             throw new RuntimeException("Lỗi khi đọc dữ liệu tài liệu", e);
-        } finally {
-            // Xóa blob cũ nếu không cần thiết nữa
-//            if (oldBlobName != null && !oldBlobName.equals(document.getBlobName())) {
-//                azureStorageService.deleteBlob(oldBlobName);
-//                log.info("Xóa blob cũ với tên: {}", oldBlobName);
-//            }
-            eventPublisher.publishEvent(new DocumentUpdateContent(this, documentId));
         }
+        //  Tạo version mới thông qua service
+        DocumentVersion newVersion = documentVersionService.createNewVersion(document, newBlobName, fileSize);
+        document.setCurrentVersion(newVersion);
+        documentRepo.save(document);
+
+        log.info("Cập nhật documentId={} thành công với blobName={} và size={}", documentId, newBlobName, fileSize);
+        eventPublisher.publishEvent(new DocumentUpdateContent(this, documentId));
     }
 
 
@@ -169,7 +161,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     @Override
     protected void hardDeleteResource(Document resource) {
         log.info("hard delete document with id {}", resource.getId());
-        documentStorageService.deleteBlob(resource.getBlobName());
+        documentStorageService.deleteBlob(resource.getCurrentVersion().getBlobName());
         documentHasTagService.deleteAllByDocumentId(resource.getId());
         permissionService.deletePermissionByItemId(resource.getId());
         documentIndexService.deleteDocById(resource.getId());
@@ -199,7 +191,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     @Override
     public InputStream download(Long documentId) {
         Document document = getItemByIdOrThrow(documentId);
-        return documentStorageService.download(document.getBlobName());
+        return documentStorageService.download(document.getCurrentVersion().getBlobName());
     }
 
     @Override
@@ -281,7 +273,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
         config.setDocumentTitle(document.getName());
         config.setFileType(documentTypeInfo.getFileType());
         config.setDocumentType(documentTypeInfo.getDocumentType());
-        config.setDocumentUrl(azureStorageService.getBlobUrl(document.getBlobName())); // SAS URL để tải tài liệu
+        config.setDocumentUrl(azureStorageService.getBlobUrl(document.getCurrentVersion().getBlobName())); // SAS URL để tải tài liệu
         config.setCallbackUrl("https://localhost:8080/api/v1/documents/save-editor");
 
         // Thông tin quyền truy cập người dùng

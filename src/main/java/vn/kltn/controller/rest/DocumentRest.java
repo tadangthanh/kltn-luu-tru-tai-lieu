@@ -204,7 +204,7 @@ public class DocumentRest {
     public void downloadDoc(@PathVariable Long documentId, HttpServletResponse response) throws IOException {
         Document document = documentService.getItemByIdOrThrow(documentId);
         try (InputStream inputStream = documentService.download(documentId)) {
-            String fileName = generateFileName(document.getBlobName());
+            String fileName = generateFileName(document.getCurrentVersion().getBlobName());
 
             response.setContentType("application/octet-stream");
             response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
