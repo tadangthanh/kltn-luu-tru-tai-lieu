@@ -138,12 +138,12 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
             List<Document> documents = documentStorageService.saveDocumentsWithFolder(bufferedFiles, parentId);
             // upload file to cloud
             blobsName.addAll(documentStorageService.store(token, bufferedFiles, documents));
+            // map blobName to document
             documentMapperService.mapBlobNamesToDocuments(documents, blobsName);
             // luu index
             documentIndexList.addAll(documentIndexService.insertAllDoc(documents).join());
-            documentVersionService.increaseVersions(documents);
+            // ke thua quyen cua parent
             permissionInheritanceService.inheritPermissionsFromParent(documents);
-            // Gửi websocket hoặc notification nếu cần
         } catch (AccessDeniedException e) {
             log.warn("Permission denied: {}", e.getMessage());
             // Có thể gửi message về client bằng WebSocket hoặc lưu log, hoặc trạng thái vào DB nếu cần
@@ -268,7 +268,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
         // Tạo cấu hình cho OnlyOffice
         OnlyOfficeConfig config = new OnlyOfficeConfig();
         config.setDocumentId(document.getId());
-        String documentKey = document.getId() + "-" + document.getUpdatedAt().getTime()+"-" + document.getCurrentVersion().getBlobName();
+        String documentKey = document.getId() + "-" + document.getUpdatedAt().getTime() + "-" + document.getCurrentVersion().getBlobName();
         config.setDocumentKey(documentKey);
         config.setDocumentTitle(document.getName());
         config.setFileType(documentTypeInfo.getFileType());

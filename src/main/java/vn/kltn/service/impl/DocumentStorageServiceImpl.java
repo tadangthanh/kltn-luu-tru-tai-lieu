@@ -14,7 +14,6 @@ import vn.kltn.entity.DocumentVersion;
 import vn.kltn.entity.Folder;
 import vn.kltn.entity.Tag;
 import vn.kltn.repository.DocumentRepo;
-import vn.kltn.repository.DocumentVersionRepo;
 import vn.kltn.service.*;
 
 import java.io.InputStream;
@@ -36,7 +35,6 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
     private final IDocumentVersionService documentVersionService;
-    private final DocumentVersionRepo documentVersionRepo;
 
 
     @Override
@@ -183,11 +181,22 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
     public List<Document> saveDocumentsWithFolder(List<FileBuffer> fileBuffers, Long folderId) {
         // Lưu tài liệu vào cơ sở dữ liệu
         List<Document> documents = documentMapperService.mapFilesBufferToListDocument(fileBuffers);
+        documents = documentRepo.saveAll(documents);
         Folder folder = folderCommonService.getFolderByIdOrThrow(folderId);
-        documents.forEach(document -> {
+        // Map từ documentId sang FileBuffer để truyền size
+        Map<Long, FileBuffer> bufferMap = new HashMap<>();
+        for (int i = 0; i < documents.size(); i++) {
+            bufferMap.put(documents.get(i).getId(), fileBuffers.get(i));
+        }
+
+        // Tạo versions
+        List<DocumentVersion> documentVersions = documentVersionService.increaseVersions(documents, bufferMap);
+
+        for (Document document : documents) {
             document.setParent(folder);
             document.setItemType(ItemType.DOCUMENT);
-        });
+            document.setCurrentVersion(documentVersions.get(documents.indexOf(document)));
+        }
         documents = documentRepo.saveAll(documents);
         return documents;
     }
