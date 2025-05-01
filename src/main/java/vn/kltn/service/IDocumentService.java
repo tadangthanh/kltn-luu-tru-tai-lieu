@@ -36,4 +36,6 @@ public interface IDocumentService extends IItemCommonService<Document, DocumentR
     DocumentDataResponse openDocumentById(Long documentId);
 
     OnlyOfficeConfig getOnlyOfficeConfig(Long documentId); // lay thong tin config onlyoffice
+
+    void hardDeleteItemById(Long documentId);
 }

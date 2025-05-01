@@ -18,6 +18,5 @@ public interface IFolderService extends IItemCommonService<Folder, FolderRespons
 
     List<FolderContent> getAllContents(Long folderId, String currentPath);
 
-
-
+    void hardDeleteFolderById(Long folderId);
 }

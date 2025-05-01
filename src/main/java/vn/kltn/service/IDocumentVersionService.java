@@ -17,4 +17,8 @@ public interface IDocumentVersionService {
     DocumentVersion createNewVersion(Document document, String blobName, long size);
 
     List<DocumentVersion> getVersionsByDocumentId(Long documentId);
+
+    void deleteVersionsByDocumentId(Long documentId);
+
+    void deleteAllByDocuments(List<Long> documentIds);
 }

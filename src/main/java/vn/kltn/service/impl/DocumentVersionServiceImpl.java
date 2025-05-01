@@ -10,6 +10,7 @@ import vn.kltn.entity.Document;
 import vn.kltn.entity.DocumentVersion;
 import vn.kltn.map.DocumentVersionMapper;
 import vn.kltn.repository.DocumentVersionRepo;
+import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IDocumentVersionService;
 
 import java.time.LocalDateTime;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 public class DocumentVersionServiceImpl implements IDocumentVersionService {
     private final DocumentVersionRepo documentVersionRepo;
     private final DocumentVersionMapper documentVersionMapper;
+    private final IAzureStorageService azureStorageService;
 
     @Override
     public DocumentVersion increaseVersion(Document document) {
@@ -76,7 +78,7 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
             doc.setCurrentVersion(dv);
             toSave.add(dv);
         }
-        List<DocumentVersion> result=documentVersionRepo.saveAll(toSave);
+        List<DocumentVersion> result = documentVersionRepo.saveAll(toSave);
 
         // 3) Xóa các version cũ để chỉ giữ 10 bản mỗi document
         //    (dùng window-function native query)
@@ -108,7 +110,7 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
             doc.setCurrentVersion(dv);
             toSave.add(dv);
         }
-        List<DocumentVersion> result=documentVersionRepo.saveAll(toSave);
+        List<DocumentVersion> result = documentVersionRepo.saveAll(toSave);
 
         // 3) Xóa các version cũ để chỉ giữ 10 bản mỗi document
         //    (dùng window-function native query)
@@ -137,5 +139,38 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
     public List<DocumentVersion> getVersionsByDocumentId(Long documentId) {
         log.info("get versions for documentId: {}", documentId);
         return documentVersionRepo.findAllByDocumentId(documentId);
+    }
+
+    @Override
+    public void deleteVersionsByDocumentId(Long documentId) {
+        List<DocumentVersion> versions = documentVersionRepo.findAllByDocumentId(documentId);
+        if (versions.isEmpty()) {
+            log.info("No versions found for documentId: {}", documentId);
+            return;
+        }
+        log.info("Deleting versions for documentId: {}", documentId);
+        List<String> blobNames = versions.stream()
+                .map(DocumentVersion::getBlobName)
+                .collect(Collectors.toList());
+        documentVersionRepo.deleteAll(versions);
+        azureStorageService.deleteBLobs(blobNames);
+        log.info("Deleted {} versions for documentId: {}", versions.size(), documentId);
+    }
+
+    @Override
+    public void deleteAllByDocuments(List<Long> documentIds) {
+        List<DocumentVersion> versions = documentVersionRepo.findAllByDocumentIds(documentIds);
+        if (versions.isEmpty()) {
+            log.info("No versions found for documentIds: {}", documentIds);
+            return;
+        }
+        log.info("Deleting versions for documentIds: {}", documentIds);
+        List<String> blobNames = versions.stream()
+                .map(DocumentVersion::getBlobName)
+                .collect(Collectors.toList());
+        documentVersionRepo.deleteAll(versions);
+        azureStorageService.deleteBLobs(blobNames);
+        log.info("Deleted {} versions for documentIds: {}", versions.size(), documentIds);
+
     }
 }

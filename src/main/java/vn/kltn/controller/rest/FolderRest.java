@@ -40,7 +40,7 @@ public class FolderRest {
 
     @DeleteMapping("/{folderId}/hard")
     public ResponseData<Void> hardDeleteFolder(@PathVariable Long folderId) {
-        folderService.hardDeleteItemById(folderId);
+        folderService.hardDeleteFolderById(folderId);
         return new ResponseData<>(204, "Xóa thành công", null);
     }
 

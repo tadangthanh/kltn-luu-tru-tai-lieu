@@ -84,8 +84,9 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
 
 
     @Override
-    protected void hardDeleteResource(Folder resource) {
-        folderDeletionService.hardDelete(resource);
+    public void hardDeleteFolderById(Long folderId) {
+        Folder folder = getFolderByIdOrThrow(folderId);
+        folderDeletionService.hardDelete(folder);
     }
 
     @Override

@@ -146,6 +146,8 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
             documentHasTagService.deleteAllByDocumentIds(documentIds);
             // Delete from search index
             documentIndexService.deleteIndexByIdList(documentIds);
+            // delete versions
+            documentVersionService.deleteAllByDocuments(documentIds);
         }
     }
 

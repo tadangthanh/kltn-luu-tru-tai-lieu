@@ -28,6 +28,9 @@ import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +40,8 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     @Value("${spring.cloud.azure.storage.blob.container-name}")
     private String containerNameDefault;
     private final SimpMessagingTemplate messagingTemplate;
+    private static final int MAX_RETRIES = 3;
+    private static final int THREAD_COUNT = 5;
 
     @Override
     public String uploadChunkedWithContainerDefault(InputStream data, String originalFileName, long length, int chunkSize) {
@@ -170,11 +175,48 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
             log.warn("No blobs to delete");
             return;
         }
-        log.info("Deleting blobs {}", blobNames);
+
+        log.info("Deleting {} blobs (parallel)...", blobNames.size());
+
+        ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+        List<Future<?>> futures = new ArrayList<>();
+
         for (String blobName : blobNames) {
-            deleteBlobByContainerAndBlob(containerNameDefault, blobName);
+            futures.add(executor.submit(() -> deleteWithRetry(blobName)));
+        }
+
+        // Chờ tất cả task hoàn tất
+        for (Future<?> future : futures) {
+            try {
+                future.get(); // block và bắt lỗi nếu có
+            } catch (Exception e) {
+                log.error("Error while deleting blob in parallel task", e);
+            }
+        }
+
+        executor.shutdown();
+        log.info("Blob deletion completed.");
+    }
+
+    private void deleteWithRetry(String blobName) {
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                deleteBlobByContainerAndBlob(containerNameDefault, blobName);
+                log.debug("Deleted blob: {}", blobName);
+                return;
+            } catch (Exception e) {
+                log.warn("Failed to delete blob '{}', attempt {}/{}", blobName, attempt, MAX_RETRIES, e);
+                if (attempt == MAX_RETRIES) {
+                    log.error("Giving up on deleting blob: {}", blobName);
+                } else {
+                    try {
+                        Thread.sleep(500L * attempt); // delay tăng dần
+                    } catch (InterruptedException ignored) {}
+                }
+            }
         }
     }
+
 
     @Override
     public InputStream downloadBlobInputStream(String blobName) {

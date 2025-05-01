@@ -159,16 +159,6 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
 
 
     @Override
-    protected void hardDeleteResource(Document resource) {
-        log.info("hard delete document with id {}", resource.getId());
-        documentStorageService.deleteBlob(resource.getCurrentVersion().getBlobName());
-        documentHasTagService.deleteAllByDocumentId(resource.getId());
-        permissionService.deletePermissionByItemId(resource.getId());
-        documentIndexService.deleteDocById(resource.getId());
-        documentRepo.delete(resource);
-    }
-
-    @Override
     protected Page<Document> getPageResourceBySpec(Specification<Document> spec, Pageable pageable) {
         log.info("get page document by specification");
         return documentRepo.findAll(spec, pageable);
@@ -290,6 +280,17 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
         user.setName(currentUser.getFullName());
         config.setUser(user);
         return config;
+    }
+
+    @Override
+    public void hardDeleteItemById(Long documentId) {
+        log.info("hard delete document with id {}", documentId);
+        Document resource = getItemByIdOrThrow(documentId);
+        documentStorageService.deleteBlob(resource.getCurrentVersion().getBlobName());
+        documentHasTagService.deleteAllByDocumentId(resource.getId());
+        documentIndexService.deleteDocById(resource.getId());
+        documentVersionService.deleteVersionsByDocumentId(documentId);
+        documentRepo.delete(resource);
     }
 
 

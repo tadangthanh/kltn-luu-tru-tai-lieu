@@ -67,4 +67,6 @@ public interface FolderRepo extends JpaRepository<Folder, Long>, JpaSpecificatio
 
 
     List<Folder> findByParentId(Long folderId);
+
+    List<Folder> findAllByPermanentDeleteAtBefore(LocalDateTime now);
 }

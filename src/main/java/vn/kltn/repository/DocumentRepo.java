@@ -42,4 +42,7 @@ public interface DocumentRepo extends JpaRepository<Document, Long>, JpaSpecific
     List<Document> findAllDocumentByResourceAndRecipient(Long resourceId, Long recipientId);
 
     List<Document> findByParentId(Long folderId);
+
+    List<Document> findAllByPermanentDeleteAtBefore(LocalDateTime now);
+
 }
