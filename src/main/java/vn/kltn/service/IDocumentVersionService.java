@@ -5,6 +5,7 @@ import vn.kltn.dto.response.DocumentVersionResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.DocumentVersion;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -17,13 +18,17 @@ public interface IDocumentVersionService {
 
     DocumentVersion createNewVersion(Document document, String blobName, long size);
 
-    List<DocumentVersion> getVersionsByDocumentId(Long documentId);
+    List<DocumentVersionResponse> getVersionsByDocumentId(Long documentId);
 
     void deleteVersionsByDocumentId(Long documentId);
 
     void deleteAllByDocuments(List<Long> documentIds);
 
     DocumentVersionResponse restoreVersion(Long documentId, Long targetVersionId);
+
+    InputStream downloadVersion(Long versionId);
+
+    DocumentVersion getVersionByIdOrThrow(Long versionId);
 
 
 }

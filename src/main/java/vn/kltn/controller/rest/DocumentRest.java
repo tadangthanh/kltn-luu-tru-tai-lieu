@@ -38,6 +38,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import static vn.kltn.repository.util.FileUtil.generateFileName;
+
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/documents")
 @RestController
@@ -218,9 +220,7 @@ public class DocumentRest {
         }
     }
 
-    private String generateFileName(String blobName) {
-        return blobName.substring(blobName.lastIndexOf("_") + 1);
-    }
+
 
     @GetMapping("/{documentId}/view")
     public ResponseEntity<InputStreamResource> download(@PathVariable Long documentId) {

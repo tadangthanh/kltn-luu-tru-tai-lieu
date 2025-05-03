@@ -6,6 +6,8 @@ import vn.kltn.dto.response.DocumentVersionResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.DocumentVersion;
 
+import java.util.List;
+
 import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 
 @Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = IGNORE)
@@ -18,4 +20,6 @@ public interface DocumentVersionMapper {
     @Mapping(target = "document", ignore = true)
     @Mapping(target = "id", ignore = true)
     DocumentVersion toDocumentVersion(Document document);
+
+    List<DocumentVersionResponse> toDocumentVersionResponse(List<DocumentVersion> documentVersions);
 }

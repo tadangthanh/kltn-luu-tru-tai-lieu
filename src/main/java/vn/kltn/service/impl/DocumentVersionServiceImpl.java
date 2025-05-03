@@ -2,6 +2,7 @@ package vn.kltn.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.kltn.dto.FileBuffer;
@@ -9,15 +10,18 @@ import vn.kltn.dto.LatestVersion;
 import vn.kltn.dto.response.DocumentVersionResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.DocumentVersion;
+import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.DocumentVersionMapper;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.repository.DocumentVersionRepo;
+import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IDocumentVersionService;
 import vn.kltn.service.event.publisher.DocumentEventPublisher;
 
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +38,7 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
     private final IAzureStorageService azureStorageService;
     private final DocumentRepo documentRepo;
     private final DocumentEventPublisher documentEventPublisher;
+    private final IAuthenticationService authenticationService;
 
     @Override
     public DocumentVersion increaseVersion(Document document) {
@@ -143,9 +148,9 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
 
 
     @Override
-    public List<DocumentVersion> getVersionsByDocumentId(Long documentId) {
+    public List<DocumentVersionResponse> getVersionsByDocumentId(Long documentId) {
         log.info("get versions for documentId: {}", documentId);
-        return documentVersionRepo.findAllByDocumentId(documentId);
+        return documentVersionMapper.toDocumentVersionResponse(documentVersionRepo.findAllByDocumentId(documentId));
     }
 
     @Override
@@ -191,6 +196,12 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
                 });
 
         Document document = targetVersion.getDocument();
+
+        User currentUser = authenticationService.getCurrentUser();
+        if (!currentUser.getId().equals(document.getOwner().getId())) {
+            throw new AccessDeniedException("Chức năng này chỉ dành cho người sở hữu tài liệu");
+        }
+
         if (!document.getId().equals(documentId)) {
             throw new InvalidDataException("Document ID does not match with the version's document ID");
         }
@@ -224,6 +235,29 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
         // cái này sai, vì nó update document sau khi đã chuyển sang version cũ tức là
         documentEventPublisher.publishDocumentUpdateContent(documentId);
         return documentVersionMapper.toDocumentVersionResponse(restored);
+    }
+
+    @Override
+    public InputStream downloadVersion(Long versionId) {
+        DocumentVersion documentVersion = documentVersionRepo.findById(versionId).orElseThrow(() -> {
+            log.warn("DocumentVersion with id {} not found", versionId);
+            return new ResourceNotFoundException("Version not found");
+        });
+        if (documentVersion.getBlobName() == null) {
+            log.warn("DocumentVersion with id {} has no blob name", versionId);
+            throw new ResourceNotFoundException("Version not found");
+        }
+        String blobName = documentVersion.getBlobName();
+        log.info("Downloading versionId={} with blobName={}", versionId, blobName);
+        return azureStorageService.downloadBlobInputStream(blobName);
+    }
+
+    @Override
+    public DocumentVersion getVersionByIdOrThrow(Long versionId) {
+        return documentVersionRepo.findById(versionId).orElseThrow(() -> {
+            log.warn("DocumentVersion with id {} not found", versionId);
+            return new ResourceNotFoundException("Version not found");
+        });
     }
 
 }

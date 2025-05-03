@@ -235,4 +235,12 @@ public class FileUtil {
         }
         return list;
     }
+
+    public static String generateFileName(String blobName) {
+        return blobName.substring(blobName.lastIndexOf("_") + 1);
+    }
+
+    public static String getOriginalFileName(String blobName) {
+        return blobName.substring( blobName.indexOf("_"), blobName.lastIndexOf("_")).split("\\.")[0];
+    }
 }
