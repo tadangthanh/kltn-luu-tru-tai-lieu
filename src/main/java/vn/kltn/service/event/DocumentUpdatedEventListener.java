@@ -5,7 +5,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import vn.kltn.service.IDocumentIndexService;
-import vn.kltn.service.IDocumentVersionService;
 
 import static org.springframework.transaction.event.TransactionPhase.AFTER_COMMIT;
 

@@ -6,12 +6,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.LatestVersion;
+import vn.kltn.dto.response.DocumentVersionResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.DocumentVersion;
+import vn.kltn.exception.InvalidDataException;
+import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.DocumentVersionMapper;
+import vn.kltn.repository.DocumentRepo;
 import vn.kltn.repository.DocumentVersionRepo;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IDocumentVersionService;
+import vn.kltn.service.event.publisher.DocumentEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -27,6 +32,8 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
     private final DocumentVersionRepo documentVersionRepo;
     private final DocumentVersionMapper documentVersionMapper;
     private final IAzureStorageService azureStorageService;
+    private final DocumentRepo documentRepo;
+    private final DocumentEventPublisher documentEventPublisher;
 
     @Override
     public DocumentVersion increaseVersion(Document document) {
@@ -173,4 +180,50 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
         log.info("Deleted {} versions for documentIds: {}", versions.size(), documentIds);
 
     }
+
+    @Override
+    public DocumentVersionResponse restoreVersion(Long documentId, Long targetVersionId) {
+        DocumentVersion targetVersion = documentVersionRepo
+                .findById(targetVersionId)
+                .orElseThrow(() -> {
+                    log.warn("DocumentVersion with id {} not found", targetVersionId);
+                    return new ResourceNotFoundException("Version not found");
+                });
+
+        Document document = targetVersion.getDocument();
+        if (!document.getId().equals(documentId)) {
+            throw new InvalidDataException("Document ID does not match with the version's document ID");
+        }
+
+        // Backup current version before restore
+        DocumentVersion currentVersion = document.getCurrentVersion();
+        if (currentVersion != null) {
+            DocumentVersion backupVersion = new DocumentVersion();
+            backupVersion.setDocument(document);
+            backupVersion.setVersion(documentVersionRepo.findLatestVersionNumber(documentId).orElse(0) + 1);
+            backupVersion.setBlobName(currentVersion.getBlobName());
+            backupVersion.setSize(currentVersion.getSize());
+            backupVersion.setExpiredAt(LocalDateTime.now().plusDays(7));
+            documentVersionRepo.save(backupVersion);
+        }
+
+        // Create new version from targetVersion (don't reuse old one)
+        DocumentVersion restored = new DocumentVersion();
+        restored.setDocument(document);
+        restored.setBlobName(targetVersion.getBlobName());
+        restored.setSize(targetVersion.getSize());
+        restored.setExpiredAt(LocalDateTime.now().plusDays(7));
+        restored.setVersion(documentVersionRepo.findLatestVersionNumber(documentId).orElse(0) + 1);
+        documentVersionRepo.save(restored);
+
+        // Update document to point to restored version
+        document.setCurrentVersion(restored);
+        documentRepo.save(document);
+
+        log.info("Restored documentId={} to versionId={} (new version created)", documentId, targetVersionId);
+        // cái này sai, vì nó update document sau khi đã chuyển sang version cũ tức là
+        documentEventPublisher.publishDocumentUpdateContent(documentId);
+        return documentVersionMapper.toDocumentVersionResponse(restored);
+    }
+
 }

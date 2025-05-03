@@ -1,6 +1,7 @@
 package vn.kltn.service;
 
 import vn.kltn.dto.FileBuffer;
+import vn.kltn.dto.response.DocumentVersionResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.DocumentVersion;
 
@@ -21,4 +22,8 @@ public interface IDocumentVersionService {
     void deleteVersionsByDocumentId(Long documentId);
 
     void deleteAllByDocuments(List<Long> documentIds);
+
+    DocumentVersionResponse restoreVersion(Long documentId, Long targetVersionId);
+
+
 }

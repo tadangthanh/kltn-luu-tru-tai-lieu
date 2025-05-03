@@ -177,6 +177,7 @@ public class DocumentIndexServiceImpl implements IDocumentIndexService {
     }
 
     @Override
+    @Async("taskExecutor")
     public void syncContentDocument(Long docId) {
         log.info("sync content documentId: {}", docId);
         Document document = documentCommonService.getDocumentById(docId);

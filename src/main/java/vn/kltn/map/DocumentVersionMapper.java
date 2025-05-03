@@ -12,10 +12,10 @@ import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 public interface DocumentVersionMapper {
 
     @Mapping(target = "documentId", source = "document.id")
+    @Mapping(target = "type", source = "document.type")
     DocumentVersionResponse toDocumentVersionResponse(DocumentVersion documentVersion);
 
     @Mapping(target = "document", ignore = true)
     @Mapping(target = "id", ignore = true)
-
     DocumentVersion toDocumentVersion(Document document);
 }
