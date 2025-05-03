@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.LatestVersion;
 import vn.kltn.dto.response.DocumentVersionResponse;
+import vn.kltn.dto.response.OnlyOfficeConfig;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.DocumentVersion;
 import vn.kltn.entity.User;
@@ -19,7 +20,9 @@ import vn.kltn.repository.DocumentVersionRepo;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IDocumentVersionService;
+import vn.kltn.service.IRedisTokenService;
 import vn.kltn.service.event.publisher.DocumentEventPublisher;
+import vn.kltn.util.DocumentTypeUtil;
 
 import java.io.InputStream;
 import java.time.LocalDateTime;
@@ -27,6 +30,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static vn.kltn.repository.util.FileUtil.getFileExtension;
 
 @Service
 @Transactional
@@ -39,6 +44,7 @@ public class DocumentVersionServiceImpl implements IDocumentVersionService {
     private final DocumentRepo documentRepo;
     private final DocumentEventPublisher documentEventPublisher;
     private final IAuthenticationService authenticationService;
+
 
     @Override
     public DocumentVersion increaseVersion(Document document) {

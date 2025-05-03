@@ -30,5 +30,4 @@ public interface IDocumentVersionService {
 
     DocumentVersion getVersionByIdOrThrow(Long versionId);
 
-
 }

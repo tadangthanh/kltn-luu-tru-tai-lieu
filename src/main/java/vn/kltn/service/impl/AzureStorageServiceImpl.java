@@ -7,6 +7,7 @@ import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.sas.BlobSasPermission;
 import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
 import com.azure.storage.blob.specialized.BlockBlobClient;
+import com.azure.storage.common.sas.SasProtocol;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -261,7 +262,10 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
                     .setReadPermission(true);
 
             // Tạo SAS token cho blob
-            BlobServiceSasSignatureValues sasSignatureValues = new BlobServiceSasSignatureValues(expiryTime, permission);
+
+            BlobServiceSasSignatureValues sasSignatureValues = new BlobServiceSasSignatureValues(expiryTime, permission)
+                    .setStartTime(OffsetDateTime.now().minusMinutes(5)) // Đặt thời gian bắt đầu sớm hơn hiện tại
+                    .setProtocol(SasProtocol.HTTPS_HTTP);
             String sasToken = blobClient.generateSas(sasSignatureValues);
 
             // Tạo và trả về URL với SAS token
@@ -272,6 +276,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
             throw new CustomBlobStorageException("Không thể lấy URL của blob: " + e.getMessage());
         }
     }
+
 
 
     private InputStream getInputStreamBlob(String containerName, String blobName) {

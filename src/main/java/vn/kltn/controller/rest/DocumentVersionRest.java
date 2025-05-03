@@ -15,8 +15,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import static vn.kltn.repository.util.FileUtil.*;
-
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/document-versions")
 @RestController
@@ -38,7 +36,7 @@ public class DocumentVersionRest {
         DocumentVersion documentVersion = documentVersionService.getVersionByIdOrThrow(versionId);
         try (InputStream inputStream = documentVersionService.downloadVersion(versionId)) {
             Document document = documentVersion.getDocument();
-            String fileName = document.getName().split("\\.")[0] + "_version_" + documentVersion.getVersion() +"." + documentVersion.getBlobName().split("\\.")[1];
+            String fileName = document.getName().split("\\.")[0] + "_version_" + documentVersion.getVersion() + "." + documentVersion.getBlobName().split("\\.")[1];
             response.setContentType("application/octet-stream");
             response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
 

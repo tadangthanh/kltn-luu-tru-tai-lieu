@@ -2,13 +2,17 @@ package vn.kltn.util;
 
 import org.springframework.stereotype.Component;
 
+import java.net.URI;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
-public class SasTokenValidator {
+public class SasTokenUtil {
     public static boolean isSasTokenValid(String sasToken) {
         if (sasToken == null || !sasToken.startsWith("?")) {
             return false; // Không phải SAS token hợp lệ
