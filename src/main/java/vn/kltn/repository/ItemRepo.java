@@ -38,6 +38,6 @@ public interface ItemRepo extends JpaRepository<Item, Long>, JpaSpecificationExe
 
 
     @Query("select i from Item i inner join SavedItem si on i.id = si.item.id where si.user.id = ?1 and i.deletedAt is null")
-    Page<Item> getPageItemSaved(Pageable pageable, Long userId);
+    Page<Item> getPageItemSaved(Long userId, Pageable pageable);
 
 }

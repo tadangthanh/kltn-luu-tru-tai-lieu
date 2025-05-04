@@ -7,6 +7,8 @@ import vn.kltn.dto.request.ItemRequest;
 import vn.kltn.dto.response.ItemResponse;
 import vn.kltn.entity.Item;
 
+import java.util.List;
+
 import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 
 @Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = IGNORE)
@@ -18,4 +20,6 @@ public interface ItemMapper {
     ItemResponse toResponse(Item item);
 
     void updateItem(@MappingTarget Item item, ItemRequest itemRequest);
+
+    List<ItemResponse> toResponse(List<Item> items);
 }

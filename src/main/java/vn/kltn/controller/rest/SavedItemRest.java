@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import vn.kltn.dto.response.ItemResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
+import vn.kltn.dto.response.SavedItemResponse;
 import vn.kltn.service.ISavedItemService;
 
 import java.util.List;
@@ -19,12 +20,12 @@ public class SavedItemRest {
     @PostMapping("/add/{itemId}")
     public ResponseData<Void> addSavedItem(@PathVariable Long itemId) {
         savedItemService.addSavedItem(itemId);
-        return new ResponseData<>(200, "Saved item added successfully", null);
+        return new ResponseData<>(201, "Saved item added successfully", null);
     }
 
-    @DeleteMapping("/remove/{savedItemId}")
-    public ResponseData<Void> removeSavedItem(@PathVariable Long savedItemId) {
-        savedItemService.removeSavedItem(savedItemId);
+    @DeleteMapping("/remove/{itemId}")
+    public ResponseData<Void> removeSavedItem(@PathVariable Long itemId) {
+        savedItemService.removeByItemId(itemId);
         return new ResponseData<>(200, "Saved item removed successfully", null);
     }
 

@@ -6,18 +6,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.kltn.common.ItemType;
 import vn.kltn.dto.response.ItemResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Item;
 import vn.kltn.entity.SavedItem;
 import vn.kltn.entity.User;
-import vn.kltn.map.ItemMapper;
+import vn.kltn.exception.DuplicateResourceException;
 import vn.kltn.repository.ItemRepo;
 import vn.kltn.repository.SavedItemRepo;
 import vn.kltn.repository.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
-import vn.kltn.service.IDocumentService;
 import vn.kltn.service.IItemService;
 import vn.kltn.service.ISavedItemService;
 
@@ -29,15 +27,19 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SavedItemServiceImpl implements ISavedItemService {
     private final SavedItemRepo savedItemRepo;
-    private final ItemRepo itemRepo;
-    private final ItemMapper itemMapper;
     private final IItemService itemService;
+    private final ItemRepo itemRepo;
     private final IAuthenticationService authenticationService;
-    private final IDocumentService documentService;
+    private final ItemMapperService itemMapperService;
 
     @Override
     public SavedItem addSavedItem(Long itemId) {
         log.info("Adding saved item with ID: {}", itemId);
+        // kiem tra su ton tai trong saved item, kiem tra item bi xoa chua
+        if (savedItemRepo.existsByUserIdAndItemId(authenticationService.getCurrentUser().getId(), itemId)) {
+            log.warn("Item with ID: {} is already saved by the user", itemId);
+            throw new DuplicateResourceException("Item already saved");
+        }
         Item item = itemService.getItemByIdOrThrow(itemId);
         SavedItem savedItem = new SavedItem();
         savedItem.setItem(item);
@@ -48,21 +50,18 @@ public class SavedItemServiceImpl implements ISavedItemService {
     }
 
     @Override
-    public void removeSavedItem(Long savedItemId) {
-        log.info("Removing saved item with ID: {}", savedItemId);
-        savedItemRepo.deleteById(savedItemId);
+    public void removeByItemId(Long itemId) {
+        log.info("Removing saved item with itemId ID: {}", itemId);
+        User user = authenticationService.getCurrentUser();
+        savedItemRepo.deleteByItemIdAndUserId(itemId, user.getId());
     }
-    private ItemResponse mapToItemResponse(Item item) {
-        ItemResponse itemResponse = itemMapper.toResponse(item);
-        if (item.getItemType().equals(ItemType.DOCUMENT)) {
-            itemResponse.setSize(documentService.getItemByIdOrThrow(item.getId()).getCurrentVersion().getSize());
-        }
-        return itemResponse;
-    }
+
+
     @Override
     public PageResponse<List<ItemResponse>> getSavedItems(Pageable pageable) {
         log.info("Getting saved items with page size: {}, page no: {}", pageable.getPageSize(), pageable.getPageNumber());
-        Page<Item> savedItems = itemRepo.getPageItemSaved(pageable, authenticationService.getCurrentUser().getId());
-        return PaginationUtils.convertToPageResponse(savedItems, pageable, this::mapToItemResponse);
+        Page<Item> savedItems =
+                itemRepo.getPageItemSaved(authenticationService.getCurrentUser().getId(), pageable);
+        return PaginationUtils.convertToPageResponse(savedItems, pageable, itemMapperService::toResponse);
     }
 }

@@ -39,6 +39,7 @@ public class ItemServiceImpl implements IItemService {
     private final IDocumentService documentService;
     private final IFolderService folderService;
     private final IPermissionValidatorService permissionValidatorService;
+    private final ItemMapperService itemMapperService;
 
     @Override
     public PageResponse<List<ItemResponse>> searchByCurrentUser(Pageable pageable, String[] items) {
@@ -57,21 +58,14 @@ public class ItemServiceImpl implements IItemService {
             }
             spec = spec.and(SpecificationUtil.buildSpecificationFromFilters(items, builder));
             Page<Item> pageAccessByResource = itemRepo.findAll(spec, pageable);
-            return PaginationUtils.convertToPageResponse(pageAccessByResource, pageable, this::mapToItemResponse );
+            return PaginationUtils.convertToPageResponse(pageAccessByResource, pageable, itemMapperService::toResponse);
         } else {
             spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("parent")));
         }
 
-        return PaginationUtils.convertToPageResponse(itemRepo.findAll(spec, pageable), pageable, this::mapToItemResponse );
+        return PaginationUtils.convertToPageResponse(itemRepo.findAll(spec, pageable), pageable, itemMapperService::toResponse);
     }
 
-    private ItemResponse mapToItemResponse(Item item) {
-        ItemResponse itemResponse = itemMapper.toResponse(item);
-        if (item.getItemType().equals(ItemType.DOCUMENT)) {
-            itemResponse.setSize(documentService.getItemByIdOrThrow(item.getId()).getCurrentVersion().getSize());
-        }
-        return itemResponse;
-    }
 
     @Override
     public Item getItemByIdOrThrow(Long itemId) {
@@ -134,7 +128,7 @@ public class ItemServiceImpl implements IItemService {
         Item itemExist = itemRepo.findById(itemId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy item với id: " + itemId));
         itemMapper.updateItem(itemExist, itemRequest);
         itemRepo.save(itemExist);
-        return mapToItemResponse(itemExist);
+        return itemMapperService.toResponse(itemExist);
     }
 
 }

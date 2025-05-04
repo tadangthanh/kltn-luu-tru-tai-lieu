@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-public  class ItemResponse extends BaseDto {
+public class ItemResponse extends BaseDto {
     private String name;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Long parentId;
@@ -27,6 +27,8 @@ public  class ItemResponse extends BaseDto {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private LocalDateTime deletedAt;
     private Long size;
+
+    private boolean saved;
 
     private ItemType itemType;
 

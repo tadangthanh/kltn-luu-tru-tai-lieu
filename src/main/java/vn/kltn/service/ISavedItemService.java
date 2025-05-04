@@ -10,7 +10,7 @@ import java.util.List;
 public interface ISavedItemService {
     SavedItem addSavedItem(Long itemId);
 
-    void removeSavedItem(Long savedItemId);
+    void removeByItemId(Long itemId);
 
     PageResponse<List<ItemResponse>> getSavedItems(Pageable pageable);
 
