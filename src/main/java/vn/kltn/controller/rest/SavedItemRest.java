@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.*;
 import vn.kltn.dto.response.ItemResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
-import vn.kltn.dto.response.SavedItemResponse;
 import vn.kltn.service.ISavedItemService;
 
 import java.util.List;
