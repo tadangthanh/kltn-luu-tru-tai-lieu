@@ -131,4 +131,55 @@ public class ItemServiceImpl implements IItemService {
         return itemMapperService.toResponse(itemExist);
     }
 
+    @Override
+    public PageResponse<List<ItemResponse>> getItemsMarkDelete(Pageable pageable) {
+        log.info("Get items mark delete page no: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
+        User currentUser = authenticationService.getCurrentUser();
+        Specification<Item> spec = Specification.where(ItemSpecification.markDeleted()).and(ItemSpecification.ownedBy(currentUser.getId()));
+        return PaginationUtils.convertToPageResponse(itemRepo.findAll(spec, pageable), pageable, itemMapperService::toResponse);
+    }
+
+    @Override
+    public void cleanUpTrash() {
+        log.info("Clean up trash");
+        User currentUser = authenticationService.getCurrentUser();
+        Specification<Item> spec = Specification.where(ItemSpecification.markDeleted()).and(ItemSpecification.ownedBy(currentUser.getId()));
+        List<Item> items = itemRepo.findAll(spec);
+        for (Item item : items) {
+            if (item.getItemType().equals(ItemType.DOCUMENT)) {
+                documentService.hardDeleteItemById(item.getId());
+            } else if (item.getItemType().equals(ItemType.FOLDER)) {
+                folderService.hardDeleteFolderById(item.getId());
+            }
+        }
+        log.info("Clean up trash done");
+    }
+
+    @Override
+    public ItemResponse restoreItemById(Long itemId) {
+        log.info("Restore item by id: {}", itemId);
+        Item item = getItemByIdOrThrow(itemId);
+        itemValidator.validateCurrentUserIsOwnerItem(item);
+        if (item.getItemType().equals(ItemType.DOCUMENT)) {
+            documentService.restoreItemById(item.getId());
+        } else if (item.getItemType().equals(ItemType.FOLDER)) {
+            folderService.restoreItemById(item.getId());
+        }
+        log.info("Restore item by id done: {}", itemId);
+        return itemMapperService.toResponse(item);
+    }
+
+    @Override
+    public void deleteItemForever(Long itemId) {
+        log.info("Delete item forever by id: {}", itemId);
+        Item item = getItemByIdOrThrow(itemId);
+        itemValidator.validateCurrentUserIsOwnerItem(item);
+        if (item.getItemType().equals(ItemType.DOCUMENT)) {
+            documentService.hardDeleteItemById(item.getId());
+        } else if (item.getItemType().equals(ItemType.FOLDER)) {
+            folderService.hardDeleteFolderById(item.getId());
+        }
+        log.info("Delete item forever by id done: {}", itemId);
+    }
+
 }

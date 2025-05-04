@@ -27,6 +27,9 @@ public class ItemSpecification {
     public static Specification<Item> notDeleted() {
         return (root, query, cb) -> cb.isNull(root.get("deletedAt"));
     }
+    public static Specification<Item> markDeleted() {
+        return (root, query, cb) -> cb.isNotNull(root.get("deletedAt"));
+    }
 
     public static Specification<Item> ofType(ItemType type) {
         return (root, query, cb) -> cb.equal(root.get("itemType"), type);

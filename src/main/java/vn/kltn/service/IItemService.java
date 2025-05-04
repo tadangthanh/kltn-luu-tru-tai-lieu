@@ -18,4 +18,13 @@ public interface IItemService {
     PageResponse<List<String>> getEmailsSharedWithMe(Pageable pageable, String keyword);
 
     ItemResponse updateItem(Long itemId, ItemRequest itemRequest);
+
+    PageResponse<List<ItemResponse>> getItemsMarkDelete(Pageable pageable);
+
+    void cleanUpTrash(); // xóa vĩnh viễn các item đã xóa trong thùng rác
+
+    ItemResponse restoreItemById(Long itemId); // phục hồi item đã xóa
+
+    void deleteItemForever(Long itemId); // xóa vĩnh viễn item đã xóa trong thùng rác
+
 }
