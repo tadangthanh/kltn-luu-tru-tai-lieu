@@ -19,4 +19,6 @@ public interface IAssistantFileService {
     AssistantFileDto update(String name, AssistantFileRequest assistantFileRequest);
 
     List<AssistantFile> save(ChatSession chatSession, List<AssistantFileDto> assistantFileDtoList);
+
+    AssistantFileDto getAssistantFileByDocId(Long docId);
 }

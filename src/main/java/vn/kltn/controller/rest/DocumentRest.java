@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -201,14 +202,17 @@ public class DocumentRest {
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + documentDataResponse.getName() + "\"").contentType(MediaType.parseMediaType(documentDataResponse.getType())).body(new InputStreamResource(new ByteArrayInputStream(documentDataResponse.getData())));
     }
 
-
     @GetMapping("/{documentId}/download")
     public void downloadDoc(@PathVariable Long documentId, HttpServletResponse response) throws IOException {
         Document document = documentService.getItemByIdOrThrow(documentId);
         try (InputStream inputStream = documentService.download(documentId)) {
             String fileName = generateFileName(document.getCurrentVersion().getBlobName());
+            String mimeType = URLConnection.guessContentTypeFromName(fileName);
+            if (mimeType == null) {
+                mimeType = "application/octet-stream"; // fallback
+            }
 
-            response.setContentType("application/octet-stream");
+            response.setContentType(mimeType);
             response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
 
             byte[] buffer = new byte[4096];
@@ -219,7 +223,6 @@ public class DocumentRest {
             response.flushBuffer();
         }
     }
-
 
 
     @GetMapping("/{documentId}/view")

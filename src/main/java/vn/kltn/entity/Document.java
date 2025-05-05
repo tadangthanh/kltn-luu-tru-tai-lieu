@@ -23,5 +23,7 @@ public class Document extends Item {
     @JoinColumn(name = "current_version_id")
     private DocumentVersion currentVersion;
 
-
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "assistant_file_id")
+    private AssistantFile assistantFile;
 }
