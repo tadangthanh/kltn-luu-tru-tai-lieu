@@ -8,6 +8,7 @@ import vn.kltn.dto.request.AssistantFileRequest;
 import vn.kltn.dto.response.AssistantFileDto;
 import vn.kltn.entity.AssistantFile;
 import vn.kltn.entity.ChatSession;
+import vn.kltn.entity.Document;
 import vn.kltn.entity.User;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.AssistantFileMapper;
@@ -16,6 +17,7 @@ import vn.kltn.repository.ChatSessionRepo;
 import vn.kltn.service.IAssistantFileService;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IChatSessionService;
+import vn.kltn.service.IDocumentService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,17 +31,25 @@ public class AssistantFileServiceImpl implements IAssistantFileService {
     private final AssistantFileRepo assistantFileRepo;
     private final IAuthenticationService authenticationService;
     private final ChatSessionRepo chatSessionRepo;
+    private final IDocumentService documentService;
 
     @Override
     public List<AssistantFileDto> uploadFile(List<AssistantFileRequest> assistantFilesRequest) {
         log.info("batch upload assistant files");
-        if(assistantFilesRequest == null || assistantFilesRequest.isEmpty()) {
+        if (assistantFilesRequest == null || assistantFilesRequest.isEmpty()) {
             return new ArrayList<>();
         }
         ChatSession chatSession = chatSessionRepo.findById(assistantFilesRequest.get(0).getChatSessionId()).orElseThrow(() -> new ResourceNotFoundException("Chat session not found"));
+        Document document = null;
+        if (assistantFilesRequest.get(0).getDocumentId() != null) {
+            document = documentService.getItemByIdOrThrow(assistantFilesRequest.get(0).getDocumentId());
+        }
         List<AssistantFile> assistantFiles = assistantFileMapper.toEntity(assistantFilesRequest);
         for (AssistantFile assistantFile : assistantFiles) {
             assistantFile.setChatSession(chatSession);
+            if (document != null) {
+                assistantFile.setDocument(document);
+            }
         }
         assistantFiles = assistantFileRepo.saveAll(assistantFiles);
         return assistantFileMapper.toResponse(assistantFiles);
@@ -86,8 +96,19 @@ public class AssistantFileServiceImpl implements IAssistantFileService {
         }
 
         List<AssistantFile> assistantFileList = assistantFileMapper.listToEntity(assistantFileDtoList);
-        for (AssistantFile assistantFile : assistantFileList) {
-            assistantFile.setChatSession(chatSession);
+        if (assistantFileList.isEmpty()) {
+            return new ArrayList<>();
+        }
+        if (assistantFileDtoList.get(0).getDocumentId() != null) {
+            Document document = documentService.getItemByIdOrThrow(assistantFileDtoList.get(0).getDocumentId());
+            for (AssistantFile assistantFile : assistantFileList) {
+                assistantFile.setDocument(document);
+                assistantFile.setChatSession(chatSession);
+            }
+        }else{
+            for (AssistantFile assistantFile : assistantFileList) {
+                assistantFile.setChatSession(chatSession);
+            }
         }
         return assistantFileRepo.saveAll(assistantFileList);
     }

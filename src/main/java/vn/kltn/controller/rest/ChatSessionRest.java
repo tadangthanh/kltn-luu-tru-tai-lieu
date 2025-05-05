@@ -40,4 +40,8 @@ public class ChatSessionRest {
     public ResponseData<PageResponse<List<ChatSessionDto>>> getAllChatSession(Pageable pageable) {
         return new ResponseData<>(200, "Thành công", chatSessionService.getAllChatSession(pageable));
     }
+    @GetMapping("/doc/{docId}")
+    public ResponseData<ChatSessionDto> getChatSessionByDocId(@PathVariable Long docId) {
+        return new ResponseData<>(200, "Thành công", chatSessionService.getChatSessionByDocId(docId));
+    }
 }

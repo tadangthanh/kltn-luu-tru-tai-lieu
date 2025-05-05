@@ -24,4 +24,6 @@ public class AssistantFileDto extends BaseDto {
     @NotBlank(message = "uri file không được để trống")
     private String uri;
 
+    private Long documentId;
+
 }

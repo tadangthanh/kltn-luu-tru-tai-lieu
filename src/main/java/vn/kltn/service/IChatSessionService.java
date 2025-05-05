@@ -11,6 +11,8 @@ import java.util.List;
 public interface IChatSessionService {
     ChatSessionDto createChat(ChatSessionDto chatSessionDto);
 
+    ChatSessionDto getChatSessionByDocId(Long docId);
+
     void deleteChat(Long id);
 
     ChatSession getChatSessionById(Long id);

@@ -20,5 +20,4 @@ public interface IAssistantFileService {
 
     List<AssistantFile> save(ChatSession chatSession, List<AssistantFileDto> assistantFileDtoList);
 
-    AssistantFileDto getAssistantFileByDocId(Long docId);
 }

@@ -27,4 +27,6 @@ public class AssistantFileRequest {
 
     @NotNull(message = "Chat session ID is required")
     private Long chatSessionId;
+
+    private Long documentId;
 }

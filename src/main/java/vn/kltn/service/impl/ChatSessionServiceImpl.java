@@ -13,6 +13,7 @@ import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.AssistantFile;
 import vn.kltn.entity.ChatSession;
 import vn.kltn.entity.Conversation;
+import vn.kltn.entity.User;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.ChatSessionMapper;
 import vn.kltn.repository.ChatSessionRepo;
@@ -42,6 +43,14 @@ public class ChatSessionServiceImpl implements IChatSessionService {
         ChatSession chatSession = chatSessionMapper.toEntity(chatSessionDto);
         chatSession.setUser(authenticationService.getCurrentUser());
         chatSession = chatSessionRepo.save(chatSession);
+        return chatSessionMapper.toDto(chatSession);
+    }
+
+    @Override
+    public ChatSessionDto getChatSessionByDocId(Long docId) {
+        log.info("Get chat session by document id: id={}", docId);
+        User currentUser = authenticationService.getCurrentUser();
+        ChatSession chatSession = chatSessionRepo.findByDocumentId(docId, currentUser.getId()).orElseThrow(() -> new ResourceNotFoundException("Chat session not found"));
         return chatSessionMapper.toDto(chatSession);
     }
 
