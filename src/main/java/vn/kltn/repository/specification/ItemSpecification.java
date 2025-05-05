@@ -38,4 +38,7 @@ public class ItemSpecification {
     public static Specification<Item> hasParentId() {
         return (root, query, cb) -> cb.isNotNull(root.get("parent"));
     }
+    public static Specification<Item> nullParent() {
+        return (root, query, cb) -> cb.isNull(root.get("parent").get("id"));
+    }
 }

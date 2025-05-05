@@ -285,7 +285,10 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     @Override
     public void hardDeleteItemById(Long documentId) {
         log.info("hard delete document with id {}", documentId);
-        Document resource = getItemByIdOrThrow(documentId);
+        Document resource = documentRepo.findById(documentId).orElse(null);
+        if (resource == null) {
+            return;
+        }
         documentStorageService.deleteBlob(resource.getCurrentVersion().getBlobName());
         documentHasTagService.deleteAllByDocumentId(resource.getId());
         documentIndexService.deleteDocById(resource.getId());

@@ -135,7 +135,8 @@ public class ItemServiceImpl implements IItemService {
     public PageResponse<List<ItemResponse>> getItemsMarkDelete(Pageable pageable) {
         log.info("Get items mark delete page no: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
         User currentUser = authenticationService.getCurrentUser();
-        Specification<Item> spec = Specification.where(ItemSpecification.markDeleted()).and(ItemSpecification.ownedBy(currentUser.getId()));
+        Specification<Item> spec = Specification.where(ItemSpecification.markDeleted()).and(ItemSpecification.ownedBy(currentUser.getId())
+                .and(ItemSpecification.nullParent()));
         return PaginationUtils.convertToPageResponse(itemRepo.findAll(spec, pageable), pageable, itemMapperService::toResponse);
     }
 
@@ -146,10 +147,10 @@ public class ItemServiceImpl implements IItemService {
         Specification<Item> spec = Specification.where(ItemSpecification.markDeleted()).and(ItemSpecification.ownedBy(currentUser.getId()));
         List<Item> items = itemRepo.findAll(spec);
         for (Item item : items) {
-            if (item.getItemType().equals(ItemType.DOCUMENT)) {
-                documentService.hardDeleteItemById(item.getId());
-            } else if (item.getItemType().equals(ItemType.FOLDER)) {
+            if (item.getItemType().equals(ItemType.FOLDER)) {
                 folderService.hardDeleteFolderById(item.getId());
+            } else if (item.getItemType().equals(ItemType.DOCUMENT)) {
+                documentService.hardDeleteItemById(item.getId());
             }
         }
         log.info("Clean up trash done");
