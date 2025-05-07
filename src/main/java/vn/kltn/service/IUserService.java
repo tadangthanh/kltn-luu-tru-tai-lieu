@@ -6,6 +6,7 @@ import vn.kltn.dto.request.AuthChangePassword;
 import vn.kltn.dto.request.AuthResetPassword;
 import vn.kltn.dto.request.UserRegister;
 import vn.kltn.dto.response.TokenResponse;
+import vn.kltn.dto.response.UserResponse;
 import vn.kltn.entity.User;
 
 import java.util.List;
@@ -35,5 +36,6 @@ public interface IUserService extends UserDetailsService {
 
     User getByEmail(String email);
 
+    UserResponse getInfo();
 
 }

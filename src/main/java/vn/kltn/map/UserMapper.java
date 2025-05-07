@@ -13,6 +13,7 @@ import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 public interface UserMapper {
     User registerToUser(UserRegister userRegister);
 
+    @Mapping(target = "createdAt", source = "createdAt")
     UserResponse toUserResponse(User user);
 
     @Mapping(target = "id", source = "id")

@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -13,11 +14,13 @@ import vn.kltn.dto.request.AuthChangePassword;
 import vn.kltn.dto.request.AuthResetPassword;
 import vn.kltn.dto.request.UserRegister;
 import vn.kltn.dto.response.TokenResponse;
+import vn.kltn.dto.response.UserResponse;
 import vn.kltn.entity.RedisToken;
 import vn.kltn.entity.Role;
 import vn.kltn.entity.User;
 import vn.kltn.exception.*;
 import vn.kltn.map.UserMapper;
+import vn.kltn.repository.ItemRepo;
 import vn.kltn.repository.UserRepo;
 import vn.kltn.service.*;
 
@@ -40,7 +43,7 @@ public class UserServiceImpl implements IUserService {
     private final IRoleService roleService;
     private final IUserHasRoleService userHasRoleService;
     private final IUserIndexService userIndexService;
-
+    private final ItemRepo itemRepo;
     @Override
     public UserDetails loadUserByUsername(String email) {
         return userRepo.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -180,6 +183,20 @@ public class UserServiceImpl implements IUserService {
             log.error("User not found by email: {}", email);
             return new ResourceNotFoundException("User not found");
         });
+    }
+
+    @Override
+    public UserResponse getInfo() {
+       String email= SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepo.findByEmail(email).orElseThrow(() -> {
+            log.error("User not found");
+            return new ResourceNotFoundException("User not found");
+        });
+
+        int totalDocuments = itemRepo.countByOwnerIdAndDeletedAtIsNullAndTypeDocument(user.getId());
+        UserResponse userResponse = userMapper.toUserResponse(user);
+        userResponse.setTotalDocuments(totalDocuments);
+        return userResponse;
     }
 
 

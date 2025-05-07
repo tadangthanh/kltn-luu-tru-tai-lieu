@@ -4,15 +4,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import vn.kltn.entity.DocumentVersion;
 import vn.kltn.entity.Item;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Repository
 public interface ItemRepo extends JpaRepository<Item, Long>, JpaSpecificationExecutor<Item> {
@@ -40,4 +34,7 @@ public interface ItemRepo extends JpaRepository<Item, Long>, JpaSpecificationExe
     @Query("select i from Item i inner join SavedItem si on i.id = si.item.id where si.user.id = ?1 and i.deletedAt is null")
     Page<Item> getPageItemSaved(Long userId, Pageable pageable);
 
+
+    @Query("select count(i) from Item i where i.owner.id = ?1 and i.deletedAt is null and i.itemType = 'DOCUMENT'")
+    int countByOwnerIdAndDeletedAtIsNullAndTypeDocument(Long ownerId);
 }

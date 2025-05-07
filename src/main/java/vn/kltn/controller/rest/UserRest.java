@@ -11,6 +11,7 @@ import vn.kltn.dto.request.UserRegister;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
 import vn.kltn.dto.response.UserIndexResponse;
+import vn.kltn.dto.response.UserResponse;
 import vn.kltn.index.UserIndex;
 import vn.kltn.service.IUserIndexService;
 import vn.kltn.service.IUserService;
@@ -65,5 +66,10 @@ public class UserRest {
                                                                            Pageable pageable) {
 
         return new ResponseData<>(200, "thanh cong", userIndexService.searchUsersByEmail(query, pageable));
+    }
+
+    @GetMapping("/info")
+    public ResponseData<UserResponse> getUserInfo() {
+        return new ResponseData<>(200, "thanh cong", userService.getInfo());
     }
 }
