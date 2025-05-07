@@ -18,6 +18,7 @@ import vn.kltn.dto.response.UploadProgressDTO;
 import vn.kltn.exception.CustomBlobStorageException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.service.IAzureStorageService;
+import vn.kltn.util.TextUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -48,7 +49,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     public String uploadChunkedWithContainerDefault(InputStream data, String originalFileName, long length, int chunkSize) {
         try {
             BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerNameDefault);
-            String newFileName = UUID.randomUUID() + "_" + originalFileName;
+            String newFileName = UUID.randomUUID() + "_" + TextUtils.normalizeFileName(originalFileName);
             BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(newFileName).getBlockBlobClient();
             List<String> blockIds = new ArrayList<>();
             byte[] buffer = new byte[chunkSize];
@@ -79,7 +80,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     public CompletableFuture<String> uploadChunkedWithContainerDefaultAsync(InputStream data, String originalFileName, long length, int chunkSize) {
         try {
             BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerNameDefault);
-            String newFileName = UUID.randomUUID() + "_" + originalFileName;
+            String newFileName = UUID.randomUUID() + "_" + TextUtils.normalizeFileName(originalFileName);
             BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(newFileName).getBlockBlobClient();
             List<String> blockIds = new ArrayList<>();
             byte[] buffer = new byte[chunkSize];

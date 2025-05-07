@@ -202,8 +202,14 @@ public class DocumentRest {
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + documentDataResponse.getName() + "\"").contentType(MediaType.parseMediaType(documentDataResponse.getType())).body(new InputStreamResource(new ByteArrayInputStream(documentDataResponse.getData())));
     }
 
-    @GetMapping("/{documentId}/download")
-    public void downloadDoc(@PathVariable Long documentId, HttpServletResponse response) throws IOException {
+    @GetMapping("/{documentId}/download/{accessToken}")
+    public void downloadDoc(@PathVariable Long documentId,@PathVariable String accessToken, HttpServletResponse response) throws IOException {
+        log.info("download document id: {}", documentId);
+        String email = jwtService.extractEmail(accessToken, TokenType.ACCESS_TOKEN);
+        User user = userService.getUserByEmail(email);
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
         Document document = documentService.getItemByIdOrThrow(documentId);
         try (InputStream inputStream = documentService.download(documentId)) {
             String fileName = generateFileName(document.getCurrentVersion().getBlobName());

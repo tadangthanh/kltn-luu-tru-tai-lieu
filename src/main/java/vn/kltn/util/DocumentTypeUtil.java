@@ -1,5 +1,8 @@
 package vn.kltn.util;
 
+import lombok.Getter;
+import lombok.Setter;
+
 public class DocumentTypeUtil {
 
     // Hàm trả về thông tin fileType và documentType dựa trên phần mở rộng
@@ -44,24 +47,11 @@ public class DocumentTypeUtil {
     }
 
     // Lớp giúp lưu thông tin về fileType và documentType
+    @Setter
+    @Getter
     public static class DocumentTypeInfo {
         private String fileType;
         private String documentType;
 
-        public String getFileType() {
-            return fileType;
-        }
-
-        public void setFileType(String fileType) {
-            this.fileType = fileType;
-        }
-
-        public String getDocumentType() {
-            return documentType;
-        }
-
-        public void setDocumentType(String documentType) {
-            this.documentType = documentType;
-        }
     }
 }

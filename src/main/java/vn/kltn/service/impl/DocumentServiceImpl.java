@@ -263,7 +263,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
         config.setDocumentTitle(document.getName());
         config.setFileType(documentTypeInfo.getFileType());
         config.setDocumentType(documentTypeInfo.getDocumentType());
-        config.setDocumentUrl(azureStorageService.getBlobUrl(document.getCurrentVersion().getBlobName())); // SAS URL để tải tài liệu
+//        config.setDocumentUrl(azureStorageService.getBlobUrl(document.getCurrentVersion().getBlobName())); // SAS URL để tải tài liệu
         config.setCallbackUrl("https://localhost:8080/api/v1/documents/save-editor");
 
         // Thông tin quyền truy cập người dùng
