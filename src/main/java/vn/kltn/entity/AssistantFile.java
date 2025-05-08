@@ -22,7 +22,7 @@ public class AssistantFile extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "chat_session_id", nullable = false)
     private ChatSession chatSession;
-
+    private String pdfBlobName;
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "document_id")
     private Document document;

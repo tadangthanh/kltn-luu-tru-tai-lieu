@@ -17,4 +17,6 @@ public interface IDocumentConversionService {
     File convertToPdf(File file);
 
     void deleteFileIfExists(File file);
+
+    File downloadAsPdf(String blobName);
 }

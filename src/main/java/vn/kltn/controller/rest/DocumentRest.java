@@ -28,10 +28,7 @@ import vn.kltn.service.IUserService;
 import vn.kltn.service.impl.UploadTokenManager;
 import vn.kltn.validation.ValidFiles;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
@@ -229,6 +226,37 @@ public class DocumentRest {
             response.flushBuffer();
         }
     }
+
+    @GetMapping("/{documentId}/download-as-pdf")
+    public void downloadDoc(@PathVariable Long documentId, HttpServletResponse response) throws IOException {
+        log.info("download as pdf for document id: {}", documentId);
+        Document document = documentService.getItemByIdOrThrow(documentId);
+
+        // Trả về file đã convert
+        File pdfFile = documentService.downloadAsPdf(document.getCurrentVersion().getBlobName());
+
+        // Đặt headers
+        response.setContentType("application/pdf");
+        response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" +
+                                                  URLEncoder.encode(generateFileName(pdfFile.getName()), StandardCharsets.UTF_8));
+
+        // Gửi file PDF về client
+        try (InputStream inputStream = new FileInputStream(pdfFile)) {
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                response.getOutputStream().write(buffer, 0, bytesRead);
+            }
+            response.flushBuffer();
+        } finally {
+            // Xóa file tạm sau khi truyền xong
+            if (pdfFile != null && pdfFile.exists()) {
+                pdfFile.delete();
+            }
+        }
+    }
+
+
 
 
     @GetMapping("/{documentId}/view")

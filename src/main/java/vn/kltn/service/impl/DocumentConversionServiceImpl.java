@@ -22,7 +22,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 
 import static com.google.common.io.Files.getFileExtension;
 import static vn.kltn.common.DocumentFormat.SUPPORTED_CONVERSIONS;
@@ -323,6 +325,55 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
             }
         }
     }
+
+    @Override
+    public File downloadAsPdf(String blobName) {
+        File downloadedFile = null;
+        File convertedFile = null;
+
+        try {
+            downloadedFile = azureStorageService.downloadToFile(blobName, tempDir);
+            if (downloadedFile == null || !downloadedFile.exists()) {
+                throw new BadRequestException("Không thể tải file từ Azure Blob");
+            }
+
+            validateExtension(downloadedFile, "pdf");
+
+            String newFileName = replaceExtension(downloadedFile.getName(), "pdf");
+            String outputFilePath = downloadedFile.getParent() + File.separator + newFileName;
+            convertedFile = new File(outputFilePath);
+
+            // Nếu file đã là PDF rồi thì không cần convert
+            if (downloadedFile.getName().toLowerCase().endsWith(".pdf")) {
+                return downloadedFile;
+            }
+
+            // Gọi LibreOffice để convert
+            ProcessBuilder pb = new ProcessBuilder(
+                    "soffice",
+                    "--headless",
+                    "--convert-to", "pdf",
+                    "--outdir", downloadedFile.getParent(),
+                    downloadedFile.getAbsolutePath());
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            int exitCode = process.waitFor();
+            if (exitCode != 0 || !convertedFile.exists()) {
+                throw new ConversionException("Chuyển đổi định dạng thất bại");
+            }
+
+            // Trả về file PDF
+            return convertedFile;
+
+        } catch (IOException | InterruptedException e) {
+            log.error("Lỗi khi chuyển đổi file từ blob: {}", e.getMessage());
+            throw new ConversionException("Chuyển đổi file thất bại: " + e.getMessage());
+        } finally {
+            // Xóa file gốc, giữ lại file PDF (file PDF sẽ bị xóa sau khi truyền xong trong controller)
+            deleteFileIfExists(downloadedFile);
+        }
+    }
+
 
 
 }

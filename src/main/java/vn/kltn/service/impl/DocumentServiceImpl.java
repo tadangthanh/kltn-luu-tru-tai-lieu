@@ -26,6 +26,7 @@ import vn.kltn.util.DocumentTypeUtil;
 import vn.kltn.util.ItemValidator;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
@@ -54,8 +55,9 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     private final WebSocketService webSocketService;
     private final IAzureStorageService azureStorageService;
     private final IDocumentVersionService documentVersionService;
+    private final IDocumentConversionService documentConversionService;
 
-    public DocumentServiceImpl(DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService, IPermissionService permissionService, ItemMapper itemMapper, IPermissionValidatorService permissionValidatorService1, WebSocketService webSocketService, IAzureStorageService azureStorageService, IDocumentVersionService documentVersionService) {
+    public DocumentServiceImpl(DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService, IPermissionService permissionService, ItemMapper itemMapper, IPermissionValidatorService permissionValidatorService1, WebSocketService webSocketService, IAzureStorageService azureStorageService, IDocumentVersionService documentVersionService, IDocumentConversionService documentConversionService) {
         super(authenticationService, folderCommonService, itemValidator, permissionInheritanceService, permissionValidatorService, permissionService);
         this.documentRepo = documentRepo;
         this.documentHasTagService = documentHasTagService;
@@ -71,6 +73,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
         this.webSocketService = webSocketService;
         this.azureStorageService = azureStorageService;
         this.documentVersionService = documentVersionService;
+        this.documentConversionService = documentConversionService;
     }
 
     @Override
@@ -294,6 +297,12 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
         documentIndexService.deleteDocById(resource.getId());
         documentVersionService.deleteVersionsByDocumentId(documentId);
         documentRepo.delete(resource);
+    }
+
+    @Override
+    public File downloadAsPdf(String blobName) {
+        log.info("download pdf with blob name {}", blobName);
+        return documentConversionService.downloadAsPdf(blobName);
     }
 
 

@@ -7,6 +7,7 @@ import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.*;
 import vn.kltn.entity.Document;
 
+import java.io.File;
 import java.io.InputStream;
 import java.util.List;
 
@@ -38,4 +39,6 @@ public interface IDocumentService extends IItemCommonService<Document, DocumentR
     OnlyOfficeConfig getOnlyOfficeConfig(Long documentId); // lay thong tin config onlyoffice
 
     void hardDeleteItemById(Long documentId);
+
+    File downloadAsPdf(String blobName); // tải file pdf từ blob storage
 }
