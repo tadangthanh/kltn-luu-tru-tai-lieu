@@ -115,7 +115,6 @@ public class ItemPermissionServiceImpl implements IPermissionService {
     }
 
 
-
     private void handlePermissionUpdateAfterSave(Item item, Permission permission) {
         if (item.getItemType() == ItemType.FOLDER) {
             // Nếu là folder, propagate quyền xuống tất cả con cháu
@@ -189,9 +188,24 @@ public class ItemPermissionServiceImpl implements IPermissionService {
 
     @Override
     public Permission getPermissionItemByRecipientId(Long itemId, Long recipientId) {
-        return permissionRepo.findByItemIdAndRecipientId(itemId, recipientId).orElseThrow(()->{
+        return permissionRepo.findByItemIdAndRecipientId(itemId, recipientId).orElseThrow(() -> {
             log.warn("Permission not found for itemId: {}, recipientId: {}", itemId, recipientId);
             return new AccessDeniedException("Bạn không có quyền truy cập tài liệu này");
         });
+    }
+
+    @Override
+    public Boolean hasPermissionEditorOrOwner(Long itemId) {
+        User currentUser = authenticationService.getCurrentUser();
+        Item item = itemGetterService.getItemByIdOrThrow(itemId);
+        if(item.getOwner().getId().equals(currentUser.getId())) {
+            return true;
+        }
+        Permission permission = permissionRepo.findByItemIdAndRecipientId(itemId, currentUser.getId()).orElse(null);
+        if (permission != null) {
+            return permission.getPermission().name().equalsIgnoreCase("editor");
+        } else {
+            return false;
+        }
     }
 }

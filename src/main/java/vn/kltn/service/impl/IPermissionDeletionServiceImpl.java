@@ -53,7 +53,7 @@ public class IPermissionDeletionServiceImpl implements IPermissionDeletionServic
             permissionRepo.deleteAllByItemIdInAndRecipientId(resourceIdsToDelete, recipientId);
         }
         // Xóa permission
-        permissionRepo.delete(permission);
+//        permissionRepo.delete(permission);
     }
 
     @Override

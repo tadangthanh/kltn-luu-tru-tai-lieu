@@ -53,7 +53,7 @@ public class SecurityConfig implements WebMvcConfigurer {
             "/api/v1/documents/open/**",
             "/api/v1/documents/save-editor/**",
             "/api/v1/documents/*/view",
-//            "/api/v1/documents/*/download/**",
+            "/api/v1/documents/*/download/**",
     };
     //quan ly cac roles, user truy cap he thong
     @Bean

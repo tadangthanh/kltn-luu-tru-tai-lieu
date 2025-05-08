@@ -47,4 +47,8 @@ public class PermissionRest {
         return new ResponseData<>(200, "Thành công");
     }
 
+    @GetMapping("/has-permission/{itemId}")
+    public ResponseData<Boolean> hasPermissionEditorOrOwner(@PathVariable Long itemId) {
+        return new ResponseData<>(200, "Thành công", permissionService.hasPermissionEditorOrOwner(itemId));
+    }
 }
