@@ -332,23 +332,23 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
         File convertedFile = null;
 
         try {
+            // 1. Tải file từ Azure Blob về thư mục tạm
             downloadedFile = azureStorageService.downloadToFile(blobName, tempDir);
             if (downloadedFile == null || !downloadedFile.exists()) {
                 throw new BadRequestException("Không thể tải file từ Azure Blob");
             }
 
-            validateExtension(downloadedFile, "pdf");
-
-            String newFileName = replaceExtension(downloadedFile.getName(), "pdf");
-            String outputFilePath = downloadedFile.getParent() + File.separator + newFileName;
-            convertedFile = new File(outputFilePath);
-
-            // Nếu file đã là PDF rồi thì không cần convert
+            // 2. Nếu file đã là PDF thì trả về luôn
             if (downloadedFile.getName().toLowerCase().endsWith(".pdf")) {
                 return downloadedFile;
             }
 
-            // Gọi LibreOffice để convert
+            // 3. Tạo đường dẫn cho file PDF sẽ được chuyển đổi
+            String newFileName = replaceExtension(downloadedFile.getName(), "pdf");
+            String outputFilePath = downloadedFile.getParent() + File.separator + newFileName;
+            convertedFile = new File(outputFilePath);
+
+            // 4. Gọi LibreOffice để chuyển đổi sang PDF
             ProcessBuilder pb = new ProcessBuilder(
                     "soffice",
                     "--headless",
@@ -358,21 +358,26 @@ public class DocumentConversionServiceImpl implements IDocumentConversionService
             pb.redirectErrorStream(true);
             Process process = pb.start();
             int exitCode = process.waitFor();
+
+            // 5. Kiểm tra kết quả
             if (exitCode != 0 || !convertedFile.exists()) {
                 throw new ConversionException("Chuyển đổi định dạng thất bại");
             }
 
-            // Trả về file PDF
             return convertedFile;
 
         } catch (IOException | InterruptedException e) {
             log.error("Lỗi khi chuyển đổi file từ blob: {}", e.getMessage());
             throw new ConversionException("Chuyển đổi file thất bại: " + e.getMessage());
         } finally {
-            // Xóa file gốc, giữ lại file PDF (file PDF sẽ bị xóa sau khi truyền xong trong controller)
-            deleteFileIfExists(downloadedFile);
+            // Nếu file đã là PDF thì ta đang trả về file đó nên không được xóa ở đây
+            // => Chỉ xóa nếu cần convert
+            if (convertedFile != null && convertedFile.exists()) {
+                deleteFileIfExists(downloadedFile); // chỉ xóa nếu có file convert
+            }
         }
     }
+
 
 
 
