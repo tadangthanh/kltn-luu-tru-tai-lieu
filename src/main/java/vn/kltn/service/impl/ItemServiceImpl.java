@@ -46,9 +46,38 @@ public class ItemServiceImpl implements IItemService {
         log.info("search items by current user page no: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
         EntitySpecificationsBuilder<Item> builder = new EntitySpecificationsBuilder<>();
         User currentUser = authenticationService.getCurrentUser();
+        // chung ta chi lay cac item khong bi xoa
         Specification<Item> spec = Specification.where(ItemSpecification.notDeleted());
+        // la chu so huu
         spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("owner").get("id"), currentUser.getId()));
+        // hoac la nguoi duoc chia se
         spec = spec.or(ItemSpecification.hasPermissionForUser(currentUser.getId()));
+        if (items != null && items.length > 0) {
+            boolean hasParentId = Arrays.stream(items)
+                    .anyMatch(item -> item.startsWith("parent.id"));
+
+            if (!hasParentId) {
+                spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("parent")));
+            }
+            spec = spec.and(SpecificationUtil.buildSpecificationFromFilters(items, builder));
+            Page<Item> pageAccessByResource = itemRepo.findAll(spec, pageable);
+            return PaginationUtils.convertToPageResponse(pageAccessByResource, pageable, itemMapperService::toResponse);
+        } else {
+            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("parent")));
+        }
+
+        return PaginationUtils.convertToPageResponse(itemRepo.findAll(spec, pageable), pageable, itemMapperService::toResponse);
+    }
+
+    @Override
+    public PageResponse<List<ItemResponse>> getItemsSharedWithMe(Pageable pageable, String[] items) {
+        log.info("search items shared with me by current user page no: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
+        EntitySpecificationsBuilder<Item> builder = new EntitySpecificationsBuilder<>();
+        User currentUser = authenticationService.getCurrentUser();
+        // chua bi xoa
+        Specification<Item> spec = Specification.where(ItemSpecification.notDeleted());
+        // duoc chia se
+        spec = spec.and(ItemSpecification.hasPermissionForUser(currentUser.getId()));
         if (items != null && items.length > 0) {
             boolean hasParentId = Arrays.stream(items)
                     .anyMatch(item -> item.startsWith("parent.id"));

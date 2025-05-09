@@ -25,6 +25,12 @@ public class ItemRest {
         return new ResponseData<>(200, "Thành công", itemService.searchByCurrentUser(pageable, items));
     }
 
+    @GetMapping("/shared-with-me")
+    public ResponseData<PageResponse<List<ItemResponse>>> getItemsSharedWithMe(Pageable pageable,
+                                                                               @RequestParam(required = false, value = "items") String[] items) {
+        return new ResponseData<>(200, "Thành công", itemService.getItemsSharedWithMe(pageable, items));
+    }
+
     @GetMapping("/emails")
     public ResponseData<PageResponse<List<String>>> getEmailsSharedWithMe(Pageable pageable, @RequestParam(required = false, value = "keyword") String keyword) {
         return new ResponseData<>(200, "Thành công", itemService.getEmailsSharedWithMe(pageable, keyword));

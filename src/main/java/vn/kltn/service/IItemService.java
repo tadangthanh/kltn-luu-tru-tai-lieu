@@ -11,6 +11,8 @@ import java.util.List;
 public interface IItemService {
     PageResponse<List<ItemResponse>> searchByCurrentUser(Pageable pageable, String[] items);
 
+    PageResponse<List<ItemResponse>> getItemsSharedWithMe(Pageable pageable, String[] items);
+
     Item getItemByIdOrThrow(Long itemId);
 
     void softDeleteItemById(Long itemId);
