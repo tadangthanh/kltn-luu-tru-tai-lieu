@@ -203,7 +203,7 @@ public class ItemPermissionServiceImpl implements IPermissionService {
         }
         Permission permission = permissionRepo.findByItemIdAndRecipientId(itemId, currentUser.getId()).orElse(null);
         if (permission != null) {
-            return permission.getPermission().name().equalsIgnoreCase("editor");
+            return permission.getPermission().name().equalsIgnoreCase("editor") && permission.isPermissionManager();
         } else {
             return false;
         }

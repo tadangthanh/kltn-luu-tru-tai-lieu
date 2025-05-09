@@ -31,7 +31,6 @@ public interface PermissionRepo extends JpaRepository<Permission, Long> {
                 where p.item.id = :itemId
                   and p.recipient.id = :recipientId
                   and p.permission = 'EDITOR'
-                  and p.isPermissionManager = true
             """)
     boolean isEditorPermission(@Param("itemId") Long itemId, @Param("recipientId") Long recipientId);
 
