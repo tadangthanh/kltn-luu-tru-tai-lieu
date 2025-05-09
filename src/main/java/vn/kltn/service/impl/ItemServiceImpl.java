@@ -78,6 +78,8 @@ public class ItemServiceImpl implements IItemService {
         Specification<Item> spec = Specification.where(ItemSpecification.notDeleted());
         // duoc chia se
         spec = spec.and(ItemSpecification.hasPermissionForUser(currentUser.getId()));
+        // không bị ẩn
+        spec = spec.and(ItemSpecification.notHiddenShared());
         if (items != null && items.length > 0) {
             boolean hasParentId = Arrays.stream(items)
                     .anyMatch(item -> item.startsWith("parent.id"));
@@ -112,8 +114,8 @@ public class ItemServiceImpl implements IItemService {
         }
         User currentUser = authenticationService.getCurrentUser();
         User owner = item.getOwner();
+        // neu la chu so huu thi chuyen vao thung rac
         if (currentUser.getId().equals(owner.getId())) {
-            // neu la chu so huu thi chuyen vao thung rac
             if (item.getItemType().equals(ItemType.DOCUMENT)) {
                 documentService.softDeleteDocumentById(item.getId());
             } else if (item.getItemType().equals(ItemType.FOLDER)) {
@@ -121,7 +123,7 @@ public class ItemServiceImpl implements IItemService {
             }
         } else {
             // nguoi thuc hien co quyen editor
-            permissionValidatorService.validatePermissionManager(item, currentUser);
+//            permissionValidatorService.validatePermissionEditor(item, currentUser);
             // set parent = null la se dua resource nay vao drive cua toi
             item.setParent(null);
         }

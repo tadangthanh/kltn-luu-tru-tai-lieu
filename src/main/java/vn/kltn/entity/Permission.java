@@ -27,6 +27,8 @@ public class Permission extends BaseEntity {
     @Column(name = "is_permission_manager")
     private boolean isPermissionManager = false;
 
+    private boolean isHidden = false;
+
     private boolean isCustomPermission = false;
     @Version
     private Integer version;  // Trường version giúp Hibernate quản lý locking

@@ -36,7 +36,7 @@ public class IPermissionDeletionServiceImpl implements IPermissionDeletionServic
         ///  validate xem user co quyen xoa permission hay k, tao 1 service permission validator
         User currentUser = authenticationService.getCurrentUser();
         Item item = permission.getItem();
-        permissionValidatorService.validatePermissionManager(item, currentUser);
+        permissionValidatorService.validatePermissionEditor(item, currentUser);
         if (item.getItemType().equals(ItemType.FOLDER)) {
             // la folder, se xoa permission cho tat ca cac item con (co the tao 1 service rieng)
             Long parentId = permission.getItem().getId();

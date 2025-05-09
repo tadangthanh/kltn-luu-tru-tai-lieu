@@ -160,7 +160,7 @@ public class ItemPermissionServiceImpl implements IPermissionService {
         Item item = itemGetterService.getItemByIdOrThrow(itemId);
         // kiểm tra xem user hiện tại có permission với resource hiện tại hay k ?
         User currentUser = authenticationService.getCurrentUser();
-        permissionValidatorService.validatePermissionManager(item, currentUser);
+        permissionValidatorService.validatePermissionEditor(item, currentUser);
         Page<Permission> pagePermission = permissionRepo.findAllByItemId(itemId, pageable);
         return PaginationUtils.convertToPageResponse(pagePermission, pageable, permissionMapper::toItemPermissionResponse);
     }

@@ -30,7 +30,7 @@ public class PermissionValidatorServiceImpl implements IPermissionValidatorServi
     }
 
     @Override
-    public void validatePermissionManager(Item item, User user) {
+    public void validatePermissionEditor(Item item, User user) {
         if (item.getOwner().getId().equals(user.getId())) {
             return;
         }
@@ -55,7 +55,7 @@ public class PermissionValidatorServiceImpl implements IPermissionValidatorServi
 
         // Validate user has permission to manage permissions
         User currentUser = authenticationService.getCurrentUser();
-        validatePermissionManager(item, currentUser);
+        validatePermissionEditor(item, currentUser);
     }
 
     @Override

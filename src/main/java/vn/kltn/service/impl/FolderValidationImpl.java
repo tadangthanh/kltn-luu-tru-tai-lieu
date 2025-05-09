@@ -32,7 +32,7 @@ public class FolderValidationImpl implements IFolderValidation {
         User currentUser = authenticationService.getCurrentUser();
         if (!folderParent.getOwner().getId().equals(currentUser.getId())) {
             // neu ko phai la chu so huu thi kiem tra xem co phai la editor hay khong
-            permissionValidatorService.validatePermissionManager(folderParent, currentUser);
+            permissionValidatorService.validatePermissionEditor(folderParent, currentUser);
         }
     }
 

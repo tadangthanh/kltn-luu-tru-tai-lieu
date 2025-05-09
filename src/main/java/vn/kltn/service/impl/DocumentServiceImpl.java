@@ -104,7 +104,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     @Override
     public void updateDocumentEditor(Long documentId, byte[] data) {
         Document document = getItemByIdOrThrow(documentId);
-        permissionValidatorService.validatePermissionManager(document, authenticationService.getCurrentUser());
+        permissionValidatorService.validatePermissionEditor(document, authenticationService.getCurrentUser());
 
         String originalFileName = document.getName();
         long fileSize = data.length;
@@ -137,7 +137,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
         try {
             log.info("upload document with parent id {}", parentId);
             Folder parent = folderCommonService.getFolderByIdOrThrow(parentId);
-            permissionValidatorService.validatePermissionManager(parent, currentUser);
+            permissionValidatorService.validatePermissionEditor(parent, currentUser);
             List<Document> documents = documentStorageService.saveDocumentsWithFolder(bufferedFiles, parentId);
             // upload file to cloud
             blobsName.addAll(documentStorageService.store(token, bufferedFiles, documents));

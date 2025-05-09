@@ -31,7 +31,7 @@ public class DocumentAspect {
 
         switch (requirePermission.value()) {
             case EDITOR:
-                permissionValidatorService.validatePermissionManager(parent, currentUser);
+                permissionValidatorService.validatePermissionEditor(parent, currentUser);
                 break;
             case VIEWER:
                 permissionValidatorService.validatePermissionViewer(parent, currentUser);

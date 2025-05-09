@@ -7,7 +7,7 @@ import vn.kltn.entity.User;
 public interface IPermissionValidatorService {
     void validatePermissionItemNotExists(Long recipientId, Long itemId);
 
-    void validatePermissionManager(Item item, User user);
+    void validatePermissionEditor(Item item, User user);
 
     void validateAddPermissionRequest(Long itemId, PermissionRequest permissionRequest);
 

@@ -23,10 +23,18 @@ public class ItemSpecification {
             return cb.equal(permissionJoin.get("recipient").get("id"), userId);
         };
     }
+    public static Specification<Item> notHiddenShared() {
+        return (root, query, cb) -> {
+            Join<Item, Permission> permissionJoin = root.join("permissions", JoinType.LEFT);
+            return cb.equal(permissionJoin.get("isHidden"), false);
+        };
+    }
 
     public static Specification<Item> notDeleted() {
         return (root, query, cb) -> cb.isNull(root.get("deletedAt"));
     }
+
+
     public static Specification<Item> markDeleted() {
         return (root, query, cb) -> cb.isNotNull(root.get("deletedAt"));
     }
@@ -38,6 +46,7 @@ public class ItemSpecification {
     public static Specification<Item> hasParentId() {
         return (root, query, cb) -> cb.isNotNull(root.get("parent"));
     }
+
     public static Specification<Item> nullParent() {
         return (root, query, cb) -> cb.isNull(root.get("parent").get("id"));
     }
