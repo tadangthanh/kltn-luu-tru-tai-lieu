@@ -198,7 +198,7 @@ public class ItemPermissionServiceImpl implements IPermissionService {
     public Boolean hasPermissionEditorOrOwner(Long itemId) {
         User currentUser = authenticationService.getCurrentUser();
         Item item = itemGetterService.getItemByIdOrThrow(itemId);
-        if(item.getOwner().getId().equals(currentUser.getId())) {
+        if (item.getOwner().getId().equals(currentUser.getId())) {
             return true;
         }
         Permission permission = permissionRepo.findByItemIdAndRecipientId(itemId, currentUser.getId()).orElse(null);
@@ -207,5 +207,16 @@ public class ItemPermissionServiceImpl implements IPermissionService {
         } else {
             return false;
         }
+    }
+
+    @Override
+    public void hidePermissionByItemIdAndUserId(Long itemId, Long userId) {
+        log.info("hide permission by itemId: {}, userId: {}", itemId, userId);
+        Permission permission = permissionRepo.findByItemIdAndRecipientId(itemId, userId).orElseThrow(() -> {
+            log.warn("Permission not found for itemId: {}, recipientId: {}", itemId, userId);
+            return new AccessDeniedException("Bạn không có quyền truy cập tài liệu này");
+        });
+        permission.setHidden(true);
+        permissionRepo.save(permission);
     }
 }

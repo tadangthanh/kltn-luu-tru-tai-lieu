@@ -232,7 +232,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
 
     @Override
     public List<DocumentIndexResponse> searchMetadata(String query, Pageable pageable) {
-        return documentSearchService.getDocumentByMe(query, pageable.getPageNumber(), pageable.getPageSize());
+        return documentSearchService.getMyDocument(query, pageable.getPageNumber(), pageable.getPageSize());
     }
 
     @Override

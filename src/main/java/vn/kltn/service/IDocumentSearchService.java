@@ -9,5 +9,5 @@ import java.util.List;
 
 public interface IDocumentSearchService {
     PageResponse<List<DocumentResponse>> searchByCurrentUser(Pageable pageable, String[] documents);
-    List<DocumentIndexResponse> getDocumentByMe( String query, int page, int size);
+    List<DocumentIndexResponse> getMyDocument(String query, int page, int size);
 }

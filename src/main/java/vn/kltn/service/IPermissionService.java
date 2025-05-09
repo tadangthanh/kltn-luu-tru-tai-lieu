@@ -31,4 +31,6 @@ public interface IPermissionService {
     Permission getPermissionItemByRecipientId(Long itemId, Long recipientId);
 
     Boolean hasPermissionEditorOrOwner(Long itemId);
+
+    void hidePermissionByItemIdAndUserId(Long itemId, Long userId);
 }

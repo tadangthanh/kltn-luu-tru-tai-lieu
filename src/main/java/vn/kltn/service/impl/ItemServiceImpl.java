@@ -38,11 +38,11 @@ public class ItemServiceImpl implements IItemService {
     private final ItemValidator itemValidator;
     private final IDocumentService documentService;
     private final IFolderService folderService;
-    private final IPermissionValidatorService permissionValidatorService;
     private final ItemMapperService itemMapperService;
+    private final IPermissionService permissionService;
 
     @Override
-    public PageResponse<List<ItemResponse>> searchByCurrentUser(Pageable pageable, String[] items) {
+    public PageResponse<List<ItemResponse>> getItemsByOwner(Pageable pageable, String[] items) {
         log.info("search items by current user page no: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
         EntitySpecificationsBuilder<Item> builder = new EntitySpecificationsBuilder<>();
         User currentUser = authenticationService.getCurrentUser();
@@ -51,7 +51,7 @@ public class ItemServiceImpl implements IItemService {
         // la chu so huu
         spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("owner").get("id"), currentUser.getId()));
         // hoac la nguoi duoc chia se
-        spec = spec.or(ItemSpecification.hasPermissionForUser(currentUser.getId()));
+//        spec = spec.or(ItemSpecification.hasPermissionForUser(currentUser.getId()));
         if (items != null && items.length > 0) {
             boolean hasParentId = Arrays.stream(items)
                     .anyMatch(item -> item.startsWith("parent.id"));
@@ -105,6 +105,7 @@ public class ItemServiceImpl implements IItemService {
 
     @Override
     public void softDeleteItemById(Long itemId) {
+        log.info("Soft delete item by id: {}", itemId);
         Item item = getItemByIdOrThrow(itemId);
         // resource chua bi xoa
         itemValidator.validateItemNotDeleted(item);
@@ -126,6 +127,7 @@ public class ItemServiceImpl implements IItemService {
 //            permissionValidatorService.validatePermissionEditor(item, currentUser);
             // set parent = null la se dua resource nay vao drive cua toi
             item.setParent(null);
+            permissionService.hidePermissionByItemIdAndUserId(item.getId(), currentUser.getId());
         }
     }
 

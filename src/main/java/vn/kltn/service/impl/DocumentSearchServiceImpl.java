@@ -49,7 +49,7 @@ public class DocumentSearchServiceImpl implements IDocumentSearchService {
     }
 
     @Override
-    public List<DocumentIndexResponse> getDocumentByMe(String query, int page, int size) {
+    public List<DocumentIndexResponse> getMyDocument(String query, int page, int size) {
         log.info("Get document by me: query={}, page={}, size={}", query, page, size);
         User currentUser = authenticationService.getCurrentUser();
         Set<Long> itemIdsAllowAccess = permissionService.getItemIdsByRecipientId(currentUser.getId());

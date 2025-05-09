@@ -21,8 +21,8 @@ public class ItemRest {
     private final IItemService itemService;
 
     @GetMapping
-    public ResponseData<PageResponse<List<ItemResponse>>> search(Pageable pageable, @RequestParam(required = false, value = "items") String[] items) {
-        return new ResponseData<>(200, "Thành công", itemService.searchByCurrentUser(pageable, items));
+    public ResponseData<PageResponse<List<ItemResponse>>> getItemsByOwner(Pageable pageable, @RequestParam(required = false, value = "items") String[] items) {
+        return new ResponseData<>(200, "Thành công", itemService.getItemsByOwner(pageable, items));
     }
 
     @GetMapping("/shared-with-me")
