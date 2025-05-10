@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -23,7 +24,6 @@ public class Document extends Item {
     @JoinColumn(name = "current_version_id")
     private DocumentVersion currentVersion;
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "assistant_file_id")
-    private AssistantFile assistantFile;
+    @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private Set<AssistantFile> assistantFiles;
 }
