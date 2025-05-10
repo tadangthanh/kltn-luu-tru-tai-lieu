@@ -1,5 +1,6 @@
 package vn.kltn.service;
 
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
 import vn.kltn.dto.ChatSessionDto;
 import vn.kltn.dto.request.ChatSessionInit;
@@ -20,4 +21,6 @@ public interface IChatSessionService {
     PageResponse<List<ChatSessionDto>> getAllChatSession(Pageable pageable);
 
     ChatSessionDto createChat(ChatSessionInit chatSessionInit);
+
+    ChatSessionDto updateChatSession(Long id, ChatSessionDto chatSessionDto);
 }

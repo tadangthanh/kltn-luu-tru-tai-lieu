@@ -2,6 +2,7 @@ package vn.kltn.map;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import vn.kltn.dto.ChatSessionDto;
 import vn.kltn.dto.request.ChatSessionInit;
 import vn.kltn.entity.ChatSession;
@@ -16,4 +17,6 @@ public interface ChatSessionMapper {
     ChatSession toEntity(ChatSessionDto chatSessionDto);
 
     ChatSession requestToEntity(ChatSessionInit chatSessionInit);
+
+    void updateEntity(@MappingTarget ChatSession chatSession, ChatSessionDto chatSessionDto);
 }

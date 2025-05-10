@@ -113,4 +113,16 @@ public class ChatSessionServiceImpl implements IChatSessionService {
         return chatSessionMapper.toDto(chatSession);
     }
 
+    @Override
+    public ChatSessionDto updateChatSession(Long id, ChatSessionDto chatSessionDto) {
+        log.info("Update chat session: id {}", id);
+        ChatSession chatSession = chatSessionRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Chat session not found"));
+        if (!chatSession.getUser().getId().equals(authenticationService.getCurrentUser().getId())) {
+            throw new AccessDeniedException("You are not the owner of this chat session");
+        }
+        chatSessionMapper.updateEntity(chatSession, chatSessionDto);
+        chatSession = chatSessionRepo.save(chatSession);
+        return chatSessionMapper.toDto(chatSession);
+    }
+
 }

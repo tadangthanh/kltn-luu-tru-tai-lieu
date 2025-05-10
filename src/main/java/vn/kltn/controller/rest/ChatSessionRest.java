@@ -44,4 +44,8 @@ public class ChatSessionRest {
     public ResponseData<ChatSessionDto> getChatSessionByDocId(@PathVariable Long docId) {
         return new ResponseData<>(200, "Thành công", chatSessionService.getChatSessionByDocId(docId));
     }
+    @PutMapping("/{id}")
+    public ResponseData<ChatSessionDto> updateChatSession(@PathVariable Long id, @Valid @RequestBody ChatSessionDto chatSessionDto) {
+        return new ResponseData<>(200, "Thành công", chatSessionService.updateChatSession(id, chatSessionDto));
+    }
 }
