@@ -23,11 +23,11 @@ public class ItemRest {
 
     @GetMapping
     public ResponseData<PageItemResponse<List<ItemResponse>>> getItemsByOwner(Pageable pageable, @RequestParam(required = false, value = "items") String[] items) {
-        return new ResponseData<>(200, "Thành công", itemService.getItemsByOwner(pageable, items));
+        return new ResponseData<>(200, "Thành công", itemService.getMyItems(pageable, items));
     }
 
     @GetMapping("/shared-with-me")
-    public ResponseData<PageResponse<List<ItemResponse>>> getItemsSharedWithMe(Pageable pageable,
+    public ResponseData<PageItemResponse<List<ItemResponse>>> getItemsSharedWithMe(Pageable pageable,
                                                                                @RequestParam(required = false, value = "items") String[] items) {
         return new ResponseData<>(200, "Thành công", itemService.getItemsSharedWithMe(pageable, items));
     }

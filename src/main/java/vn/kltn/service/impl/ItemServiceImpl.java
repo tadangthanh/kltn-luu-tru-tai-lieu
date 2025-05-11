@@ -23,10 +23,10 @@ import vn.kltn.repository.ItemRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.specification.ItemSpecification;
 import vn.kltn.repository.specification.SpecificationUtil;
-import vn.kltn.util.PaginationItemUtils;
-import vn.kltn.util.PaginationUtils;
 import vn.kltn.service.*;
 import vn.kltn.util.ItemValidator;
+import vn.kltn.util.PaginationItemUtils;
+import vn.kltn.util.PaginationUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,76 +47,89 @@ public class ItemServiceImpl implements IItemService {
     private final IPermissionService permissionService;
 
     @Override
-    public PageItemResponse<List<ItemResponse>> getItemsByOwner(Pageable pageable, String[] items) {
-        log.info("search items by current user page no: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
-        EntitySpecificationsBuilder<Item> builder = new EntitySpecificationsBuilder<>();
+    public PageItemResponse<List<ItemResponse>> getMyItems(Pageable pageable, String[] filters) {
+        log.info("get my items - page: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
+
         User currentUser = authenticationService.getCurrentUser();
-        // chung ta chi lay cac item khong bi xoa
-        Specification<Item> spec = Specification.where(ItemSpecification.notDeleted());
-        // la chu so huu
-        spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("owner").get("id"), currentUser.getId()));
-        // hoac la nguoi duoc chia se
-//        spec = spec.or(ItemSpecification.hasPermissionForUser(currentUser.getId()));
-        List < BreadcrumbDto> breadcrumbDtos= new ArrayList<>();
+        Specification<Item> spec = buildBaseSpecification();
+        // Chỉ lấy các item của người dùng hiện tại
+        spec = spec.and(ItemSpecification.ownedBy(currentUser.getId()));
 
-        if (items != null && items.length > 0) {
-            boolean hasParentId = Arrays.stream(items)
-                    .anyMatch(item -> item.startsWith("parent.id"));
+        List<BreadcrumbDto> breadcrumbDtos = new ArrayList<>();
 
-            if (!hasParentId) {
-                spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("parent")));
-            }else{
-                for (String item : items) {
-                    if (item.startsWith("parent.id")) {
-                        Long parentId = extractParentId(items);
-                        Item parentItem = itemRepo.findById(parentId).orElseThrow(() -> new ResourceNotFoundException("Item not found for itemId: " + parentId));
-                        breadcrumbDtos.addAll(itemMapperService.buildBreadcrumb(parentItem));
-                    }
-                }
+        if (filters != null && filters.length > 0) {
+            Long parentId = extractParentIdIfPresent(filters);
+
+            if (parentId != null) {
+                Item parentItem = itemRepo.findById(parentId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Item not found for itemId: " + parentId));
+                breadcrumbDtos.addAll(itemMapperService.buildBreadcrumb(parentItem));
+            } else {
+                spec = spec.and((root, query, cb) -> cb.isNull(root.get("parent")));
             }
-            spec = spec.and(SpecificationUtil.buildSpecificationFromFilters(items, builder));
-            Page<Item> pageAccessByResource = itemRepo.findAll(spec, pageable);
-            return PaginationItemUtils.convertToPageItemResponse(pageAccessByResource, pageable, itemMapperService::toResponse, breadcrumbDtos);
+
+            EntitySpecificationsBuilder<Item> builder = new EntitySpecificationsBuilder<>();
+            spec = spec.and(SpecificationUtil.buildSpecificationFromFilters(filters, builder));
         } else {
-            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("parent")));
+            spec = spec.and((root, query, cb) -> cb.isNull(root.get("parent")));
         }
 
-        return PaginationItemUtils.convertToPageItemResponse(itemRepo.findAll(spec, pageable), pageable, itemMapperService::toResponse,breadcrumbDtos);
+        Page<Item> itemPage = itemRepo.findAll(spec, pageable);
+        return PaginationItemUtils.convertToPageItemResponse(itemPage, pageable, itemMapperService::toResponse, breadcrumbDtos);
     }
-    private Long extractParentId(String[] filters) {
+
+    private Specification<Item> buildBaseSpecification() {
+        return Specification.where(ItemSpecification.notDeleted());
+
+        // Nếu bạn muốn sau này mở lại quyền chia sẻ, có thể thêm vào đây:
+        // .or(ItemSpecification.hasPermissionForUser(currentUser.getId()));
+    }
+
+    private Long extractParentIdIfPresent(String[] filters) {
         return Arrays.stream(filters)
                 .filter(f -> f.startsWith("parent.id:"))
-                .map(f -> Long.valueOf(f.split(":", 2)[1]))
+                .map(f -> {
+                    try {
+                        return Long.valueOf(f.split(":", 2)[1]);
+                    } catch (NumberFormatException ex) {
+                        throw new InvalidDataException("Invalid parent.id filter format");
+                    }
+                })
                 .findFirst()
-                .orElseThrow(() -> new InvalidDataException("Missing parent.id filter"));
+                .orElse(null);
     }
 
-    @Override
-    public PageResponse<List<ItemResponse>> getItemsSharedWithMe(Pageable pageable, String[] items) {
-        log.info("search items shared with me by current user page no: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
-        EntitySpecificationsBuilder<Item> builder = new EntitySpecificationsBuilder<>();
-        User currentUser = authenticationService.getCurrentUser();
-        // chua bi xoa
-        Specification<Item> spec = Specification.where(ItemSpecification.notDeleted());
-        // duoc chia se
-        spec = spec.and(ItemSpecification.hasPermissionForUser(currentUser.getId()));
-        // không bị ẩn
-        spec = spec.and(ItemSpecification.notHiddenShared());
-        if (items != null && items.length > 0) {
-            boolean hasParentId = Arrays.stream(items)
-                    .anyMatch(item -> item.startsWith("parent.id"));
 
-            if (!hasParentId) {
-                spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("parent")));
+    @Override
+    public PageItemResponse<List<ItemResponse>> getItemsSharedWithMe(Pageable pageable, String[] filters) {
+        log.info("get item shared with me - page: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
+
+        User currentUser = authenticationService.getCurrentUser();
+        Specification<Item> spec = buildBaseSpecification();
+        // Chỉ lấy các item dc chia sẻ với người dùng hiện tại
+        spec = spec.and(ItemSpecification.hasPermissionForUser(currentUser.getId()));
+
+        List<BreadcrumbDto> breadcrumbDtos = new ArrayList<>();
+
+        if (filters != null && filters.length > 0) {
+            Long parentId = extractParentIdIfPresent(filters);
+
+            if (parentId != null) {
+                Item parentItem = itemRepo.findById(parentId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Item not found for itemId: " + parentId));
+                breadcrumbDtos.addAll(itemMapperService.buildBreadcrumb(parentItem));
+            } else {
+                spec = spec.and((root, query, cb) -> cb.isNull(root.get("parent")));
             }
-            spec = spec.and(SpecificationUtil.buildSpecificationFromFilters(items, builder));
-            Page<Item> pageAccessByResource = itemRepo.findAll(spec, pageable);
-            return PaginationUtils.convertToPageResponse(pageAccessByResource, pageable, itemMapperService::toResponse);
+
+            EntitySpecificationsBuilder<Item> builder = new EntitySpecificationsBuilder<>();
+            spec = spec.and(SpecificationUtil.buildSpecificationFromFilters(filters, builder));
         } else {
-            spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("parent")));
+            spec = spec.and((root, query, cb) -> cb.isNull(root.get("parent")));
         }
 
-        return PaginationUtils.convertToPageResponse(itemRepo.findAll(spec, pageable), pageable, itemMapperService::toResponse);
+        Page<Item> itemPage = itemRepo.findAll(spec, pageable);
+        return PaginationItemUtils.convertToPageItemResponse(itemPage, pageable, itemMapperService::toResponse, breadcrumbDtos);
     }
 
 

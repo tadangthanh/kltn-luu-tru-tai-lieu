@@ -10,9 +10,9 @@ import vn.kltn.entity.Item;
 import java.util.List;
 
 public interface IItemService {
-    PageItemResponse<List<ItemResponse>> getItemsByOwner(Pageable pageable, String[] items);
+    PageItemResponse<List<ItemResponse>> getMyItems(Pageable pageable, String[] filters);
 
-    PageResponse<List<ItemResponse>> getItemsSharedWithMe(Pageable pageable, String[] items);
+    PageItemResponse<List<ItemResponse>> getItemsSharedWithMe(Pageable pageable, String[] items);
 
     Item getItemByIdOrThrow(Long itemId);
 
