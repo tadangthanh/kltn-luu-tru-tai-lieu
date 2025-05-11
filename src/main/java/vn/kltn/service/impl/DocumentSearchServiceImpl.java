@@ -16,7 +16,7 @@ import vn.kltn.entity.User;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.specification.SpecificationUtil;
-import vn.kltn.repository.util.PaginationUtils;
+import vn.kltn.util.PaginationUtils;
 import vn.kltn.service.*;
 
 import java.util.List;

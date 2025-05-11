@@ -7,6 +7,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vn.kltn.dto.request.ItemRequest;
 import vn.kltn.dto.response.ItemResponse;
+import vn.kltn.dto.response.PageItemResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
 import vn.kltn.service.IItemService;
@@ -21,7 +22,7 @@ public class ItemRest {
     private final IItemService itemService;
 
     @GetMapping
-    public ResponseData<PageResponse<List<ItemResponse>>> getItemsByOwner(Pageable pageable, @RequestParam(required = false, value = "items") String[] items) {
+    public ResponseData<PageItemResponse<List<ItemResponse>>> getItemsByOwner(Pageable pageable, @RequestParam(required = false, value = "items") String[] items) {
         return new ResponseData<>(200, "Thành công", itemService.getItemsByOwner(pageable, items));
     }
 

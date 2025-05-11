@@ -3,13 +3,14 @@ package vn.kltn.service;
 import org.springframework.data.domain.Pageable;
 import vn.kltn.dto.request.ItemRequest;
 import vn.kltn.dto.response.ItemResponse;
+import vn.kltn.dto.response.PageItemResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Item;
 
 import java.util.List;
 
 public interface IItemService {
-    PageResponse<List<ItemResponse>> getItemsByOwner(Pageable pageable, String[] items);
+    PageItemResponse<List<ItemResponse>> getItemsByOwner(Pageable pageable, String[] items);
 
     PageResponse<List<ItemResponse>> getItemsSharedWithMe(Pageable pageable, String[] items);
 

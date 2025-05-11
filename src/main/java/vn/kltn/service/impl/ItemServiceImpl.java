@@ -9,21 +9,26 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import vn.kltn.common.ItemType;
+import vn.kltn.dto.BreadcrumbDto;
 import vn.kltn.dto.request.ItemRequest;
 import vn.kltn.dto.response.ItemResponse;
+import vn.kltn.dto.response.PageItemResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Item;
 import vn.kltn.entity.User;
+import vn.kltn.exception.InvalidDataException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.map.ItemMapper;
 import vn.kltn.repository.ItemRepo;
 import vn.kltn.repository.specification.EntitySpecificationsBuilder;
 import vn.kltn.repository.specification.ItemSpecification;
 import vn.kltn.repository.specification.SpecificationUtil;
-import vn.kltn.repository.util.PaginationUtils;
+import vn.kltn.util.PaginationItemUtils;
+import vn.kltn.util.PaginationUtils;
 import vn.kltn.service.*;
 import vn.kltn.util.ItemValidator;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -42,7 +47,7 @@ public class ItemServiceImpl implements IItemService {
     private final IPermissionService permissionService;
 
     @Override
-    public PageResponse<List<ItemResponse>> getItemsByOwner(Pageable pageable, String[] items) {
+    public PageItemResponse<List<ItemResponse>> getItemsByOwner(Pageable pageable, String[] items) {
         log.info("search items by current user page no: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
         EntitySpecificationsBuilder<Item> builder = new EntitySpecificationsBuilder<>();
         User currentUser = authenticationService.getCurrentUser();
@@ -52,21 +57,38 @@ public class ItemServiceImpl implements IItemService {
         spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("owner").get("id"), currentUser.getId()));
         // hoac la nguoi duoc chia se
 //        spec = spec.or(ItemSpecification.hasPermissionForUser(currentUser.getId()));
+        List < BreadcrumbDto> breadcrumbDtos= new ArrayList<>();
+
         if (items != null && items.length > 0) {
             boolean hasParentId = Arrays.stream(items)
                     .anyMatch(item -> item.startsWith("parent.id"));
 
             if (!hasParentId) {
                 spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("parent")));
+            }else{
+                for (String item : items) {
+                    if (item.startsWith("parent.id")) {
+                        Long parentId = extractParentId(items);
+                        Item parentItem = itemRepo.findById(parentId).orElseThrow(() -> new ResourceNotFoundException("Item not found for itemId: " + parentId));
+                        breadcrumbDtos.addAll(itemMapperService.buildBreadcrumb(parentItem));
+                    }
+                }
             }
             spec = spec.and(SpecificationUtil.buildSpecificationFromFilters(items, builder));
             Page<Item> pageAccessByResource = itemRepo.findAll(spec, pageable);
-            return PaginationUtils.convertToPageResponse(pageAccessByResource, pageable, itemMapperService::toResponse);
+            return PaginationItemUtils.convertToPageItemResponse(pageAccessByResource, pageable, itemMapperService::toResponse, breadcrumbDtos);
         } else {
             spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("parent")));
         }
 
-        return PaginationUtils.convertToPageResponse(itemRepo.findAll(spec, pageable), pageable, itemMapperService::toResponse);
+        return PaginationItemUtils.convertToPageItemResponse(itemRepo.findAll(spec, pageable), pageable, itemMapperService::toResponse,breadcrumbDtos);
+    }
+    private Long extractParentId(String[] filters) {
+        return Arrays.stream(filters)
+                .filter(f -> f.startsWith("parent.id:"))
+                .map(f -> Long.valueOf(f.split(":", 2)[1]))
+                .findFirst()
+                .orElseThrow(() -> new InvalidDataException("Missing parent.id filter"));
     }
 
     @Override

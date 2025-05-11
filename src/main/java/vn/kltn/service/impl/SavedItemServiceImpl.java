@@ -14,7 +14,7 @@ import vn.kltn.entity.User;
 import vn.kltn.exception.DuplicateResourceException;
 import vn.kltn.repository.ItemRepo;
 import vn.kltn.repository.SavedItemRepo;
-import vn.kltn.repository.util.PaginationUtils;
+import vn.kltn.util.PaginationUtils;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IItemService;
 import vn.kltn.service.ISavedItemService;

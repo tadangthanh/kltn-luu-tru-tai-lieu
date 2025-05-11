@@ -1,4 +1,4 @@
-package vn.kltn.repository.util;
+package vn.kltn.util;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

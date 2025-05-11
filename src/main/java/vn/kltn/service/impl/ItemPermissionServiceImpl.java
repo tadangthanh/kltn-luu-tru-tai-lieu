@@ -17,7 +17,7 @@ import vn.kltn.entity.User;
 import vn.kltn.exception.InvalidDataException;
 import vn.kltn.map.PermissionMapper;
 import vn.kltn.repository.PermissionRepo;
-import vn.kltn.repository.util.PaginationUtils;
+import vn.kltn.util.PaginationUtils;
 import vn.kltn.service.*;
 
 import java.util.*;
