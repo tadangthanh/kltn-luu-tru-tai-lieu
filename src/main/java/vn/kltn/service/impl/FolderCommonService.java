@@ -33,7 +33,7 @@ public class FolderCommonService {
     }
 
     public Folder getFolderByIdOrThrow(Long folderId) {
-        log.info("get folder by id or throw: folderId={}", folderId);
+        log.info("get folder by id or throw folderId: {}", folderId);
         return folderRepo.findById(folderId).orElseThrow(() -> {
             log.warn("Folder with id {} not found", folderId);
             return new ResourceNotFoundException("Không tìm thấy thư mục");

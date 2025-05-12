@@ -4,9 +4,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.kltn.entity.Item;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
 public interface ItemRepo extends JpaRepository<Item, Long>, JpaSpecificationExecutor<Item> {
@@ -37,4 +42,24 @@ public interface ItemRepo extends JpaRepository<Item, Long>, JpaSpecificationExe
 
     @Query("select count(i) from Item i where i.owner.id = ?1 and i.deletedAt is null and i.itemType = 'DOCUMENT'")
     int countByOwnerIdAndDeletedAtIsNullAndTypeDocument(Long ownerId);
+
+    @Query(value = """
+                WITH RECURSIVE item_tree AS (
+                                        -- Bắt đầu từ parent
+                                        SELECT id FROM item WHERE id = :parentId
+                                        UNION ALL
+                                        SELECT i.id
+                                        FROM item i
+                                        INNER JOIN item_tree it ON i.parent_id = it.id
+                                    )
+                                    -- Lấy tất cả ID bao gồm cả parent
+                                    SELECT id FROM item_tree;
+            """, nativeQuery = true)
+    List<Long> findAllItemIdsRecursively(@Param("parentId") Long parentId);
+
+    @Modifying
+    @Query("UPDATE Item i SET i.deletedAt = :deletedAt, i.permanentDeleteAt = :permanentDeleteAt WHERE i.id IN :itemIds")
+    void updateDeletedAtAndPermanentDeleteAt(@Param("itemIds") List<Long> itemIds,
+                                             @Param("deletedAt") LocalDateTime deletedAt,
+                                             @Param("permanentDeleteAt") LocalDateTime permanentDeleteAt);
 }

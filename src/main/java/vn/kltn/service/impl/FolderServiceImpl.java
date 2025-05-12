@@ -32,8 +32,9 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
     private final IFolderRestorationService folderRestorationService;
     private final ItemValidator itemValidator;
     private final DocumentRepo documentRepo;
+    private final IItemIndexService itemIndexService;
 
-    public FolderServiceImpl(FolderRepo folderRepo, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IFolderCreationService folderCreationService, IFolderMapperService folderMapperService, IFolderDeletionService folderDeletionService, IFolderRestorationService folderRestorationService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionService permissionService, IPermissionValidatorService permissionValidatorService, DocumentRepo documentRepo) {
+    public FolderServiceImpl(FolderRepo folderRepo, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IFolderCreationService folderCreationService, IFolderMapperService folderMapperService, IFolderDeletionService folderDeletionService, IFolderRestorationService folderRestorationService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionService permissionService, IPermissionValidatorService permissionValidatorService, DocumentRepo documentRepo, IItemIndexService itemIndexService) {
         super(authenticationService, folderCommonService, itemValidator, permissionInheritanceService, permissionValidatorService, permissionService);
         this.folderRepo = folderRepo;
         this.folderCommonService = folderCommonService;
@@ -43,11 +44,13 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
         this.folderRestorationService = folderRestorationService;
         this.itemValidator = itemValidator;
         this.documentRepo = documentRepo;
+        this.itemIndexService = itemIndexService;
     }
 
     @Override
     public FolderResponse createFolder(FolderRequest folderRequest) {
         Folder folder = folderCreationService.createFolder(folderRequest);
+        itemIndexService.insertItem(folder);
         return mapToR(folder);
     }
 
@@ -87,6 +90,7 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
     public void hardDeleteFolderById(Long folderId) {
         Folder folder = getFolderByIdOrThrow(folderId);
         folderDeletionService.hardDelete(folder);
+        itemIndexService.deleteDocById(folderId);
     }
 
     @Override
@@ -106,6 +110,7 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
         itemValidator.validateCurrentUserIsOwnerItem(folder);
         itemValidator.validateItemNotDeleted(folder);
         folderMapperService.updateFolder(folder, folderRequest);
+        itemIndexService.syncItem(folderId);
         return folderMapperService.mapToResponse(folderRepo.save(folder));
     }
 

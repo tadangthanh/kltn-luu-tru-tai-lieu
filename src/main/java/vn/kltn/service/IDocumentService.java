@@ -32,7 +32,7 @@ public interface IDocumentService extends IItemCommonService<Document, DocumentR
 
     void restoreDocumentsByFolderIds(List<Long> folderIds);
 
-    List<DocumentIndexResponse> searchMetadata(String query, Pageable pageable);
+    List<ItemIndexResponse> searchMetadata(String query, Pageable pageable);
 
     DocumentDataResponse openDocumentById(Long documentId);
 

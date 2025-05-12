@@ -13,6 +13,7 @@ public class ItemSpecification {
     }
 
 
+
     public static Specification<Item> ownedBy(Long userId) {
         return (root, query, cb) -> cb.equal(root.get("owner").get("id"), userId);
     }
@@ -48,6 +49,13 @@ public class ItemSpecification {
     }
 
     public static Specification<Item> nullParent() {
-        return (root, query, cb) -> cb.isNull(root.get("parent").get("id"));
+        return (root, query, cb) -> cb.isNull(root.get("parent"));
     }
+    public static Specification<Item> parentNotMarkDeleted() {
+        return (root, query, cb) -> {
+            Join<Item, Item> parentJoin = root.join("parent", JoinType.LEFT);
+            return cb.isNull(parentJoin.get("deletedAt"));
+        };
+    }
+
 }

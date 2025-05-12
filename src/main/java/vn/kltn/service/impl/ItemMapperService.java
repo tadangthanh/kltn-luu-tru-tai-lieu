@@ -42,9 +42,9 @@ public class ItemMapperService {
         Item current = item;
 
         while (current.getParent() != null) {
-            Folder parent = current.getParent(); // parent là Folder, kế thừa Item
-            breadcrumb.add(new BreadcrumbDto(parent.getId(), parent.getName()));
-            current = parent;
+            Item itemFolder = current.getParent(); // parent là Folder, kế thừa Item
+            breadcrumb.add(new BreadcrumbDto(itemFolder.getId(), itemFolder.getName()));
+            current = itemFolder;
         }
 
         // Đảo ngược vì hiện tại đang từ dưới lên

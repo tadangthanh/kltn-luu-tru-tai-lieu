@@ -7,7 +7,6 @@ import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 
@@ -16,15 +15,15 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Document(indexName = "documents_index")
+@Document(indexName = "items_index")
 @ToString
-public class DocumentIndex extends BaseSearchEntity {
-    private Long documentId; // ID của tài liệu gốc
-    private String description; // Mô tả tài liệu
-    private String name; // tên tài liệu
-    private String type; // loại tài liệu
+public class ItemIndex extends BaseSearchEntity {
+    private Long itemId; // ID của item
+    private String name; // tên item
+    private String docType; // loại tài liệu
+    private String itemType; // loại tài liệu (folder, file)
     @Field(type = FieldType.Text, analyzer = "folding_analyzer", searchAnalyzer = "folding_analyzer")
-    private String content; // Full nội dung text của tài liệu
+    private String content; // Full nội dung text nếu là của tài liệu
     private Long ownerId;
     private boolean isDeleted = false;
 
@@ -32,8 +31,8 @@ public class DocumentIndex extends BaseSearchEntity {
     public Map<String, Object> toPartialUpdateMap() {
         Map<String, Object> map = new HashMap<>();
         if (this.name != null) map.put("name", this.name);
-        if (this.description != null) map.put("description", this.description);
-        if (this.type != null) map.put("type", this.type);
+        if (this.docType != null) map.put("docType", this.docType);
+        if (this.itemType != null) map.put("itemType", this.itemType);
         if (this.content != null) map.put("content", this.content);
         if (this.ownerId != null) map.put("ownerId", this.ownerId);
         map.put("isDeleted", this.isDeleted);
@@ -41,6 +40,5 @@ public class DocumentIndex extends BaseSearchEntity {
         if (this.getUpdatedBy() != null) map.put("updatedBy", this.getUpdatedBy());
         return map;
     }
-
 
 }

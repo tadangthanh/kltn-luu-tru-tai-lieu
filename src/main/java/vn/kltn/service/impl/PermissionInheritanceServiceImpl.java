@@ -13,7 +13,7 @@ import vn.kltn.repository.PermissionRepo;
 import vn.kltn.service.IAuthenticationService;
 import vn.kltn.service.IDocumentValidator;
 import vn.kltn.service.IPermissionInheritanceService;
-import vn.kltn.service.event.MultipleDocumentsUpdatedEvent;
+import vn.kltn.service.event.MultipleItemsUpdatedEvent;
 import vn.kltn.util.ItemValidator;
 
 import java.util.ArrayList;
@@ -155,7 +155,7 @@ public class PermissionInheritanceServiceImpl implements IPermissionInheritanceS
         if (!permissionsForDocument.isEmpty()) {
             permissionRepo.saveAllAndFlush(permissionsForDocument);
             // update lai tron elasticsearch
-            eventPublisher.publishEvent(new MultipleDocumentsUpdatedEvent(this, new HashSet<>(documentChildIds)));
+            eventPublisher.publishEvent(new MultipleItemsUpdatedEvent(this, new HashSet<>(documentChildIds)));
             return documentChildIds;
         }
         return new ArrayList<>();

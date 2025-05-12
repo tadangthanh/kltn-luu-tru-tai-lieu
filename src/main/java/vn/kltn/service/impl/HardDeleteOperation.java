@@ -7,6 +7,7 @@ import vn.kltn.entity.Folder;
 import vn.kltn.repository.FolderRepo;
 import vn.kltn.service.IDocumentService;
 import vn.kltn.service.IFolderOperation;
+import vn.kltn.service.IItemIndexService;
 
 import java.util.List;
 
@@ -16,14 +17,17 @@ import java.util.List;
 public class HardDeleteOperation implements IFolderOperation {
     private final FolderRepo folderRepo;
     private final IDocumentService documentService;
+    private final IItemIndexService itemIndexService;
     @Override
     public void execute(Folder folder) {
         log.info("Hard delete folder: folderId={}", folder.getId());
-        deleteDocumentChild(folder);
+        List<Long> folderIdsToDelete=deleteDocumentChild(folder);
+        itemIndexService.deleteIndexByIdList(folderIdsToDelete);
         folderRepo.delete(folder);
     }
-    private void deleteDocumentChild(Folder folder) {
+    private List<Long> deleteDocumentChild(Folder folder) {
         List<Long> folderIdsDelete = folderRepo.findCurrentAndChildFolderIdsByFolderId(folder.getId());
         documentService.hardDeleteDocumentByFolderIds(folderIdsDelete);
+        return folderIdsDelete;
     }
 }

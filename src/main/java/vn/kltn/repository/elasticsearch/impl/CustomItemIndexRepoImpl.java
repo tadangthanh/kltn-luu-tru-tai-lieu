@@ -10,10 +10,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Repository;
-import vn.kltn.dto.response.DocumentIndexResponse;
+import vn.kltn.dto.response.ItemIndexResponse;
 import vn.kltn.exception.CustomIOException;
-import vn.kltn.index.DocumentIndex;
-import vn.kltn.repository.elasticsearch.CustomDocumentIndexRepo;
+import vn.kltn.index.ItemIndex;
+import vn.kltn.repository.elasticsearch.CustomItemIndexRepo;
 
 import java.io.IOException;
 import java.util.List;
@@ -24,14 +24,15 @@ import java.util.stream.Collectors;
 @Repository
 @RequiredArgsConstructor
 @Slf4j(topic = "CUSTOM_DOCUMENT_INDEX_REPO")
-public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
+public class CustomItemIndexRepoImpl implements CustomItemIndexRepo {
     private final ElasticsearchClient elasticsearchClient;
 
     @Override
     public void markDeletedByIndexId(String indexId, boolean value) {
         log.info("Mark deleted for indexId: {}", indexId);
         try {
-            elasticsearchClient.update(UpdateRequest.of(u -> u.index("documents_index").id(indexId).doc(Map.of("isDeleted", value))), DocumentIndex.class);
+            elasticsearchClient.update(UpdateRequest.of(u -> u.index("items_index")
+                    .id(indexId).doc(Map.of("isDeleted", value))), ItemIndex.class);
         } catch (ElasticsearchException e) {
             if (e.getMessage() != null && e.getMessage().contains("document_missing_exception")) {
                 log.warn("Document with indexId {} not found in Elasticsearch. Skipping update.", indexId);
@@ -48,13 +49,13 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
 
     // ko update content
     @Override
-    public void updateDocument(DocumentIndex documentUpdated) {
+    public void updateItem(ItemIndex itemUpdated) {
         try {
             elasticsearchClient.update(u -> u
-                            .index("documents_index")
-                            .id(documentUpdated.getId())
-                            .doc(documentUpdated), // chỉ định object thay thế
-                    DocumentIndex.class);
+                            .index("items_index")
+                            .id(itemUpdated.getId())
+                            .doc(itemUpdated), // chỉ định object thay thế
+                    ItemIndex.class);
         } catch (IOException| ElasticsearchException e) {
             log.error("Error updating document: {}", e.getMessage(), e);
             throw new CustomIOException("Failed to update document");
@@ -69,7 +70,7 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
 
             // Lặp qua từng indexId và tạo delete operation
             for (Long indexId : indexIds) {
-                bulkRequest.operations(op -> op.delete(d -> d.index("documents_index")  // Tên index
+                bulkRequest.operations(op -> op.delete(d -> d.index("items_index")  // Tên index
                         .id(indexId.toString())  // ID của document trong ES
                 ));
             }
@@ -89,11 +90,11 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
     }
 
     @Override
-    public void markDeleteDocumentsIndex(List<String> indexIds, boolean value) {
+    public void markDeleteItemsIndex(List<String> indexIds, boolean value) {
         try {
             // Xây dựng UpdateByQuery request
             UpdateByQueryRequest.Builder updateRequestBuilder = new UpdateByQueryRequest.Builder()
-                    .index("documents_index")  // Tên của index
+                    .index("items_index")  // Tên của index
                     .query(q -> q
                             .terms(t -> t
                                     .field("id")  // Trường id hoặc có thể là "documentId"
@@ -123,12 +124,12 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
 
 
     @Override
-    public List<DocumentIndexResponse> getDocumentShared(Set<Long> documentIds, String query, int page, int size) {
+    public List<ItemIndexResponse> getItemShared(Set<Long> itemIds, String query, int page, int size) {
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
 
         try {
-            SearchResponse<DocumentIndex> response = elasticsearchClient.search(s ->
-                            s.index("documents_index")
+            SearchResponse<ItemIndex> response = elasticsearchClient.search(s ->
+                            s.index("items_index")
                                     .from(page * size)
                                     .size(size)
                                     .query(q -> q
@@ -138,7 +139,6 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
                                                                     .query(query)
                                                                     .type(TextQueryType.Phrase)
                                                                     .fields("name^3",
-                                                                            "description^2",
                                                                             "content",
                                                                             "updatedBy",
                                                                             "createdBy")))
@@ -151,7 +151,7 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
                                                     // Đây mới là phần bạn cần: id ∈ documentIds hoặc createdBy == currentEmail
                                                     .should(sh1 -> sh1.terms(t -> t
                                                             .field("id")
-                                                            .terms(tq -> tq.value(documentIds.stream()
+                                                            .terms(tq -> tq.value(itemIds.stream()
                                                                     .map(String::valueOf)
                                                                     .map(FieldValue::of)
                                                                     .toList()))
@@ -170,15 +170,14 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
                                                     f -> f.fragmentSize(150)
                                                             .numberOfFragments(3))
                                             .fields("name", f -> f)
-                                            .fields("description", f -> f)
                                             .fields("updatedBy", f -> f)),
-                    DocumentIndex.class);
+                    ItemIndex.class);
 
             return response.hits().hits().stream()
                     .filter(hit -> hit.source() != null)
                     .map(hit -> {
-                        DocumentIndexResponse dto = new DocumentIndexResponse();
-                        dto.setDocument(hit.source());
+                        ItemIndexResponse dto = new ItemIndexResponse();
+                        dto.setItem(hit.source());
                         dto.setHighlights(hit.highlight());
                         return dto;
                     })
@@ -192,14 +191,14 @@ public class CustomDocumentIndexRepoImpl implements CustomDocumentIndexRepo {
 
 
     @Override
-    public void bulkUpdate(List<DocumentIndex> indices) {
+    public void bulkUpdate(List<ItemIndex> indices) {
         try {
             BulkRequest.Builder builder = new BulkRequest.Builder();
 
-            for (DocumentIndex doc : indices) {
+            for (ItemIndex doc : indices) {
                 builder.operations(op -> op
                         .update(u -> u
-                                .index("documents_index")
+                                .index("items_index")
                                 .id(String.valueOf(doc.getId()))
                                 .action(a -> a
                                         .doc(doc.toPartialUpdateMap())

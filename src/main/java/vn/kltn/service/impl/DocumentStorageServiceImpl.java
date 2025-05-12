@@ -30,7 +30,7 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
     private final DocumentRepo documentRepo;
     private final FolderCommonService folderCommonService;
     private final IUploadProcessor uploadProcessor;
-    private final IDocumentIndexService documentIndexService;
+    private final IItemIndexService itemIndexService;
     private final IDocumentHasTagService documentHasTagService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
@@ -51,7 +51,7 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
         documentRepo.setDeleteDocument(folderIds, LocalDateTime.now(), LocalDateTime.now().plusDays(documentRetentionDays));
         List<Long> documentIdsToMarkDelete = documentRepo.findDocumentIdsWithParentIds(folderIds);
         // danh dau isDeleted o elasticsearch
-        markDeleteDocumentIndexByFolders(documentIdsToMarkDelete, true);
+        itemIndexService.markDeleteItems(documentIdsToMarkDelete, true);
     }
 
     @Override
@@ -60,8 +60,9 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
         documentRepo.setDeleteDocument(folderIds, null, null);
         List<Long> documentIdsToMarkDelete = documentRepo.findDocumentIdsWithParentIds(folderIds);
         // danh dau isDeleted o elasticsearch
-        markDeleteDocumentIndexByFolders(documentIdsToMarkDelete, false);
+        itemIndexService.markDeleteItems(documentIdsToMarkDelete, false);
     }
+
 
     @Override
     public Document copyDocument(Document document) {
@@ -90,7 +91,7 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
         target.getCurrentVersion().setBlobName(newBlobName);
 
         // Index document
-        documentIndexService.insertDoc(target);
+        itemIndexService.insertItem(target);
     }
 
     private String generateCopyName(String originalName) {
@@ -119,7 +120,7 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
     private void markDeleteDocumentIndexByFolders(List<Long> folderIds, boolean value) {
         List<Long> documentsMarkDeleted = documentRepo.findDocumentIdsWithParentIds(folderIds);
         // danh dau isDeleted o elasticsearch
-        documentIndexService.markDeleteDocuments(documentsMarkDeleted, value);
+        itemIndexService.markDeleteItems(documentsMarkDeleted, value);
     }
 
     @Override
@@ -145,7 +146,7 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
             // Delete tags
             documentHasTagService.deleteAllByDocumentIds(documentIds);
             // Delete from search index
-            documentIndexService.deleteIndexByIdList(documentIds);
+            itemIndexService.deleteIndexByIdList(documentIds);
             // delete versions
             documentVersionService.deleteAllByDocuments(documentIds);
         }

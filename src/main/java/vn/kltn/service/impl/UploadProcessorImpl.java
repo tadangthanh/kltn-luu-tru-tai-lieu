@@ -9,9 +9,8 @@ import vn.kltn.dto.ProcessUploadResult;
 import vn.kltn.dto.UploadContext;
 import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.exception.CustomIOException;
-import vn.kltn.index.DocumentIndex;
 import vn.kltn.service.IAzureStorageService;
-import vn.kltn.service.IDocumentIndexService;
+import vn.kltn.service.IItemIndexService;
 import vn.kltn.service.IDocumentMapperService;
 import vn.kltn.service.IUploadProcessor;
 
@@ -29,7 +28,7 @@ import java.util.concurrent.CompletableFuture;
 public class UploadProcessorImpl implements IUploadProcessor {
     private final IAzureStorageService azureStorageService;
     private final IDocumentMapperService documentMapperService;
-    private final IDocumentIndexService documentIndexService;
+    private final IItemIndexService documentIndexService;
     private final UploadFinalizerService uploadFinalizerService;
     private final WebSocketService webSocketService;
 

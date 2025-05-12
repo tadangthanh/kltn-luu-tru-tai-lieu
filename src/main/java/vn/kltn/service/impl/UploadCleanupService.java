@@ -5,11 +5,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.kltn.entity.Document;
-import vn.kltn.index.DocumentIndex;
+import vn.kltn.index.ItemIndex;
 import vn.kltn.repository.DocumentRepo;
-import vn.kltn.repository.elasticsearch.DocumentIndexRepo;
 import vn.kltn.service.IAzureStorageService;
-import vn.kltn.service.IDocumentIndexService;
+import vn.kltn.service.IItemIndexService;
 
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -20,11 +19,11 @@ import java.util.concurrent.CancellationException;
 @Slf4j(topic = "UPLOAD_CLEANUP_SERVICE")
 public class UploadCleanupService {
     private final DocumentRepo documentRepo;
-    private final IDocumentIndexService documentIndexService;
+    private final IItemIndexService documentIndexService;
     private final IAzureStorageService azureStorageService;
 
 
-    public void cleanupUpload(List<Document> documents, List<DocumentIndex> documentIndices, List<String> blobNames) {
+    public void cleanupUpload(List<Document> documents, List<ItemIndex> documentIndices, List<String> blobNames) {
         log.info("Bắt đầu dọn dẹp tài liệu bị hủy");
         try {
             // Xoá document trong MySQL
@@ -46,7 +45,7 @@ public class UploadCleanupService {
         }
     }
 
-    private void deleteDocumentsIndex(List<DocumentIndex> documentIndices) {
+    private void deleteDocumentsIndex(List<ItemIndex> documentIndices) {
         if (documentIndices != null && !documentIndices.isEmpty()) {
             documentIndexService.deleteAll(documentIndices);
             log.info("Đã xoá {} tài liệu trong Elasticsearch", documentIndices.size());

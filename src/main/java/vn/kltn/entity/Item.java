@@ -17,7 +17,7 @@ public abstract class Item extends BaseEntity {
     private String name;
     @ManyToOne
     @JoinColumn(name = "parent_id")
-    private Folder parent;
+    private Item parent;
     @ManyToOne
     @JoinColumn(name = "owner_id")
     private User owner;

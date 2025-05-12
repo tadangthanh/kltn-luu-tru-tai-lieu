@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import vn.kltn.index.DocumentIndex;
+import vn.kltn.index.ItemIndex;
 
 import java.util.List;
 import java.util.Map;
@@ -13,7 +13,7 @@ import java.util.Map;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class DocumentIndexResponse {
-    private DocumentIndex document; // dữ liệu gốc
+public class ItemIndexResponse {
+    private ItemIndex item; // dữ liệu gốc
     private Map<String, List<String>> highlights; // highlight của các field
 }

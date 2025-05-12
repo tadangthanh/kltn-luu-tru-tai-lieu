@@ -16,12 +16,12 @@ import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.*;
 import vn.kltn.entity.*;
 import vn.kltn.exception.ResourceNotFoundException;
-import vn.kltn.index.DocumentIndex;
+import vn.kltn.index.ItemIndex;
 import vn.kltn.map.ItemMapper;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.service.*;
 import vn.kltn.service.event.DocumentUpdateContent;
-import vn.kltn.service.event.DocumentUpdatedEvent;
+import vn.kltn.service.event.ItemUpdatedEvent;
 import vn.kltn.util.DocumentTypeUtil;
 import vn.kltn.util.ItemValidator;
 
@@ -43,7 +43,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     private final IDocumentHasTagService documentHasTagService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
-    private final IDocumentIndexService documentIndexService;
+    private final IItemIndexService documentIndexService;
     private final ApplicationEventPublisher eventPublisher;
     private final IDocumentStorageService documentStorageService;
     private final IDocumentMapperService documentMapperService;
@@ -57,7 +57,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     private final IDocumentVersionService documentVersionService;
     private final IDocumentConversionService documentConversionService;
 
-    public DocumentServiceImpl(DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IDocumentIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService, IPermissionService permissionService, ItemMapper itemMapper, IPermissionValidatorService permissionValidatorService1, WebSocketService webSocketService, IAzureStorageService azureStorageService, IDocumentVersionService documentVersionService, IDocumentConversionService documentConversionService) {
+    public DocumentServiceImpl(DocumentRepo documentRepo, IDocumentHasTagService documentHasTagService, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IItemIndexService documentIndexService, ApplicationEventPublisher eventPublisher, IDocumentStorageService documentStorageService, IDocumentMapperService documentMapperService, IDocumentSearchService documentSearchService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionValidatorService permissionValidatorService, IPermissionService permissionService, ItemMapper itemMapper, IPermissionValidatorService permissionValidatorService1, WebSocketService webSocketService, IAzureStorageService azureStorageService, IDocumentVersionService documentVersionService, IDocumentConversionService documentConversionService) {
         super(authenticationService, folderCommonService, itemValidator, permissionInheritanceService, permissionValidatorService, permissionService);
         this.documentRepo = documentRepo;
         this.documentHasTagService = documentHasTagService;
@@ -83,20 +83,21 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
         List<Document> documents = documentStorageService.saveDocuments(bufferedFiles);
 //        documentVersionService.increaseVersions(documents);
         List<String> blobsName = new ArrayList<>();
-        List<DocumentIndex> documentIndexList = new ArrayList<>();
+        List<ItemIndex> itemIndexList = new ArrayList<>();
         try {
             // upload file to cloud
             blobsName.addAll(documentStorageService.store(token, bufferedFiles, documents));
             documentMapperService.mapBlobNamesToDocuments(documents, blobsName);
             // luu index
-            documentIndexList.addAll(documentIndexService.insertAllDoc(documents).join());
+            List<Item> items = new ArrayList<>(documents);
+            itemIndexList.addAll(documentIndexService.insertAllItem(items).join());
 
         } catch (Exception e) {
             log.error("Error uploading document: {}", e.getMessage());
             // Gửi thông báo lỗi về client
             webSocketService.sendUploadError(authenticationService.getCurrentUser().getEmail(), "Có lỗi xảy ra khi upload tài liệu.");
             documentStorageService.deleteBlobsFromCloud(blobsName);
-            documentIndexService.deleteAll(documentIndexList);
+            documentIndexService.deleteAll(itemIndexList);
             throw e;
         }
     }
@@ -133,7 +134,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     public void uploadDocumentWithParent(Long parentId, List<FileBuffer> bufferedFiles, CancellationToken token) {
         User currentUser = authenticationService.getCurrentUser();
         List<String> blobsName = new ArrayList<>();
-        List<DocumentIndex> documentIndexList = new ArrayList<>();
+        List<ItemIndex> itemIndexList = new ArrayList<>();
         try {
             log.info("upload document with parent id {}", parentId);
             Folder parent = folderCommonService.getFolderByIdOrThrow(parentId);
@@ -144,7 +145,8 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
             // map blobName to document
             documentMapperService.mapBlobNamesToDocuments(documents, blobsName);
             // luu index
-            documentIndexList.addAll(documentIndexService.insertAllDoc(documents).join());
+            List<Item> items = new ArrayList<>(documents);
+            itemIndexList.addAll(documentIndexService.insertAllItem(items).join());
             // ke thua quyen cua parent
             permissionInheritanceService.inheritPermissionsFromParent(documents);
         } catch (AccessDeniedException e) {
@@ -156,7 +158,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
             // Gửi thông báo lỗi về client
             webSocketService.sendUploadError(currentUser.getEmail(), "Có lỗi xảy ra khi upload tài liệu.");
             documentStorageService.deleteBlobsFromCloud(blobsName);
-            documentIndexService.deleteAll(documentIndexList);
+            documentIndexService.deleteAll(itemIndexList);
         }
     }
 
@@ -178,7 +180,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
         Document document = getItemByIdOrThrow(documentId);
         document.setDeletedAt(LocalDateTime.now());
         document.setPermanentDeleteAt(LocalDateTime.now().plusDays(documentRetentionDays));
-        documentIndexService.markDeleteDocument(document.getId(), true);
+        documentIndexService.markDeleteItem(document.getId(), true);
     }
 
     @Override
@@ -195,7 +197,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
         itemValidator.validateItemDeleted(resource);
         resource.setDeletedAt(null);
         resource.setPermanentDeleteAt(null);
-        documentIndexService.markDeleteDocument(itemId, false);
+        documentIndexService.markDeleteItem(itemId, false);
         return mapToR(resource);
     }
 
@@ -231,7 +233,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
     }
 
     @Override
-    public List<DocumentIndexResponse> searchMetadata(String query, Pageable pageable) {
+    public List<ItemIndexResponse> searchMetadata(String query, Pageable pageable) {
         return documentSearchService.getMyDocument(query, pageable.getPageNumber(), pageable.getPageSize());
     }
 
@@ -321,7 +323,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
         Document docExists = getItemByIdOrThrow(documentId);
         documentMapperService.updateDocument(docExists, documentRequest);
         docExists = documentRepo.save(docExists);
-        eventPublisher.publishEvent(new DocumentUpdatedEvent(this, documentId));
+        eventPublisher.publishEvent(new ItemUpdatedEvent(this, documentId));
         return documentMapperService.mapToDocumentResponse(docExists);
     }
 }

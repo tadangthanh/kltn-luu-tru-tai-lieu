@@ -28,6 +28,7 @@ import vn.kltn.util.ItemValidator;
 import vn.kltn.util.PaginationItemUtils;
 import vn.kltn.util.PaginationUtils;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -45,6 +46,7 @@ public class ItemServiceImpl implements IItemService {
     private final IFolderService folderService;
     private final ItemMapperService itemMapperService;
     private final IPermissionService permissionService;
+    private final IItemIndexService itemIndexService;
 
     @Override
     public PageItemResponse<List<ItemResponse>> getMyItems(Pageable pageable, String[] filters) {
@@ -138,6 +140,34 @@ public class ItemServiceImpl implements IItemService {
         return itemRepo.findById(itemId).orElseThrow(() -> new ResourceNotFoundException("Item not found for itemId: " + itemId));
     }
 
+//    @Override
+//    public void softDeleteItemById(Long itemId) {
+//        log.info("Soft delete item by id: {}", itemId);
+//        Item item = getItemByIdOrThrow(itemId);
+//        // resource chua bi xoa
+//        itemValidator.validateItemNotDeleted(item);
+//        // validate chu so huu hoac editor o resource cha
+//        if (item.getParent() != null) {
+//            itemValidator.validateCurrentUserIsOwnerOrEditorItem(item.getParent());
+//        }
+//        User currentUser = authenticationService.getCurrentUser();
+//        User owner = item.getOwner();
+//        // neu la chu so huu thi chuyen vao thung rac
+//        if (currentUser.getId().equals(owner.getId())) {
+//            if (item.getItemType().equals(ItemType.DOCUMENT)) {
+//                documentService.softDeleteDocumentById(item.getId());
+//            } else if (item.getItemType().equals(ItemType.FOLDER)) {
+//                folderService.softDeleteFolderById(item.getId());
+//            }
+//        } else {
+//            // nguoi thuc hien co quyen editor
+
+    /// /            permissionValidatorService.validatePermissionEditor(item, currentUser);
+//            // set parent = null la se dua resource nay vao drive cua toi
+//            item.setParent(null);
+//            permissionService.hidePermissionByItemIdAndUserId(item.getId(), currentUser.getId());
+//        }
+//    }
     @Override
     public void softDeleteItemById(Long itemId) {
         log.info("Soft delete item by id: {}", itemId);
@@ -152,11 +182,9 @@ public class ItemServiceImpl implements IItemService {
         User owner = item.getOwner();
         // neu la chu so huu thi chuyen vao thung rac
         if (currentUser.getId().equals(owner.getId())) {
-            if (item.getItemType().equals(ItemType.DOCUMENT)) {
-                documentService.softDeleteDocumentById(item.getId());
-            } else if (item.getItemType().equals(ItemType.FOLDER)) {
-                folderService.softDeleteFolderById(item.getId());
-            }
+            List<Long> itemIds = itemRepo.findAllItemIdsRecursively(item.getId());
+            itemRepo.updateDeletedAtAndPermanentDeleteAt(itemIds, LocalDateTime.now(), LocalDateTime.now().plusDays(30));
+            itemIndexService.markDeleteItems(itemIds, true);
         } else {
             // nguoi thuc hien co quyen editor
 //            permissionValidatorService.validatePermissionEditor(item, currentUser);
@@ -204,7 +232,7 @@ public class ItemServiceImpl implements IItemService {
         log.info("Get items mark delete page no: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
         User currentUser = authenticationService.getCurrentUser();
         Specification<Item> spec = Specification.where(ItemSpecification.markDeleted()).and(ItemSpecification.ownedBy(currentUser.getId())
-                .and(ItemSpecification.nullParent()));
+                .and(ItemSpecification.nullParent().or(ItemSpecification.parentNotMarkDeleted())));
         return PaginationUtils.convertToPageResponse(itemRepo.findAll(spec, pageable), pageable, itemMapperService::toResponse);
     }
 
@@ -212,7 +240,7 @@ public class ItemServiceImpl implements IItemService {
     public void cleanUpTrash() {
         log.info("Clean up trash");
         User currentUser = authenticationService.getCurrentUser();
-        Specification<Item> spec = Specification.where(ItemSpecification.markDeleted()).and(ItemSpecification.ownedBy(currentUser.getId()));
+        Specification<Item> spec = Specification.where(ItemSpecification.markDeleted()).and(ItemSpecification.ownedBy(currentUser.getId())).and(ItemSpecification.nullParent().or(ItemSpecification.parentNotMarkDeleted()));
         List<Item> items = itemRepo.findAll(spec);
         for (Item item : items) {
             if (item.getItemType().equals(ItemType.FOLDER)) {
@@ -229,11 +257,15 @@ public class ItemServiceImpl implements IItemService {
         log.info("Restore item by id: {}", itemId);
         Item item = getItemByIdOrThrow(itemId);
         itemValidator.validateCurrentUserIsOwnerItem(item);
-        if (item.getItemType().equals(ItemType.DOCUMENT)) {
-            documentService.restoreItemById(item.getId());
-        } else if (item.getItemType().equals(ItemType.FOLDER)) {
-            folderService.restoreItemById(item.getId());
-        }
+//        if (item.getItemType().equals(ItemType.DOCUMENT)) {
+//            documentService.restoreItemById(item.getId());
+//        } else if (item.getItemType().equals(ItemType.FOLDER)) {
+//            folderService.restoreItemById(item.getId());
+//        }
+        // Chuyển item về trạng thái chưa xóa
+        List<Long> itemIds = itemRepo.findAllItemIdsRecursively(item.getId());
+        itemRepo.updateDeletedAtAndPermanentDeleteAt(itemIds, null, null);
+        itemIndexService.markDeleteItems(itemIds, false);
         log.info("Restore item by id done: {}", itemId);
         return itemMapperService.toResponse(item);
     }
@@ -243,11 +275,15 @@ public class ItemServiceImpl implements IItemService {
         log.info("Delete item forever by id: {}", itemId);
         Item item = getItemByIdOrThrow(itemId);
         itemValidator.validateCurrentUserIsOwnerItem(item);
-        if (item.getItemType().equals(ItemType.DOCUMENT)) {
-            documentService.hardDeleteItemById(item.getId());
-        } else if (item.getItemType().equals(ItemType.FOLDER)) {
-            folderService.hardDeleteFolderById(item.getId());
-        }
+//        if (item.getItemType().equals(ItemType.DOCUMENT)) {
+//            documentService.hardDeleteItemById(item.getId());
+//        } else if (item.getItemType().equals(ItemType.FOLDER)) {
+//            folderService.hardDeleteFolderById(item.getId());
+//        }
+        // Xóa item vĩnh viễn
+        List<Long> itemIds = itemRepo.findAllItemIdsRecursively(item.getId());
+        itemRepo.deleteAllById(itemIds);
+        itemIndexService.deleteIndexByIdList(itemIds);
         log.info("Delete item forever by id done: {}", itemId);
     }
 

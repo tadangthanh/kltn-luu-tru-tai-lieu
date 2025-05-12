@@ -119,7 +119,7 @@ public class DocumentRest {
     }
 
     @GetMapping("/search-metadata")
-    public ResponseData<List<DocumentIndexResponse>> searchMetadata(@RequestParam(required = false, value = "query") String query, Pageable pageable) {
+    public ResponseData<List<ItemIndexResponse>> searchMetadata(@RequestParam(required = false, value = "query") String query, Pageable pageable) {
         return new ResponseData<>(200, "Thành công", documentService.searchMetadata(query, pageable));
     }
 

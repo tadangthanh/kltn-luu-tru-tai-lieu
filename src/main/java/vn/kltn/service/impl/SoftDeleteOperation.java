@@ -7,6 +7,7 @@ import vn.kltn.entity.Folder;
 import vn.kltn.repository.FolderRepo;
 import vn.kltn.service.IDocumentService;
 import vn.kltn.service.IFolderOperation;
+import vn.kltn.service.IItemIndexService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.List;
 public class SoftDeleteOperation implements IFolderOperation {
     private final FolderRepo folderRepo;
     private final IDocumentService documentService;
+    private final IItemIndexService itemIndexService;
     @Value("${app.delete.document-retention-days}")
     private int documentRetentionDays;
 
@@ -25,7 +27,9 @@ public class SoftDeleteOperation implements IFolderOperation {
         List<Long> folderIdsDelete = folderRepo.findCurrentAndChildFolderIdsByFolderId(folder.getId());
         // update deletedAt cho cac folder va cac folder con
         folderRepo.setDeleteForFolders(folderIdsDelete, LocalDateTime.now(), LocalDateTime.now().plusDays(documentRetentionDays));
+        itemIndexService.markDeleteItems(folderIdsDelete,true);
         // xoa document cua cac folder va cac folder con
         documentService.softDeleteDocumentsByFolderIds(folderIdsDelete);
+
     }
 }
