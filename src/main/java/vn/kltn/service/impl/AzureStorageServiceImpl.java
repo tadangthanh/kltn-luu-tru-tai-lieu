@@ -44,6 +44,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     private final SimpMessagingTemplate messagingTemplate;
     private static final int MAX_RETRIES = 3;
     private static final int THREAD_COUNT = 5;
+    private final UploadProgressThrottler uploadProgressThrottler;
 
     @Override
     public String uploadChunkedWithContainerDefault(InputStream data, String originalFileName, long length, int chunkSize) {
@@ -77,7 +78,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     }
 
     @Override
-    public CompletableFuture<String> uploadChunkedWithContainerDefaultAsync(InputStream data, String originalFileName, long length, int chunkSize) {
+    public CompletableFuture<String> uploadProgress(InputStream data, String originalFileName, long length, int chunkSize) {
         try {
             BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerNameDefault);
             String newFileName = UUID.randomUUID() + "_" + TextUtils.normalizeFileName(originalFileName);
@@ -101,9 +102,8 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
                     progressPercent = 100; // đảm bảo chunk cuối là 100%
                 }
 
-                messagingTemplate.convertAndSendToUser(
+                uploadProgressThrottler.sendProgress(
                         email,
-                        "/topic/upload-documents",
                         new UploadProgressDTO(originalFileName, blockNumber, totalChunks, progressPercent)
                 );
             }

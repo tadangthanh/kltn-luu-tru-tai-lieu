@@ -167,6 +167,63 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
         log.info("Upload folder hoàn tất tất cả file.");
     }
 
+    @Override
+    @Async("taskExecutor")
+    public void uploadFolderWithParent(Long folderId, List<FileBuffer> fileBufferList, CancellationToken token) {
+        Map<String, Folder> folderCache = new HashMap<>();
+        Map<Long, List<FileBuffer>> groupedByParentId = new HashMap<>();
+        User currentUser = authenticationService.getCurrentUser();
+
+        // Lấy folder cha gốc
+        Folder rootParent = folderRepo.findById(folderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Folder cha không tồn tại"));
+
+        for (FileBuffer fileBuffer : fileBufferList) {
+            String filePath = fileBuffer.getFileName(); // vd: Nhóm 10/abc.txt
+            Path path = Paths.get(filePath);
+
+            Folder parent = rootParent; // bắt đầu từ folder cha được truyền vào
+            StringBuilder currentPath = new StringBuilder();
+
+            // tạo folder theo path con (nếu có)
+            for (int i = 0; i < path.getNameCount() - 1; i++) {
+                String folderName = path.getName(i).toString();
+                if (!currentPath.isEmpty()) currentPath.append("/");
+                currentPath.append(folderName);
+                String fullPath = currentPath.toString();
+
+                Folder folder = folderCache.get(fullPath);
+                if (folder == null) {
+                    Folder finalParent = parent;
+                    folder = folderRepo.findByNameAndParent(folderName, parent)
+                            .orElseGet(() -> {
+                                Folder newFolder = new Folder();
+                                newFolder.setName(folderName);
+                                newFolder.setParent(finalParent);
+                                newFolder.setItemType(ItemType.FOLDER);
+                                newFolder.setOwner(currentUser);
+                                return folderRepo.saveAndFlush(newFolder);
+                            });
+                    folderCache.put(fullPath, folder);
+                }
+                parent = folder;
+            }
+
+            // Sửa lại tên file gốc
+            String fileName = path.getFileName().toString();
+            FileBuffer fixedBuffer = new FileBuffer(fileName, fileBuffer.getData(), fileBuffer.getSize(), fileBuffer.getContentType());
+
+            groupedByParentId.computeIfAbsent(parent.getId(), k -> new ArrayList<>()).add(fixedBuffer);
+        }
+
+        // Upload từng nhóm file theo folder cha
+        for (Map.Entry<Long, List<FileBuffer>> entry : groupedByParentId.entrySet()) {
+            documentService.uploadDocumentWithParentBlocking(entry.getKey(), entry.getValue(), token);
+        }
+
+        log.info("Upload folder (có parent) hoàn tất tất cả file.");
+    }
+
 
 
     @Override

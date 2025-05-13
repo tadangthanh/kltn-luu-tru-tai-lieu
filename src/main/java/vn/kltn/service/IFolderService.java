@@ -23,4 +23,6 @@ public interface IFolderService extends IItemCommonService<Folder, FolderRespons
     void hardDeleteFolderById(Long folderId);
 
     void uploadFolderNullParent(List<FileBuffer> fileBufferList, CancellationToken token);
+
+    void uploadFolderWithParent(Long folderId, List<FileBuffer> fileBufferList, CancellationToken token);
 }

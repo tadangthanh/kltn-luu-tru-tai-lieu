@@ -8,7 +8,7 @@ import java.util.concurrent.CompletableFuture;
 public interface IAzureStorageService {
     String uploadChunkedWithContainerDefault(InputStream data, String originalFileName, long length, int chunkSize);
 
-    CompletableFuture<String> uploadChunkedWithContainerDefaultAsync(InputStream data, String originalFileName, long length, int chunkSize);
+    CompletableFuture<String> uploadProgress(InputStream data, String originalFileName, long length, int chunkSize);
 
     String copyBlob(String sourceBlobName);
 

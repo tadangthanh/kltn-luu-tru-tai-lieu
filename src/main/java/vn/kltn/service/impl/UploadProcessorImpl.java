@@ -10,7 +10,6 @@ import vn.kltn.dto.UploadContext;
 import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.exception.CustomIOException;
 import vn.kltn.service.IAzureStorageService;
-import vn.kltn.service.IItemIndexService;
 import vn.kltn.service.IDocumentMapperService;
 import vn.kltn.service.IUploadProcessor;
 
@@ -28,9 +27,9 @@ import java.util.concurrent.CompletableFuture;
 public class UploadProcessorImpl implements IUploadProcessor {
     private final IAzureStorageService azureStorageService;
     private final IDocumentMapperService documentMapperService;
-    private final IItemIndexService documentIndexService;
     private final UploadFinalizerService uploadFinalizerService;
     private final WebSocketService webSocketService;
+    private final UploadProgressThrottler uploadProgressThrottler;
 
     @Override
     public List<String> process(List<FileBuffer> bufferedFiles) {
@@ -75,12 +74,15 @@ public class UploadProcessorImpl implements IUploadProcessor {
         List<CompletableFuture<String>> futures = new ArrayList<>();
         for (FileBuffer file : files) {
             try (InputStream inputStream = new ByteArrayInputStream(file.getData())) {
-                CompletableFuture<String> future = azureStorageService.uploadChunkedWithContainerDefaultAsync(inputStream, file.getFileName(), file.getSize(), 1024 * 1024).handle((blobName, ex) -> {
+                CompletableFuture<String> future = azureStorageService.uploadProgress(inputStream, file.getFileName(), file.getSize(), 1024 * 1024).handle((blobName, ex) -> {
+                    // clear progress
+                    uploadProgressThrottler.clear(SecurityContextHolder.getContext().getAuthentication().getName(), file.getFileName());
                     if (ex != null) {
                         log.error("Upload failed for file {}: {}", file.getFileName(), ex.getMessage());
                         return null; // hoặc return "" nếu bạn muốn tránh null
                     }
                     log.info("Upload thành công file: {}", file.getFileName());
+
                     return blobName;
                 });
                 futures.add(future);

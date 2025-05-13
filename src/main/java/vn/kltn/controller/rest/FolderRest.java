@@ -56,6 +56,18 @@ public class FolderRest {
         folderService.uploadFolderNullParent(FileUtil.getFileBufferList(files), token);
         return new ResponseData<>(201, "Thành công");
     }
+    @PostMapping("/upload/with-parent/{folderId}")
+    public ResponseData<String> uploadFolderNullParent(@PathVariable Long folderId,@RequestParam("files") MultipartFile[] files) {
+        if (files.length==0) return new ResponseData<>(400, "Không có file nào được upload", null);
+        // Tạo token mới cho mỗi yêu cầu upload
+        CancellationToken token = new CancellationToken();
+        // Đăng ký token vào registry và lấy uploadId
+        String uploadId = UUID.randomUUID().toString();
+        uploadTokenManager.registerToken(uploadId, token);
+        token.setUploadId(uploadId);
+        folderService.uploadFolderWithParent(folderId,FileUtil.getFileBufferList(files), token);
+        return new ResponseData<>(201, "Thành công");
+    }
 
     @DeleteMapping("/{folderId}/hard")
     public ResponseData<Void> hardDeleteFolder(@PathVariable Long folderId) {
