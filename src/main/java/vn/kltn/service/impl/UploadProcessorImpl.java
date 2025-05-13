@@ -5,13 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import vn.kltn.dto.FileBuffer;
-import vn.kltn.dto.ProcessUploadResult;
+import vn.kltn.dto.ProcessDocUploadResult;
 import vn.kltn.dto.UploadContext;
-import vn.kltn.dto.response.DocumentResponse;
+import vn.kltn.dto.response.ItemResponse;
 import vn.kltn.dto.response.UploadProgressDTO;
 import vn.kltn.exception.CustomIOException;
 import vn.kltn.service.IAzureStorageService;
-import vn.kltn.service.IDocumentMapperService;
 import vn.kltn.service.IUploadProcessor;
 
 import java.io.ByteArrayInputStream;
@@ -28,9 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 @RequiredArgsConstructor
 public class UploadProcessorImpl implements IUploadProcessor {
     private final IAzureStorageService azureStorageService;
-    private final IDocumentMapperService documentMapperService;
     private final UploadFinalizerService uploadFinalizerService;
     private final WebSocketService webSocketService;
+    private final ItemMapperService itemMapperService;
     private final UploadProgressThrottler uploadProgressThrottler;
 
     @Override
@@ -54,8 +53,8 @@ public class UploadProcessorImpl implements IUploadProcessor {
             }
             uploadFinalizerService.finalizeUpload(context.getToken());
 
-            List<DocumentResponse> documentResponses = documentMapperService.mapToDocumentResponseList(context.getDocuments());
-            webSocketService.sendUploadSuccess(SecurityContextHolder.getContext().getAuthentication().getName(), new ProcessUploadResult(false, documentResponses));
+            List<ItemResponse> itemResponses = itemMapperService.toResponse(context.getItems());
+            webSocketService.sendDocUploadSuccess(SecurityContextHolder.getContext().getAuthentication().getName(), new ProcessDocUploadResult(false, itemResponses));
 
             return blobNames;
         } finally {
@@ -64,11 +63,11 @@ public class UploadProcessorImpl implements IUploadProcessor {
     }
 
     private boolean checkCancellation(UploadContext context) {
-        return uploadFinalizerService.checkCancelledAndFinalize(context.getToken(), context.getDocuments(), context.getDocumentIndices(), context.getBlobNames());
+        return uploadFinalizerService.checkCancelledAndFinalize(context.getToken(), context.getItems(), context.getDocumentIndices(), context.getBlobNames());
     }
 
-    private ProcessUploadResult createCancelledResult() {
-        return new ProcessUploadResult(true, null);
+    private ProcessDocUploadResult createCancelledResult() {
+        return new ProcessDocUploadResult(true, null);
     }
 
 
@@ -94,6 +93,7 @@ public class UploadProcessorImpl implements IUploadProcessor {
                 });
                 futures.add(future);
             } catch (IOException e) {
+                uploadProgressThrottler.clear(email, file.getFileName());
                 log.error("IOException khi đọc file {}: {}", file.getFileName(), e.getMessage());
                 throw new CustomIOException("Có lỗi xảy ra khi đọc file");
             }

@@ -54,7 +54,7 @@ public class FolderRest {
         uploadTokenManager.registerToken(uploadId, token);
         token.setUploadId(uploadId);
         folderService.uploadFolderNullParent(FileUtil.getFileBufferList(files), token);
-        return new ResponseData<>(201, "Thành công");
+        return new ResponseData<>(200, "Thành công");
     }
     @PostMapping("/upload/with-parent/{folderId}")
     public ResponseData<String> uploadFolderNullParent(@PathVariable Long folderId,@RequestParam("files") MultipartFile[] files) {
@@ -66,7 +66,7 @@ public class FolderRest {
         uploadTokenManager.registerToken(uploadId, token);
         token.setUploadId(uploadId);
         folderService.uploadFolderWithParent(folderId,FileUtil.getFileBufferList(files), token);
-        return new ResponseData<>(201, "Thành công");
+        return new ResponseData<>(200, "Thành công");
     }
 
     @DeleteMapping("/{folderId}/hard")

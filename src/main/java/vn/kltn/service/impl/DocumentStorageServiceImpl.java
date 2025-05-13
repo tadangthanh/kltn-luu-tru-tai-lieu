@@ -9,10 +9,7 @@ import vn.kltn.common.CancellationToken;
 import vn.kltn.common.ItemType;
 import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.UploadContext;
-import vn.kltn.entity.Document;
-import vn.kltn.entity.DocumentVersion;
-import vn.kltn.entity.Folder;
-import vn.kltn.entity.Tag;
+import vn.kltn.entity.*;
 import vn.kltn.repository.DocumentRepo;
 import vn.kltn.service.*;
 
@@ -176,7 +173,8 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
 
     @Override
     public List<String> store(CancellationToken token, List<FileBuffer> bufferedFiles, List<Document> documents) {
-        UploadContext context = new UploadContext(token, documents);
+        List<Item> items = new ArrayList<>(documents);
+        UploadContext context = new UploadContext(token, items);
         return uploadProcessor.processUpload(context, bufferedFiles);
     }
 

@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.CancellationToken;
 import vn.kltn.entity.Document;
+import vn.kltn.entity.Item;
 import vn.kltn.index.ItemIndex;
 
 import java.util.List;
@@ -17,12 +18,12 @@ public class UploadFinalizerService {
     private final UploadCleanupService uploadCleanupService;
 
     //Xóa token + cleanup file/db/index nếu user cancel
-    public void finalizeUpload(CancellationToken token, List<Document> documents,
+    public void finalizeUpload(CancellationToken token, List<Item> items,
                                List<ItemIndex> documentIndices, List<String> blobNames) {
         try {
             if (token.isCancelled()) {
                 log.info(" Upload bị hủy, bắt đầu dọn dẹp...");
-                uploadCleanupService.cleanupUpload(documents, documentIndices, blobNames);
+                uploadCleanupService.cleanupUpload(items, documentIndices, blobNames);
             }
         } finally {
             uploadTokenManager.removeToken(token.getUploadId());
@@ -35,11 +36,11 @@ public class UploadFinalizerService {
         uploadTokenManager.removeToken(token.getUploadId());
         log.info("Token [{}] đã được remove", token.getUploadId());
     }
-    public boolean checkCancelledAndFinalize(CancellationToken token, List<Document> documents,
+    public boolean checkCancelledAndFinalize(CancellationToken token, List<Item> items,
                                              List<ItemIndex> indices, List<String> blobNames) {
         if (token.isCancelled()) {
             log.info("Upload was cancelled");
-            finalizeUpload(token, documents, indices, blobNames);
+            finalizeUpload(token, items, indices, blobNames);
             return true;
         }
         return false;

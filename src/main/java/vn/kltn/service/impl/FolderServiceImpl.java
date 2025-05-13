@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.kltn.common.CancellationToken;
@@ -13,6 +14,7 @@ import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.FolderContent;
 import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.dto.response.FolderResponse;
+import vn.kltn.dto.response.ItemResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.Folder;
 import vn.kltn.entity.User;
@@ -43,8 +45,10 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
     private final DocumentRepo documentRepo;
     private final IItemIndexService itemIndexService;
     private final IDocumentService documentService;
+    private final WebSocketService webSocketService;
+    private final ItemMapperService itemMapperService;
 
-    public FolderServiceImpl(FolderRepo folderRepo, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IFolderCreationService folderCreationService, IFolderMapperService folderMapperService, IFolderDeletionService folderDeletionService, IFolderRestorationService folderRestorationService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionService permissionService, IPermissionValidatorService permissionValidatorService, DocumentRepo documentRepo, IItemIndexService itemIndexService, IDocumentService documentService) {
+    public FolderServiceImpl(FolderRepo folderRepo, IAuthenticationService authenticationService, FolderCommonService folderCommonService, IFolderCreationService folderCreationService, IFolderMapperService folderMapperService, IFolderDeletionService folderDeletionService, IFolderRestorationService folderRestorationService, ItemValidator itemValidator, IPermissionInheritanceService permissionInheritanceService, IPermissionService permissionService, IPermissionValidatorService permissionValidatorService, DocumentRepo documentRepo, IItemIndexService itemIndexService, IDocumentService documentService, WebSocketService webSocketService, ItemMapperService itemMapperService) {
         super(authenticationService, folderCommonService, itemValidator, permissionInheritanceService, permissionValidatorService, permissionService);
         this.folderRepo = folderRepo;
         this.folderCommonService = folderCommonService;
@@ -56,6 +60,8 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
         this.documentRepo = documentRepo;
         this.itemIndexService = itemIndexService;
         this.documentService = documentService;
+        this.webSocketService = webSocketService;
+        this.itemMapperService = itemMapperService;
     }
 
     @Override
@@ -111,7 +117,7 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
         Map<Long, List<FileBuffer>> groupedByParentId = new HashMap<>();
         List<FileBuffer> rootFiles = new ArrayList<>();
         User currentUser = authenticationService.getCurrentUser();
-
+        ItemResponse itemResponse = null;
         for (FileBuffer fileBuffer : fileBufferList) {
             String filePath = fileBuffer.getFileName(); // vd: nhom10/Nhóm 10/abc.txt
             Path path = Paths.get(filePath);
@@ -139,6 +145,10 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
                                 return folderRepo.saveAndFlush(newFolder);
                             });
                     folderCache.put(fullPath, folder);
+                    // Gán folder đầu tiên cấp 1 làm itemResponse
+                    if (itemResponse == null && i == 0 && folder.getParent() == null) {
+                        itemResponse =itemMapperService.toResponse(folder);
+                    }
                 }
                 parent = folder;
             }
@@ -164,6 +174,7 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
             documentService.uploadDocumentWithParentBlocking(entry.getKey(), entry.getValue(), token);
         }
 
+        webSocketService.sendFolderUploadSuccess(SecurityContextHolder.getContext().getAuthentication().getName(), itemResponse);
         log.info("Upload folder hoàn tất tất cả file.");
     }
 
@@ -173,6 +184,7 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
         Map<String, Folder> folderCache = new HashMap<>();
         Map<Long, List<FileBuffer>> groupedByParentId = new HashMap<>();
         User currentUser = authenticationService.getCurrentUser();
+        ItemResponse itemResponse = null;
 
         // Lấy folder cha gốc
         Folder rootParent = folderRepo.findById(folderId)
@@ -205,6 +217,10 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
                                 return folderRepo.saveAndFlush(newFolder);
                             });
                     folderCache.put(fullPath, folder);
+                    // Gán folder đầu tiên cấp 1 làm itemResponse
+                    if (itemResponse == null && i == 0 && folder.getParent().getId().equals(rootParent.getId())) {
+                        itemResponse =itemMapperService.toResponse(folder);
+                    }
                 }
                 parent = folder;
             }
@@ -220,7 +236,7 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
         for (Map.Entry<Long, List<FileBuffer>> entry : groupedByParentId.entrySet()) {
             documentService.uploadDocumentWithParentBlocking(entry.getKey(), entry.getValue(), token);
         }
-
+        webSocketService.sendFolderUploadSuccess(SecurityContextHolder.getContext().getAuthentication().getName(), itemResponse);
         log.info("Upload folder (có parent) hoàn tất tất cả file.");
     }
 

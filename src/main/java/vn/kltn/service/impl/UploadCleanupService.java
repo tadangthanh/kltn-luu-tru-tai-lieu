@@ -5,8 +5,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.kltn.entity.Document;
+import vn.kltn.entity.Item;
 import vn.kltn.index.ItemIndex;
 import vn.kltn.repository.DocumentRepo;
+import vn.kltn.repository.ItemRepo;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IItemIndexService;
 
@@ -21,13 +23,14 @@ public class UploadCleanupService {
     private final DocumentRepo documentRepo;
     private final IItemIndexService documentIndexService;
     private final IAzureStorageService azureStorageService;
+    private final ItemRepo itemRepo;
 
 
-    public void cleanupUpload(List<Document> documents, List<ItemIndex> documentIndices, List<String> blobNames) {
+    public void cleanupUpload(List<Item> items, List<ItemIndex> documentIndices, List<String> blobNames) {
         log.info("Bắt đầu dọn dẹp tài liệu bị hủy");
         try {
             // Xoá document trong MySQL
-            deleteDocuments(documents);
+            deleteItems(items);
             // Xoá document trong Elasticsearch
             deleteDocumentsIndex(documentIndices);
             // Xoá blob trên Azure
@@ -38,10 +41,10 @@ public class UploadCleanupService {
         }
     }
 
-    private void deleteDocuments(List<Document> documents) {
-        if (documents != null && !documents.isEmpty()) {
-            documentRepo.deleteAll(documents);
-            log.info("Đã xoá {} tài liệu trong MySQL", documents.size());
+    private void deleteItems(List<Item> items) {
+        if (items != null && !items.isEmpty()) {
+            itemRepo.deleteAll(items);
+            log.info("Đã xoá {} tài liệu trong MySQL", items.size());
         }
     }
 
