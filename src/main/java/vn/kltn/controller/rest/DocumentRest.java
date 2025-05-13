@@ -57,7 +57,7 @@ public class DocumentRest {
         String uploadId = UUID.randomUUID().toString();
         uploadTokenManager.registerToken(uploadId, token);
         token.setUploadId(uploadId);
-        documentService.uploadDocumentEmptyParent(FileUtil.getFileBufferList(files), token);
+        documentService.uploadDocumentNullParentSync(FileUtil.getFileBufferList(files), token);
         return new ResponseData<>(200, "Đang tải ....", uploadId);
     }
 
@@ -75,14 +75,14 @@ public class DocumentRest {
     }
 
     @PostMapping("/folder/{folderId}")
-    public ResponseData<String> upload(@PathVariable Long folderId, @ValidFiles @RequestPart("files") MultipartFile[] files) {
+    public ResponseData<String> uploadWithParent(@PathVariable Long folderId, @ValidFiles @RequestPart("files") MultipartFile[] files) {
         // Tạo token mới cho mỗi yêu cầu upload
         CancellationToken token = new CancellationToken();
         // Đăng ký token vào registry và lấy uploadId
         String uploadId = UUID.randomUUID().toString();
         uploadTokenManager.registerToken(uploadId, token);
         token.setUploadId(uploadId);
-        documentService.uploadDocumentWithParent(folderId, FileUtil.getFileBufferList(files), token);
+        documentService.uploadDocumentWithParentSync(folderId, FileUtil.getFileBufferList(files), token);
         return new ResponseData<>(200, "Đang tải lên...", uploadId);
     }
 

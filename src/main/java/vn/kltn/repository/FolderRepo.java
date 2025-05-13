@@ -11,6 +11,7 @@ import vn.kltn.entity.Folder;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface FolderRepo extends JpaRepository<Folder, Long>, JpaSpecificationExecutor<Folder> {
@@ -69,4 +70,8 @@ public interface FolderRepo extends JpaRepository<Folder, Long>, JpaSpecificatio
     List<Folder> findByParentId(Long folderId);
 
     List<Folder> findAllByPermanentDeleteAtBefore(LocalDateTime now);
+
+    Optional<Folder> findByName(String currentPath);
+
+    Optional<Folder> findByNameAndParent(String part, Folder parent);
 }

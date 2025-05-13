@@ -12,15 +12,20 @@ import java.io.InputStream;
 import java.util.List;
 
 public interface IDocumentService extends IItemCommonService<Document, DocumentResponse> {
-    void uploadDocumentEmptyParent(List<FileBuffer> bufferedFiles, CancellationToken token);
+    void uploadDocumentNullParentSync(List<FileBuffer> bufferedFiles, CancellationToken token);
+
+    void uploadDocumentWithParentSync(Long folderId, List<FileBuffer> bufferedFiles, CancellationToken token);
+
+    void uploadDocumentNullParentBlocking(List<FileBuffer> bufferedFiles, CancellationToken token);
+
+    void uploadDocumentWithParentBlocking(Long folderId, List<FileBuffer> bufferedFiles, CancellationToken token);
+
 
     void updateDocumentEditor(Long documentId, byte[] data); // cap nhat noi dung document
 
     void softDeleteDocumentById(Long documentId); // xoa tam document
 
     InputStream download(Long documentId);
-
-    void uploadDocumentWithParent(Long folderId, List<FileBuffer> bufferedFiles, CancellationToken token);
 
     void softDeleteDocumentsByFolderIds(List<Long> folderIds); // xóa document theo danh sach folder id nhưng chưa xóa vĩnh viễn
 

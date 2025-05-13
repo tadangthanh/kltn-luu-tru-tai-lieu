@@ -26,10 +26,10 @@ public class MultipartFileArrayValidator implements ConstraintValidator<ValidFil
             return false;
         }
 
-        if (files.length > MAX_FILES) {
-            setMessage(context, "Chỉ được upload tối đa " + MAX_FILES + " file");
-            return false;
-        }
+//        if (files.length > MAX_FILES) {
+//            setMessage(context, "Chỉ được upload tối đa " + MAX_FILES + " file");
+//            return false;
+//        }
 
         for (MultipartFile file : files) {
             if (file.isEmpty()) {

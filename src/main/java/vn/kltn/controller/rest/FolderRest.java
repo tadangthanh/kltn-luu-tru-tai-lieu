@@ -5,14 +5,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import vn.kltn.common.CancellationToken;
 import vn.kltn.dto.FolderContent;
 import vn.kltn.dto.request.FolderRequest;
 import vn.kltn.dto.response.FolderResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.dto.response.ResponseData;
 import vn.kltn.entity.Folder;
+import vn.kltn.repository.util.FileUtil;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IFolderService;
+import vn.kltn.service.impl.UploadTokenManager;
 import vn.kltn.validation.Create;
 
 import java.io.IOException;
@@ -22,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -32,10 +37,24 @@ import java.util.zip.ZipOutputStream;
 public class FolderRest {
     private final IFolderService folderService;
     private final IAzureStorageService azureStorageService;
+    private final UploadTokenManager uploadTokenManager;
 
     @PostMapping
     public ResponseData<FolderResponse> createFolder(@RequestBody @Validated(Create.class) FolderRequest folderRequest) {
         return new ResponseData<>(201, "Thành công", folderService.createFolder(folderRequest));
+    }
+
+    @PostMapping("/upload")
+    public ResponseData<String> uploadFolderNullParent(@RequestParam("files") MultipartFile[] files) {
+        if (files.length==0) return new ResponseData<>(400, "Không có file nào được upload", null);
+        // Tạo token mới cho mỗi yêu cầu upload
+        CancellationToken token = new CancellationToken();
+        // Đăng ký token vào registry và lấy uploadId
+        String uploadId = UUID.randomUUID().toString();
+        uploadTokenManager.registerToken(uploadId, token);
+        token.setUploadId(uploadId);
+        folderService.uploadFolderNullParent(FileUtil.getFileBufferList(files), token);
+        return new ResponseData<>(201, "Thành công");
     }
 
     @DeleteMapping("/{folderId}/hard")

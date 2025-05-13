@@ -15,6 +15,7 @@ import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.request.DocumentRequest;
 import vn.kltn.dto.response.*;
 import vn.kltn.entity.*;
+import vn.kltn.exception.BadRequestException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.index.ItemIndex;
 import vn.kltn.map.ItemMapper;
@@ -78,7 +79,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
 
     @Override
     @Async("taskExecutor")
-    public void uploadDocumentEmptyParent(List<FileBuffer> bufferedFiles, CancellationToken token) {
+    public void uploadDocumentNullParentSync(List<FileBuffer> bufferedFiles, CancellationToken token) {
         // luu db
         List<Document> documents = documentStorageService.saveDocuments(bufferedFiles);
 //        documentVersionService.increaseVersions(documents);
@@ -131,7 +132,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
 
     @Override
     @Async("taskExecutor")
-    public void uploadDocumentWithParent(Long parentId, List<FileBuffer> bufferedFiles, CancellationToken token) {
+    public void uploadDocumentWithParentSync(Long parentId, List<FileBuffer> bufferedFiles, CancellationToken token) {
         User currentUser = authenticationService.getCurrentUser();
         List<String> blobsName = new ArrayList<>();
         List<ItemIndex> itemIndexList = new ArrayList<>();
@@ -153,12 +154,73 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
             log.warn("Permission denied: {}", e.getMessage());
             // Có thể gửi message về client bằng WebSocket hoặc lưu log, hoặc trạng thái vào DB nếu cần
             webSocketService.sendUploadError(currentUser.getEmail(), "Bạn không có quyền upload vào thư mục này.");
+            throw new AccessDeniedException("Bạn không có quyền upload vào thư mục này.");
         } catch (Exception e) {
             log.error("Error uploading document: {}", e.getMessage());
             // Gửi thông báo lỗi về client
             webSocketService.sendUploadError(currentUser.getEmail(), "Có lỗi xảy ra khi upload tài liệu.");
             documentStorageService.deleteBlobsFromCloud(blobsName);
             documentIndexService.deleteAll(itemIndexList);
+            throw new BadRequestException("Có lỗi xảy ra.");
+        }
+    }
+
+    @Override
+    public void uploadDocumentNullParentBlocking(List<FileBuffer> bufferedFiles, CancellationToken token) {
+        // luu db
+        List<Document> documents = documentStorageService.saveDocuments(bufferedFiles);
+//        documentVersionService.increaseVersions(documents);
+        List<String> blobsName = new ArrayList<>();
+        List<ItemIndex> itemIndexList = new ArrayList<>();
+        try {
+            // upload file to cloud
+            blobsName.addAll(documentStorageService.store(token, bufferedFiles, documents));
+            documentMapperService.mapBlobNamesToDocuments(documents, blobsName);
+            // luu index
+            List<Item> items = new ArrayList<>(documents);
+            itemIndexList.addAll(documentIndexService.insertAllItem(items).join());
+
+        } catch (Exception e) {
+            log.error("Error uploading document: {}", e.getMessage());
+            // Gửi thông báo lỗi về client
+            webSocketService.sendUploadError(authenticationService.getCurrentUser().getEmail(), "Có lỗi xảy ra khi upload tài liệu.");
+            documentStorageService.deleteBlobsFromCloud(blobsName);
+            documentIndexService.deleteAll(itemIndexList);
+            throw e;
+        }
+    }
+
+    @Override
+    public void uploadDocumentWithParentBlocking(Long folderId, List<FileBuffer> bufferedFiles, CancellationToken token) {
+        User currentUser = authenticationService.getCurrentUser();
+        List<String> blobsName = new ArrayList<>();
+        List<ItemIndex> itemIndexList = new ArrayList<>();
+        try {
+            log.info("upload document with parent id {}", folderId);
+            Folder parent = folderCommonService.getFolderByIdOrThrow(folderId);
+            permissionValidatorService.validatePermissionEditor(parent, currentUser);
+            List<Document> documents = documentStorageService.saveDocumentsWithFolder(bufferedFiles, folderId);
+            // upload file to cloud
+            blobsName.addAll(documentStorageService.store(token, bufferedFiles, documents));
+            // map blobName to document
+            documentMapperService.mapBlobNamesToDocuments(documents, blobsName);
+            // luu index
+            List<Item> items = new ArrayList<>(documents);
+            itemIndexList.addAll(documentIndexService.insertAllItem(items).join());
+            // ke thua quyen cua parent
+            permissionInheritanceService.inheritPermissionsFromParent(documents);
+        } catch (AccessDeniedException e) {
+            log.warn("Permission denied: {}", e.getMessage());
+            // Có thể gửi message về client bằng WebSocket hoặc lưu log, hoặc trạng thái vào DB nếu cần
+            webSocketService.sendUploadError(currentUser.getEmail(), "Bạn không có quyền upload vào thư mục này.");
+            throw new AccessDeniedException("Bạn không có quyền upload vào thư mục này.");
+        } catch (Exception e) {
+            log.error("Error uploading document: {}", e.getMessage());
+            // Gửi thông báo lỗi về client
+            webSocketService.sendUploadError(currentUser.getEmail(), "Có lỗi xảy ra khi upload tài liệu.");
+            documentStorageService.deleteBlobsFromCloud(blobsName);
+            documentIndexService.deleteAll(itemIndexList);
+            throw new BadRequestException("Có lỗi xảy ra.");
         }
     }
 
