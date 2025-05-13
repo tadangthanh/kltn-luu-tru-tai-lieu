@@ -22,7 +22,7 @@ public class UploadProgressThrottler {
         String key = email + "|" + dto.getFileName();
 
         Long lastTime = lastSentTime.getOrDefault(key, 0L);
-        if (now - lastTime >= THROTTLE_INTERVAL_MS || dto.getProgressPercent() == 100) {
+        if (now - lastTime >= THROTTLE_INTERVAL_MS) {
             lastSentTime.put(key, now);
             messagingTemplate.convertAndSendToUser(email, "/topic/upload-documents", dto);
         }

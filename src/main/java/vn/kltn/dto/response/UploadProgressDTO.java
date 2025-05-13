@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class UploadProgressDTO {
     private String fileName;
-    private int currentChunk;
-    private int totalChunks;
-    private int progressPercent;
+    private int totalFileUploaded;
+    private int totalFile;
 }

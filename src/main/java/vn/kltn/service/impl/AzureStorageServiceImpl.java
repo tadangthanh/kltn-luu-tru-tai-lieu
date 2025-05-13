@@ -11,10 +11,7 @@ import com.azure.storage.common.sas.SasProtocol;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import vn.kltn.dto.response.UploadProgressDTO;
 import vn.kltn.exception.CustomBlobStorageException;
 import vn.kltn.exception.ResourceNotFoundException;
 import vn.kltn.service.IAzureStorageService;
@@ -41,10 +38,8 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     private final BlobServiceClient blobServiceClient;
     @Value("${spring.cloud.azure.storage.blob.container-name}")
     private String containerNameDefault;
-    private final SimpMessagingTemplate messagingTemplate;
     private static final int MAX_RETRIES = 3;
     private static final int THREAD_COUNT = 5;
-    private final UploadProgressThrottler uploadProgressThrottler;
 
     @Override
     public String uploadChunkedWithContainerDefault(InputStream data, String originalFileName, long length, int chunkSize) {
@@ -78,7 +73,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
     }
 
     @Override
-    public CompletableFuture<String> uploadProgress(InputStream data, String originalFileName, long length, int chunkSize) {
+    public CompletableFuture<String> uploadChunk(InputStream data, String originalFileName, long length, int chunkSize) {
         try {
             BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerNameDefault);
             String newFileName = UUID.randomUUID() + "_" + TextUtils.normalizeFileName(originalFileName);
@@ -87,8 +82,6 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
             byte[] buffer = new byte[chunkSize];
             int bytesRead;
             int blockNumber = 0;
-            int totalChunks = (int) ((length + chunkSize - 1) / chunkSize);
-            String email = SecurityContextHolder.getContext().getAuthentication().getName();
             while ((bytesRead = data.read(buffer)) != -1) {
                 String blockId = Base64.getEncoder().encodeToString(String.format("%06d", blockNumber).getBytes()); // Tạo Block ID
                 blockBlobClient.stageBlock(blockId, new ByteArrayInputStream(buffer, 0, bytesRead), bytesRead);  // Upload từng phần
@@ -97,17 +90,7 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
                 //  In log với số phần upload thành công
                 System.out.println("✅ Đã upload thành công phần " + (blockNumber + 1) + " trên tổng số " + ((length + chunkSize - 1) / chunkSize) + " phần");
                 blockNumber++;
-                int progressPercent = (int) ((blockNumber * 100.0) / totalChunks);
-                if (blockNumber == totalChunks) {
-                    progressPercent = 100; // đảm bảo chunk cuối là 100%
-                }
-
-                uploadProgressThrottler.sendProgress(
-                        email,
-                        new UploadProgressDTO(originalFileName, blockNumber, totalChunks, progressPercent)
-                );
             }
-
             // Ghép các phần lại
             blockBlobClient.commitBlockList(blockIds);
 
@@ -213,7 +196,8 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
                 } else {
                     try {
                         Thread.sleep(500L * attempt); // delay tăng dần
-                    } catch (InterruptedException ignored) {}
+                    } catch (InterruptedException ignored) {
+                    }
                 }
             }
         }
@@ -277,7 +261,6 @@ public class AzureStorageServiceImpl implements IAzureStorageService {
             throw new CustomBlobStorageException("Không thể lấy URL của blob: " + e.getMessage());
         }
     }
-
 
 
     private InputStream getInputStreamBlob(String containerName, String blobName) {

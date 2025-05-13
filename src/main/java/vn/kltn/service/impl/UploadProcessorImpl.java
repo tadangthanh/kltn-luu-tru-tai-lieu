@@ -8,6 +8,7 @@ import vn.kltn.dto.FileBuffer;
 import vn.kltn.dto.ProcessUploadResult;
 import vn.kltn.dto.UploadContext;
 import vn.kltn.dto.response.DocumentResponse;
+import vn.kltn.dto.response.UploadProgressDTO;
 import vn.kltn.exception.CustomIOException;
 import vn.kltn.service.IAzureStorageService;
 import vn.kltn.service.IDocumentMapperService;
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @Slf4j(topic = "UPLOAD_PROCESSOR_SERVICE")
@@ -72,17 +74,22 @@ public class UploadProcessorImpl implements IUploadProcessor {
 
     private List<String> uploadBufferedFilesToCloud(List<FileBuffer> files) {
         List<CompletableFuture<String>> futures = new ArrayList<>();
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        int totalFile = files.size();
+        AtomicInteger totalFileUploaded = new AtomicInteger();
         for (FileBuffer file : files) {
             try (InputStream inputStream = new ByteArrayInputStream(file.getData())) {
-                CompletableFuture<String> future = azureStorageService.uploadProgress(inputStream, file.getFileName(), file.getSize(), 1024 * 1024).handle((blobName, ex) -> {
+                CompletableFuture<String> future = azureStorageService.uploadChunk(inputStream, file.getFileName(), file.getSize(), 1024 * 1024).handle((blobName, ex) -> {
                     // clear progress
-                    uploadProgressThrottler.clear(SecurityContextHolder.getContext().getAuthentication().getName(), file.getFileName());
                     if (ex != null) {
+                        uploadProgressThrottler.clear(email, file.getFileName());
                         log.error("Upload failed for file {}: {}", file.getFileName(), ex.getMessage());
                         return null; // hoặc return "" nếu bạn muốn tránh null
                     }
                     log.info("Upload thành công file: {}", file.getFileName());
-
+                    totalFileUploaded.getAndIncrement();
+                    uploadProgressThrottler.sendProgress(email, new UploadProgressDTO(file.getFileName(), totalFileUploaded.get(), totalFile));
+                    uploadProgressThrottler.clear(email, file.getFileName());
                     return blobName;
                 });
                 futures.add(future);
