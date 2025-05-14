@@ -77,6 +77,13 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
     }
 
     @Override
+    public Folder saveFolder(Folder folder) {
+        Folder savedFolder = folderRepo.save(folder);
+        itemIndexService.insertItem(savedFolder);
+        return savedFolder;
+    }
+
+    @Override
     protected Folder saveResource(Folder resource) {
         return folderRepo.save(resource);
     }
@@ -113,19 +120,31 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
     @Override
     @Async("taskExecutor")
     public void uploadFolderNullParent(List<FileBuffer> fileBufferList, CancellationToken token) {
+        processFolderUpload(null, fileBufferList, token);
+    }
+
+    @Override
+    @Async("taskExecutor")
+    public void uploadFolderWithParent(Long folderId, List<FileBuffer> fileBufferList, CancellationToken token) {
+        Folder rootParent = folderRepo.findById(folderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Folder cha không tồn tại"));
+        processFolderUpload(rootParent, fileBufferList, token);
+    }
+
+    private void processFolderUpload(Folder rootParent, List<FileBuffer> fileBufferList, CancellationToken token) {
         Map<String, Folder> folderCache = new HashMap<>();
         Map<Long, List<FileBuffer>> groupedByParentId = new HashMap<>();
         List<FileBuffer> rootFiles = new ArrayList<>();
         User currentUser = authenticationService.getCurrentUser();
         ItemResponse itemResponse = null;
+
         for (FileBuffer fileBuffer : fileBufferList) {
-            String filePath = fileBuffer.getFileName(); // vd: nhom10/Nhóm 10/abc.txt
+            String filePath = fileBuffer.getFileName(); // vd: Nhóm 10/abc.txt
             Path path = Paths.get(filePath);
 
-            Folder parent = null;
+            Folder parent = rootParent;
             StringBuilder currentPath = new StringBuilder();
 
-            // Tạo folder cha theo path
             for (int i = 0; i < path.getNameCount() - 1; i++) {
                 String folderName = path.getName(i).toString();
                 if (!currentPath.isEmpty()) currentPath.append("/");
@@ -142,20 +161,23 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
                                 newFolder.setParent(finalParent);
                                 newFolder.setItemType(ItemType.FOLDER);
                                 newFolder.setOwner(currentUser);
-                                return folderRepo.saveAndFlush(newFolder);
+                                return saveFolder(newFolder);
                             });
                     folderCache.put(fullPath, folder);
-                    // Gán folder đầu tiên cấp 1 làm itemResponse
-                    if (itemResponse == null && i == 0 && folder.getParent() == null) {
-                        itemResponse =itemMapperService.toResponse(folder);
+
+                    if (itemResponse == null && i == 0) {
+                        boolean isRootFolderUpload = rootParent == null && folder.getParent() == null;
+                        boolean isSubFolderUpload = rootParent != null && folder.getParent().getId().equals(rootParent.getId());
+                        if (isRootFolderUpload || isSubFolderUpload) {
+                            itemResponse = itemMapperService.toResponse(folder);
+                        }
                     }
                 }
                 parent = folder;
             }
 
-            // Sửa tên file trong buffer
             String fileName = path.getFileName().toString();
-            FileBuffer fixedBuffer = new FileBuffer(fileName,fileBuffer.getData(), fileBuffer.getSize(),fileBuffer.getContentType());
+            FileBuffer fixedBuffer = new FileBuffer(fileName, fileBuffer.getData(), fileBuffer.getSize(), fileBuffer.getContentType());
 
             if (parent == null) {
                 rootFiles.add(fixedBuffer);
@@ -164,12 +186,10 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
             }
         }
 
-        // Upload các file không có folder cha
-        if (!rootFiles.isEmpty()) {
+        if (rootParent == null && !rootFiles.isEmpty()) {
             documentService.uploadDocumentNullParentBlocking(rootFiles, token);
         }
 
-        // Upload từng nhóm theo folder cha
         for (Map.Entry<Long, List<FileBuffer>> entry : groupedByParentId.entrySet()) {
             documentService.uploadDocumentWithParentBlocking(entry.getKey(), entry.getValue(), token);
         }
@@ -178,67 +198,6 @@ public class FolderServiceImpl extends AbstractItemCommonService<Folder, FolderR
         log.info("Upload folder hoàn tất tất cả file.");
     }
 
-    @Override
-    @Async("taskExecutor")
-    public void uploadFolderWithParent(Long folderId, List<FileBuffer> fileBufferList, CancellationToken token) {
-        Map<String, Folder> folderCache = new HashMap<>();
-        Map<Long, List<FileBuffer>> groupedByParentId = new HashMap<>();
-        User currentUser = authenticationService.getCurrentUser();
-        ItemResponse itemResponse = null;
-
-        // Lấy folder cha gốc
-        Folder rootParent = folderRepo.findById(folderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Folder cha không tồn tại"));
-
-        for (FileBuffer fileBuffer : fileBufferList) {
-            String filePath = fileBuffer.getFileName(); // vd: Nhóm 10/abc.txt
-            Path path = Paths.get(filePath);
-
-            Folder parent = rootParent; // bắt đầu từ folder cha được truyền vào
-            StringBuilder currentPath = new StringBuilder();
-
-            // tạo folder theo path con (nếu có)
-            for (int i = 0; i < path.getNameCount() - 1; i++) {
-                String folderName = path.getName(i).toString();
-                if (!currentPath.isEmpty()) currentPath.append("/");
-                currentPath.append(folderName);
-                String fullPath = currentPath.toString();
-
-                Folder folder = folderCache.get(fullPath);
-                if (folder == null) {
-                    Folder finalParent = parent;
-                    folder = folderRepo.findByNameAndParent(folderName, parent)
-                            .orElseGet(() -> {
-                                Folder newFolder = new Folder();
-                                newFolder.setName(folderName);
-                                newFolder.setParent(finalParent);
-                                newFolder.setItemType(ItemType.FOLDER);
-                                newFolder.setOwner(currentUser);
-                                return folderRepo.saveAndFlush(newFolder);
-                            });
-                    folderCache.put(fullPath, folder);
-                    // Gán folder đầu tiên cấp 1 làm itemResponse
-                    if (itemResponse == null && i == 0 && folder.getParent().getId().equals(rootParent.getId())) {
-                        itemResponse =itemMapperService.toResponse(folder);
-                    }
-                }
-                parent = folder;
-            }
-
-            // Sửa lại tên file gốc
-            String fileName = path.getFileName().toString();
-            FileBuffer fixedBuffer = new FileBuffer(fileName, fileBuffer.getData(), fileBuffer.getSize(), fileBuffer.getContentType());
-
-            groupedByParentId.computeIfAbsent(parent.getId(), k -> new ArrayList<>()).add(fixedBuffer);
-        }
-
-        // Upload từng nhóm file theo folder cha
-        for (Map.Entry<Long, List<FileBuffer>> entry : groupedByParentId.entrySet()) {
-            documentService.uploadDocumentWithParentBlocking(entry.getKey(), entry.getValue(), token);
-        }
-        webSocketService.sendFolderUploadSuccess(SecurityContextHolder.getContext().getAuthentication().getName(), itemResponse);
-        log.info("Upload folder (có parent) hoàn tất tất cả file.");
-    }
 
 
 

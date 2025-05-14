@@ -33,6 +33,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j(topic = "FILE_UTIL")
 public class FileUtil {
@@ -222,19 +223,44 @@ public class FileUtil {
         if (files == null || files.length == 0) {
             throw new ResourceNotFoundException("Không có file nào được gửi lên");
         }
+
+        // Danh sách phần mở rộng tài liệu hợp lệ
+        Set<String> allowedExtensions = Set.of(
+                "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "odt", "rtf"
+        );
+
         List<FileBuffer> list = new ArrayList<>();
         for (int i = 0; i < files.length; i++) {
-            if (files[i].isEmpty()) {
-                throw new ResourceNotFoundException(String.format("File %s bị trống", ++i));
+            MultipartFile file = files[i];
+
+            if (file.isEmpty()) {
+                throw new ResourceNotFoundException(String.format("File %s bị trống", i + 1));
             }
+
+            String originalName = file.getOriginalFilename();
+            if (originalName == null || !originalName.contains(".")) {
+                continue; // Bỏ qua file không có đuôi
+            }
+
+            String extension = originalName.substring(originalName.lastIndexOf('.') + 1).toLowerCase();
+            if (!allowedExtensions.contains(extension)) {
+                continue; // Bỏ qua file không hợp lệ
+            }
+
             try {
-                list.add(new FileBuffer(files[i].getOriginalFilename(), files[i].getBytes(), files[i].getSize(), files[i].getContentType()));
+                list.add(new FileBuffer(originalName, file.getBytes(), file.getSize(), file.getContentType()));
             } catch (IOException e) {
                 throw new CustomIOException("Không đọc được file");
             }
         }
+
+        if (list.isEmpty()) {
+            throw new ResourceNotFoundException("Không có file tài liệu hợp lệ nào được gửi lên");
+        }
+
         return list;
     }
+
 
     public static String generateFileName(String blobName) {
         return blobName.substring(blobName.lastIndexOf("_") + 1);

@@ -32,10 +32,6 @@ public class UploadProcessorImpl implements IUploadProcessor {
     private final ItemMapperService itemMapperService;
     private final UploadProgressThrottler uploadProgressThrottler;
 
-    @Override
-    public List<String> process(List<FileBuffer> bufferedFiles) {
-        return uploadBufferedFilesToCloud(bufferedFiles);
-    }
 
     @Override
     public List<String> processUpload(UploadContext context, List<FileBuffer> files) {
@@ -62,13 +58,11 @@ public class UploadProcessorImpl implements IUploadProcessor {
         }
     }
 
+
     private boolean checkCancellation(UploadContext context) {
         return uploadFinalizerService.checkCancelledAndFinalize(context.getToken(), context.getItems(), context.getDocumentIndices(), context.getBlobNames());
     }
 
-    private ProcessDocUploadResult createCancelledResult() {
-        return new ProcessDocUploadResult(true, null);
-    }
 
 
     private List<String> uploadBufferedFilesToCloud(List<FileBuffer> files) {

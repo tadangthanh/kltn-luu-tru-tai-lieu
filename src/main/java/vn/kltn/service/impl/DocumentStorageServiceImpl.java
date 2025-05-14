@@ -177,7 +177,6 @@ public class DocumentStorageServiceImpl implements IDocumentStorageService {
         UploadContext context = new UploadContext(token, items);
         return uploadProcessor.processUpload(context, bufferedFiles);
     }
-
     @Override
     public List<Document> saveDocumentsWithFolder(List<FileBuffer> fileBuffers, Long folderId) {
         // Lưu tài liệu vào cơ sở dữ liệu

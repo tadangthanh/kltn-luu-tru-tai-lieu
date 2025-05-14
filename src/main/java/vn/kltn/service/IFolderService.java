@@ -14,6 +14,8 @@ public interface IFolderService extends IItemCommonService<Folder, FolderRespons
 
     Folder getFolderByIdOrThrow(Long folderId);
 
+    Folder saveFolder(Folder folder);
+
     void softDeleteFolderById(Long folderId);
 
     FolderResponse updateFolderById(Long folderId, FolderRequest folderRequest);
