@@ -72,6 +72,7 @@ public class UploadProcessorImpl implements IUploadProcessor {
         AtomicInteger totalFileUploaded = new AtomicInteger();
         for (FileBuffer file : files) {
             try (InputStream inputStream = new ByteArrayInputStream(file.getData())) {
+                uploadProgressThrottler.sendProgress(email, new UploadProgressDTO(file.getFileName(), totalFileUploaded.get(), totalFile));
                 CompletableFuture<String> future = azureStorageService.uploadChunk(inputStream, file.getFileName(), file.getSize(), 1024 * 1024).handle((blobName, ex) -> {
                     // clear progress
                     if (ex != null) {

@@ -181,7 +181,6 @@ public class DocumentRest {
     }
 
 
-
     @GetMapping("/open")
     public ResponseEntity<InputStreamResource> openDoc(@RequestParam(value = "documentId") Long documentId, @RequestHeader(value = HttpHeaders.RANGE, defaultValue = "") String range) {
         DocumentDataResponse documentDataResponse = documentService.openDocumentById(documentId);
@@ -200,7 +199,7 @@ public class DocumentRest {
     }
 
     @GetMapping("/{documentId}/download/{accessToken}")
-    public void downloadDoc(@PathVariable Long documentId,@PathVariable String accessToken, HttpServletResponse response) throws IOException {
+    public void downloadDoc(@PathVariable Long documentId, @PathVariable String accessToken, HttpServletResponse response) throws IOException {
         log.info("download document id: {}", documentId);
         String email = jwtService.extractEmail(accessToken, TokenType.ACCESS_TOKEN);
         User user = userService.getUserByEmail(email);
@@ -250,13 +249,11 @@ public class DocumentRest {
             response.flushBuffer();
         } finally {
             // Xóa file tạm sau khi truyền xong
-            if (pdfFile != null && pdfFile.exists()) {
+            if (pdfFile.exists()) {
                 pdfFile.delete();
             }
         }
     }
-
-
 
 
     @GetMapping("/{documentId}/view")
