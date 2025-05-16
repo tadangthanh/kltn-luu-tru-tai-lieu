@@ -1,8 +1,5 @@
 package vn.kltn.security;
 
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,14 +15,12 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import vn.kltn.dto.response.TokenResponse;
 import vn.kltn.service.IUserService;
 
 import java.util.List;
@@ -55,6 +50,7 @@ public class SecurityConfig implements WebMvcConfigurer {
             "/api/v1/documents/*/view",
             "/api/v1/documents/*/download/**",
     };
+
     //quan ly cac roles, user truy cap he thong
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
@@ -82,6 +78,7 @@ public class SecurityConfig implements WebMvcConfigurer {
         http.csrf(AbstractHttpConfigurer::disable) //mat giao dien login
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
+                                .requestMatchers(HttpMethod.GET, "/api/v1/shared-link/*").permitAll()
                                 .requestMatchers(WHITE_LIST).permitAll()
                                 .anyRequest().authenticated()
                 ).sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

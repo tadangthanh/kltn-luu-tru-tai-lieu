@@ -36,4 +36,8 @@ public abstract class Item extends BaseEntity {
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<SavedItem> savedItems = new HashSet<>();
 
+    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<SharedLink> sharedLinks = new HashSet<>();
+
+
 }

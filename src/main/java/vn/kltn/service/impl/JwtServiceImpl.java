@@ -4,6 +4,7 @@ package vn.kltn.service.impl;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
@@ -132,7 +133,7 @@ public class JwtServiceImpl implements IJwtService {
             return Jwts.parser()
                     .verifyWith(getKey(type))
                     .build().parseSignedClaims(token).getPayload();
-        } catch (ExpiredJwtException | SignatureException e) {
+        } catch (ExpiredJwtException | SignatureException | MalformedJwtException e) {
             throw new AccessDeniedException("Access denied!, error: " + e.getMessage());
         }
     }
