@@ -1,6 +1,6 @@
 package vn.kltn.repository.elasticsearch;
 
-import vn.kltn.dto.response.ItemIndexResponse;
+import vn.kltn.dto.response.ItemSearchResponse;
 import vn.kltn.index.ItemIndex;
 
 import java.util.List;
@@ -15,7 +15,7 @@ public interface CustomItemIndexRepo {
 
     void markDeleteItemsIndex(List<String> indexIds, boolean value);
 
-    List<ItemIndexResponse> getItemShared(Set<Long> itemIds, String query, int page, int size);
+    List<ItemSearchResponse> getItemShared(Set<Long> itemIds, String query, int page, int size);
 
     void bulkUpdate(List<ItemIndex> indices);
 }

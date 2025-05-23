@@ -24,6 +24,15 @@ public class ItemSpecification {
             return cb.equal(permissionJoin.get("recipient").get("id"), userId);
         };
     }
+    public  static Specification<Item> hasPermissionItemNotHiddenForUser(Long userId) {
+        return (root, query, cb) -> {
+            Join<Item, Permission> permissionJoin = root.join("permissions", JoinType.LEFT);
+            return cb.and(
+                    cb.equal(permissionJoin.get("recipient").get("id"), userId),
+                    cb.equal(permissionJoin.get("isHidden"), false)
+            );
+        };
+    }
     public static Specification<Item> notHiddenShared() {
         return (root, query, cb) -> {
             Join<Item, Permission> permissionJoin = root.join("permissions", JoinType.LEFT);

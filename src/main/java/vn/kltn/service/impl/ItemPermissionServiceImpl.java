@@ -219,4 +219,11 @@ public class ItemPermissionServiceImpl implements IPermissionService {
         permission.setHidden(true);
         permissionRepo.save(permission);
     }
+
+    @Override
+    public void showItem(Long itemId) {
+        log.info("show item id: {}",itemId);
+        User currentUser= authenticationService.getCurrentUser();
+        permissionRepo.showItem(itemId,currentUser.getId());
+    }
 }

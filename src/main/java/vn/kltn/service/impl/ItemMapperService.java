@@ -10,6 +10,7 @@ import vn.kltn.entity.Item;
 import vn.kltn.entity.User;
 import vn.kltn.map.ItemMapper;
 import vn.kltn.repository.DocumentRepo;
+import vn.kltn.repository.PermissionRepo;
 import vn.kltn.repository.SavedItemRepo;
 import vn.kltn.service.IAuthenticationService;
 
@@ -26,6 +27,7 @@ public class ItemMapperService {
     private final SavedItemRepo savedItemRepo;
     private final DocumentRepo documentRepo;
     private final IAuthenticationService authenticationService;
+    private final PermissionRepo permissionRepo;
 
     public ItemResponse toResponse(Item item) {
         ItemResponse itemResponse = itemMapper.toResponse(item);
@@ -36,9 +38,8 @@ public class ItemMapperService {
             }).getCurrentVersion().getSize());
         }
         User user = authenticationService.getCurrentUser();
-        if (user != null) {
-            itemResponse.setSaved(savedItemRepo.existsByUserIdAndItemId(user.getId(), item.getId()));
-        }
+        itemResponse.setSaved(savedItemRepo.existsByUserIdAndItemId(user.getId(), item.getId()));
+        itemResponse.setSharedWithMe(permissionRepo.existsByRecipientIdAndItemId(user.getId(), item.getId()));
         return itemResponse;
     }
 

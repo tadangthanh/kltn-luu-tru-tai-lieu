@@ -110,6 +110,8 @@ public class ItemServiceImpl implements IItemService {
         Specification<Item> spec = buildBaseSpecification();
         // Chỉ lấy các item dc chia sẻ với người dùng hiện tại
         spec = spec.and(ItemSpecification.hasPermissionForUser(currentUser.getId()));
+        // Chỉ lấy các item chưa bị ẩn
+        spec = spec.and(ItemSpecification.hasPermissionItemNotHiddenForUser(currentUser.getId()));
 
         List<BreadcrumbDto> breadcrumbDtos = new ArrayList<>();
 
@@ -285,6 +287,12 @@ public class ItemServiceImpl implements IItemService {
         itemRepo.deleteAllById(itemIds);
         itemIndexService.deleteIndexByIdList(itemIds);
         log.info("Delete item forever by id done: {}", itemId);
+    }
+
+    @Override
+    public void showItem(Long itemId) {
+        Item item = getItemByIdOrThrow(itemId);
+        permissionService.showItem(itemId);
     }
 
 }

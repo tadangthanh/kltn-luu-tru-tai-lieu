@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import vn.kltn.dto.response.ItemIndexResponse;
+import vn.kltn.dto.response.ItemSearchResponse;
 import vn.kltn.dto.response.DocumentResponse;
 import vn.kltn.dto.response.PageResponse;
 import vn.kltn.entity.Document;
@@ -49,7 +49,7 @@ public class DocumentSearchServiceImpl implements IDocumentSearchService {
     }
 
     @Override
-    public List<ItemIndexResponse> getMyDocument(String query, int page, int size) {
+    public List<ItemSearchResponse> getMyDocument(String query, int page, int size) {
         log.info("Get document by me: query={}, page={}, size={}", query, page, size);
         User currentUser = authenticationService.getCurrentUser();
         Set<Long> itemIdsAllowAccess = permissionService.getItemIdsByRecipientId(currentUser.getId());

@@ -85,4 +85,9 @@ public interface PermissionRepo extends JpaRepository<Permission, Long> {
 
     @Query("select case when count(p) > 0 then true else false end from Permission p where p.item.id = ?1 and p.recipient.id = ?2 and p.permission = 'VIEWER'")
     boolean isViewerPermission(Long itemId, Long recipientId);
+
+    @Modifying
+    @Query("update Permission p set p.isHidden=false where p.item.id=?1 and p.recipient.id=?2")
+    @Transactional
+    void showItem(Long itemId, Long recipientId);
 }

@@ -1,6 +1,6 @@
 package vn.kltn.service;
 
-import vn.kltn.dto.response.ItemIndexResponse;
+import vn.kltn.dto.response.ItemSearchResponse;
 import vn.kltn.entity.Item;
 import vn.kltn.index.ItemIndex;
 
@@ -15,7 +15,7 @@ public interface IItemIndexService {
 
     void markDeleteItem(Long indexId, boolean value);
 
-    List<ItemIndexResponse> getItemShared(Set<Long> itemIds, String query, int page, int size);
+    List<ItemSearchResponse> getItemShared(Set<Long> itemIds, String query, int page, int size);
 
     void deleteIndexByIdList(List<Long> indexIds);
 

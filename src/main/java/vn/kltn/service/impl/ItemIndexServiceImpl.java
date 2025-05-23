@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import vn.kltn.common.ItemType;
-import vn.kltn.dto.response.ItemIndexResponse;
+import vn.kltn.dto.response.ItemSearchResponse;
 import vn.kltn.entity.Document;
 import vn.kltn.entity.Item;
 import vn.kltn.exception.CustomIOException;
@@ -104,7 +104,7 @@ public class ItemIndexServiceImpl implements IItemIndexService {
     }
 
     @Override
-    public List<ItemIndexResponse> getItemShared(Set<Long> itemIds, String query, int page, int size) {
+    public List<ItemSearchResponse> getItemShared(Set<Long> itemIds, String query, int page, int size) {
         log.info("getItemShared started");
         return customItemIndexRepo.getItemShared(itemIds, query, page, size);
     }

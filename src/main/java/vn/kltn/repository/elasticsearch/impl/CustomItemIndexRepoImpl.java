@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Repository;
-import vn.kltn.dto.response.ItemIndexResponse;
+import vn.kltn.dto.response.ItemSearchResponse;
 import vn.kltn.exception.CustomIOException;
 import vn.kltn.index.ItemIndex;
 import vn.kltn.repository.elasticsearch.CustomItemIndexRepo;
@@ -124,7 +124,7 @@ public class CustomItemIndexRepoImpl implements CustomItemIndexRepo {
 
 
     @Override
-    public List<ItemIndexResponse> getItemShared(Set<Long> itemIds, String query, int page, int size) {
+    public List<ItemSearchResponse> getItemShared(Set<Long> itemIds, String query, int page, int size) {
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
 
         try {
@@ -176,7 +176,7 @@ public class CustomItemIndexRepoImpl implements CustomItemIndexRepo {
             return response.hits().hits().stream()
                     .filter(hit -> hit.source() != null)
                     .map(hit -> {
-                        ItemIndexResponse dto = new ItemIndexResponse();
+                        ItemSearchResponse dto = new ItemSearchResponse();
                         dto.setItem(hit.source());
                         dto.setHighlights(hit.highlight());
                         return dto;

@@ -29,7 +29,7 @@ public class ItemResponse extends BaseDto {
     private Long size;
 
     private boolean saved;
-
+    private boolean isSharedWithMe;
     private ItemType itemType;
 
 }

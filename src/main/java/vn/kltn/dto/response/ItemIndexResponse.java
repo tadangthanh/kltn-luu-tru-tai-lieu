@@ -1,19 +1,18 @@
 package vn.kltn.dto.response;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
-import vn.kltn.index.ItemIndex;
-
-import java.util.List;
-import java.util.Map;
+import vn.kltn.index.BaseSearchEntity;
 
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
-public class ItemIndexResponse {
-    private ItemIndex item; // dữ liệu gốc
-    private Map<String, List<String>> highlights; // highlight của các field
+public class ItemIndexResponse extends BaseSearchEntity {
+    private Long itemId; // ID của item
+    private String name; // tên item
+    private String docType; // loại tài liệu
+    private String itemType; // loại tài liệu (folder, file)
+    private String content; // Full nội dung text nếu là của tài liệu
+    private Long ownerId;
+    private boolean isDeleted = false;
+    private boolean isSharedWithMe; // có phải là tài liệu được chia sẻ với tôi hay không
 }

@@ -30,4 +30,5 @@ public interface IItemService {
 
     void deleteItemForever(Long itemId); // xóa vĩnh viễn item đã xóa trong thùng rác
 
+    void showItem(Long itemId);
 }

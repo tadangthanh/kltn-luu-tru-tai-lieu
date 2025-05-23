@@ -68,4 +68,10 @@ public class ItemRest {
     public ResponseData<ItemResponse> restoreItem(@PathVariable Long itemId) {
         return new ResponseData<>(200, "Phục hồi thành công", itemService.restoreItemById(itemId));
     }
+
+    @PutMapping("/show/{itemId}")
+    public ResponseData<Void> showItem(@PathVariable Long itemId) {
+        itemService.showItem(itemId);
+        return new ResponseData<>(200, "thanh cong");
+    }
 }
