@@ -66,6 +66,7 @@ public class ItemServiceImpl implements IItemService {
                 Item parentItem = itemRepo.findById(parentId)
                         .orElseThrow(() -> new ResourceNotFoundException("Item not found for itemId: " + parentId));
                 breadcrumbDtos.addAll(itemMapperService.buildBreadcrumb(parentItem));
+                spec=spec.or(ItemSpecification.hasPermissionItemNotHiddenForUser(currentUser.getId()));
             } else {
                 spec = spec.and((root, query, cb) -> cb.isNull(root.get("parent")));
             }
@@ -122,6 +123,7 @@ public class ItemServiceImpl implements IItemService {
                 Item parentItem = itemRepo.findById(parentId)
                         .orElseThrow(() -> new ResourceNotFoundException("Item not found for itemId: " + parentId));
                 breadcrumbDtos.addAll(itemMapperService.buildBreadcrumb(parentItem));
+                spec=spec.or(ItemSpecification.ownedBy(currentUser.getId()));
             } else {
                 spec = spec.and((root, query, cb) -> cb.isNull(root.get("parent")));
             }
@@ -202,7 +204,7 @@ public class ItemServiceImpl implements IItemService {
         Page<String> emailsSharedWithMe;
         User currentUser = authenticationService.getCurrentUser();
         if (!StringUtils.hasText(keyword)) {
-            emailsSharedWithMe = itemRepo.findOwnerEmailsSharedItemForMe(
+            emailsSharedWithMe = itemRepo.getEmailSharedWithMe(
                     currentUser.getId(), pageable
             );
         } else {

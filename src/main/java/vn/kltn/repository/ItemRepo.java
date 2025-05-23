@@ -22,8 +22,9 @@ public interface ItemRepo extends JpaRepository<Item, Long>, JpaSpecificationExe
                 inner join Permission p on p.item.id = i.id
                 where p.recipient.id = ?1
                 and i.deletedAt is null
+                and p.isHidden = false
             """)
-    Page<String> findOwnerEmailsSharedItemForMe(Long userId, Pageable pageable);
+    Page<String> getEmailSharedWithMe(Long userId, Pageable pageable);
 
     @Query("""
                 select distinct i.owner.email
@@ -32,6 +33,7 @@ public interface ItemRepo extends JpaRepository<Item, Long>, JpaSpecificationExe
                 where p.recipient.id = ?1
                 and i.deletedAt is null
                 and lower(i.owner.email) like lower(concat('%', ?2, '%'))
+                            and p.isHidden = false
             """)
     Page<String> findOwnerEmailsSharedItemForMeFiltered(Long userId, String keyword, Pageable pageable);
 
