@@ -51,9 +51,10 @@ public class IPermissionDeletionServiceImpl implements IPermissionDeletionServic
             resourceIdsToDelete.addAll(documentIds);
             // Xóa các permission liên quan đến user này cho các resource con
             permissionRepo.deleteAllByItemIdInAndRecipientId(resourceIdsToDelete, recipientId);
+            return;
         }
         // Xóa permission
-//        permissionRepo.delete(permission);
+        permissionRepo.delete(permission);
     }
 
     @Override
