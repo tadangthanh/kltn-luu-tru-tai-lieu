@@ -68,6 +68,7 @@ public class UploadProcessorImpl implements IUploadProcessor {
     private List<String> uploadBufferedFilesToCloud(List<FileBuffer> files) {
         List<CompletableFuture<String>> futures = new ArrayList<>();
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        System.out.println("email = " + email);
         int totalFile = files.size();
         AtomicInteger totalFileUploaded = new AtomicInteger();
         for (FileBuffer file : files) {

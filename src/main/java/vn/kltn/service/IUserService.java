@@ -38,4 +38,5 @@ public interface IUserService extends UserDetailsService {
 
     UserResponse getInfo();
 
+    List<User> getAllUser();
 }

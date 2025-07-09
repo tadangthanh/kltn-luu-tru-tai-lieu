@@ -24,6 +24,7 @@ import vn.kltn.repository.ItemRepo;
 import vn.kltn.repository.UserRepo;
 import vn.kltn.service.*;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static vn.kltn.common.TokenType.ACCESS_TOKEN;
@@ -197,6 +198,11 @@ public class UserServiceImpl implements IUserService {
         UserResponse userResponse = userMapper.toUserResponse(user);
         userResponse.setTotalDocuments(totalDocuments);
         return userResponse;
+    }
+
+    @Override
+    public List<User> getAllUser() {
+        return userRepo.findAll();
     }
 
 
