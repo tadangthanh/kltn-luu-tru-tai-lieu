@@ -75,7 +75,7 @@ public class ItemIndexServiceImpl implements IItemIndexService {
 
     private String getContentFromBlob(String blobName) {
         try (InputStream inputStream = azureStorageService.downloadBlobInputStream(blobName)) {
-            return FileUtil.extractTextByType(blobName, inputStream);
+            return FileUtil.extractTextByType(blobName,blobName, inputStream);
         } catch (IOException e) {
             log.error("Error downloading blob {}: {}", blobName, e.getMessage());
             throw new CustomIOException("Có lỗi xảy ra khi tải tài liệu lên Elasticsearch");
@@ -144,7 +144,7 @@ public class ItemIndexServiceImpl implements IItemIndexService {
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 try (InputStream inputStream = azureStorageService.downloadBlobInputStream(document.getCurrentVersion().getBlobName())) {
 
-                    String content = FileUtil.extractTextByType(document.getType(), inputStream);
+                    String content = FileUtil.extractTextByType(document.getType(),document.getName(), inputStream);
                     ItemIndex itemIndex = mapToItemIndex(document);
                     itemIndex.setContent(content);
                     documentIndices.add(itemIndex);
@@ -218,7 +218,7 @@ public class ItemIndexServiceImpl implements IItemIndexService {
     private ItemIndex mapDocContent(Document document) {
         ItemIndex itemIndex = itemIndexMapper.toIndex(document);
         try (InputStream inputStream = azureStorageService.downloadBlobInputStream(document.getCurrentVersion().getBlobName())) {
-            String content = FileUtil.extractTextByType(document.getType(), inputStream);
+            String content = FileUtil.extractTextByType(document.getType(), document.getName(),inputStream);
             itemIndex.setContent(content);
         } catch (IOException e) {
             log.error("Error downloading blob for document {}: {}", document.getId(), e.getMessage());

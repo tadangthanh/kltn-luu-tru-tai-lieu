@@ -10,6 +10,9 @@ import org.apache.poi.hslf.usermodel.HSLFTextShape;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.hwpf.HWPFDocument;
 import org.apache.poi.hwpf.extractor.WordExtractor;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -26,187 +29,83 @@ import vn.kltn.dto.FileBuffer;
 import vn.kltn.exception.CustomIOException;
 import vn.kltn.exception.ResourceNotFoundException;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j(topic = "FILE_UTIL")
 public class FileUtil {
-    // Add file utility methods here
-    // For example, methods to read/write files, check file types, etc.
 
-    // Example method
     public static String getFileExtension(String fileName) {
-        if (fileName == null || fileName.isEmpty()) {
-            return "";
-        }
-        int lastIndexOfDot = fileName.lastIndexOf('.');
-        if (lastIndexOfDot == -1) {
-            return ""; // No extension found
-        }
-        return fileName.substring(lastIndexOfDot + 1);
+        if (fileName == null || fileName.isEmpty()) return "";
+        int idx = fileName.lastIndexOf('.');
+        return (idx == -1) ? "" : fileName.substring(idx + 1).toLowerCase();
     }
 
+    /**
+     * Extract text based on MIME type and file extension, with fallback for mislabelled files.
+     */
+    public static String extractTextByType(String mimeType, String fileName, InputStream is) {
+        try {
+            byte[] data = is.readAllBytes();
+            String ext = getFileExtension(fileName);
 
-    public static String extractDocxText(InputStream inputStream) {
-        try (XWPFDocument document = new XWPFDocument(inputStream)) {
-            StringBuilder fullText = new StringBuilder();
-
-            for (XWPFParagraph paragraph : document.getParagraphs()) {
-                fullText.append(paragraph.getText()).append("\n");
-            }
-
-            return fullText.toString().trim();
-        } catch (IOException e) {
-            log.error("Error extracting DOCX text: {}", e.getMessage());
-            throw new CustomIOException("Error extracting DOCX file");
-        }
-    }
-
-    public static String extractPdfText(InputStream inputStream) {
-        try (PDDocument document = PDDocument.load(inputStream)) {
-            PDFTextStripper stripper = new PDFTextStripper();
-            return stripper.getText(document).trim();
-        } catch (IOException e) {
-            log.error("Error extracting PDF text: {}", e.getMessage());
-            throw new CustomIOException("Error extracting PDF file");
-        }
-    }
-
-    public static String extractExcelText(InputStream inputStream) {
-        StringBuilder text = new StringBuilder();
-
-        try (XSSFWorkbook workbook = new XSSFWorkbook(inputStream)) {
-            for (Sheet sheet : workbook) {
-                for (Row row : sheet) {
-                    for (Cell cell : row) {
-                        switch (cell.getCellType()) {
-                            case STRING:
-                                text.append(cell.getStringCellValue()).append(" ");
-                                break;
-                            case NUMERIC:
-                                text.append(cell.getNumericCellValue()).append(" ");
-                                break;
-                            case BOOLEAN:
-                                text.append(cell.getBooleanCellValue()).append(" ");
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                    text.append("\n");
-                }
+            // Try by MIME type first
+            switch (mimeType) {
+                case "application/msword":
+                    return extractDocWithFallback(data, ext);
+                case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                    return extractDocxText(new ByteArrayInputStream(data));
+                case "application/pdf":
+                    return extractPdfText(new ByteArrayInputStream(data));
+                case "text/plain":
+                    return extractTxtText(new ByteArrayInputStream(data));
+                case "application/vnd.ms-excel":
+                    return extractXlsText(new ByteArrayInputStream(data));
+                case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                    return extractExcelText(new ByteArrayInputStream(data));
+                case "application/vnd.ms-powerpoint":
+                    return extractPptText(new ByteArrayInputStream(data));
+                case "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+                    return extractPptxText(new ByteArrayInputStream(data));
+                default:
+                    // Fallback to extension-based detection
+                    return extractByExtension(ext, new ByteArrayInputStream(data));
             }
         } catch (IOException e) {
-            log.error("Error extracting Excel text: {}", e.getMessage());
-            throw new CustomIOException("Error extracting Excel file");
+            log.error("Error reading file bytes: {}", e.getMessage(), e);
+            throw new CustomIOException("Error processing file");
         }
-
-        return text.toString().trim();
     }
 
-    public static String extractPptxText(InputStream inputStream) {
-        StringBuilder text = new StringBuilder();
-
-        try (XMLSlideShow ppt = new XMLSlideShow(inputStream)) {
-            for (XSLFSlide slide : ppt.getSlides()) {
-                for (XSLFShape shape : slide.getShapes()) {
-                    if (shape instanceof XSLFTextShape textShape) {
-                        text.append(textShape.getText()).append("\n");
-                    }
-                }
-            }
+    private static String extractDocWithFallback(byte[] data, String ext) {
+        // Try old POIFS (.doc)
+        try (InputStream is1 = new ByteArrayInputStream(data)) {
+            return extractDocText(is1);
+        } catch (IllegalArgumentException | IOException e) {
+            log.warn("POIFS (.doc) extractor failed, trying OOXML (.docx): {}", e.getMessage());
+        }
+        // Try OOXML .docx
+        try (InputStream is2 = new ByteArrayInputStream(data)) {
+            return extractDocxText(is2);
         } catch (IOException e) {
-            log.error("Error extracting PPTX text: {}", e.getMessage());
-            throw new CustomIOException("Error extracting PowerPoint file");
-        }
-
-        return text.toString().trim();
-    }
-
-    public static String extractTxtText(InputStream inputStream) {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
-            StringBuilder text = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                text.append(line).append("\n");
-            }
-            return text.toString().trim();
-        } catch (IOException e) {
-            log.error("Error extracting TXT text: {}", e.getMessage());
-            throw new CustomIOException("Error extracting TXT file");
+            log.error("Error extracting DOCX text: {}", e.getMessage(), e);
+            throw new CustomIOException("Error extracting Word file");
         }
     }
 
-    public static String extractTextByType(String mimeType, InputStream inputStream) {
-        return switch (mimeType) {
-            case "application/pdf" -> extractPdfText(inputStream);
-            case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" -> // .docx
-                    extractDocxText(inputStream);
-            case "application/msword" -> // .doc
-                    extractDocText(inputStream);
-            case "text/plain" -> // .txt
-                    extractTxtText(inputStream);
-            case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" -> // .xlsx
-                    extractExcelText(inputStream);
-            case "application/vnd.ms-excel" -> // .xls
-                    extractXlsText(inputStream);
-            case "application/vnd.openxmlformats-officedocument.presentationml.presentation" -> // .pptx
-                    extractPptxText(inputStream);
-            case "application/vnd.ms-powerpoint" -> // .ppt
-                    extractPptText(inputStream);
-            default -> {
-                log.error("Unsupported file type: {}", mimeType);
-                throw new CustomIOException("Unsupported file type: " + mimeType);
-            }
-        };
-    }
-
-
-    public static String extractXlsText(InputStream inputStream) {
-        StringBuilder text = new StringBuilder();
-        try (Workbook workbook = new HSSFWorkbook(inputStream)) {
-            for (Sheet sheet : workbook) {
-                for (Row row : sheet) {
-                    for (Cell cell : row) {
-                        switch (cell.getCellType()) {
-                            case STRING -> text.append(cell.getStringCellValue()).append(" ");
-                            case NUMERIC -> text.append(cell.getNumericCellValue()).append(" ");
-                            case BOOLEAN -> text.append(cell.getBooleanCellValue()).append(" ");
-                            default -> {
-                            }
-                        }
-                    }
-                    text.append("\n");
-                }
-            }
-        } catch (IOException e) {
-            log.error("Error extracting XLS text: {}", e.getMessage());
-            throw new CustomIOException("Error extracting XLS file");
+    private static String extractByExtension(String ext, InputStream is) {
+        switch (ext) {
+            case "doc": return extractDocText(is);
+            case "docx": return extractDocxText(is);
+            case "xls": return extractXlsText(is);
+            case "xlsx": return extractExcelText(is);
+            case "ppt": return extractPptText(is);
+            case "pptx": return extractPptxText(is);
+            case "pdf": return extractPdfText(is);
+            case "txt": return extractTxtText(is);
+            default: throw new CustomIOException("Unsupported file extension: " + ext);
         }
-        return text.toString().trim();
-    }
-
-    public static String extractPptText(InputStream inputStream) {
-        StringBuilder text = new StringBuilder();
-        try (HSLFSlideShow ppt = new HSLFSlideShow(inputStream)) {
-            for (HSLFSlide slide : ppt.getSlides()) {
-                for (HSLFShape shape : slide.getShapes()) {
-                    if (shape instanceof HSLFTextShape textShape) {
-                        text.append(textShape.getText()).append("\n");
-                    }
-                }
-            }
-        } catch (IOException e) {
-            log.error("Error extracting PPT text: {}", e.getMessage());
-            throw new CustomIOException("Error extracting PPT file");
-        }
-        return text.toString().trim();
     }
 
     public static String extractDocText(InputStream inputStream) {
@@ -214,8 +113,114 @@ public class FileUtil {
             WordExtractor extractor = new WordExtractor(document);
             return extractor.getText().trim();
         } catch (IOException e) {
-            log.error("Error extracting DOC text: {}", e.getMessage());
+            log.error("Error extracting DOC text: {}", e.getMessage(), e);
             throw new CustomIOException("Error extracting DOC file");
+        }
+    }
+
+    public static String extractDocxText(InputStream inputStream) {
+        try (XWPFDocument document = new XWPFDocument(OPCPackage.open(inputStream))) {
+            StringBuilder sb = new StringBuilder();
+            for (XWPFParagraph p : document.getParagraphs()) {
+                sb.append(p.getText()).append("\n");
+            }
+            return sb.toString().trim();
+        } catch (IOException | InvalidFormatException e) {
+            log.error("Error extracting DOCX text: {}", e.getMessage(), e);
+            throw new CustomIOException("Error extracting DOCX file");
+        }
+    }
+
+    public static String extractPdfText(InputStream inputStream) {
+        try (PDDocument document = PDDocument.load(inputStream)) {
+            return new PDFTextStripper().getText(document).trim();
+        } catch (IOException e) {
+            log.error("Error extracting PDF text: {}", e.getMessage(), e);
+            throw new CustomIOException("Error extracting PDF file");
+        }
+    }
+
+    public static String extractTxtText(InputStream inputStream) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line).append("\n");
+            }
+            return sb.toString().trim();
+        } catch (IOException e) {
+            log.error("Error extracting TXT text: {}", e.getMessage(), e);
+            throw new CustomIOException("Error extracting TXT file");
+        }
+    }
+
+    public static String extractExcelText(InputStream inputStream) {
+        try (Workbook wb = new XSSFWorkbook(inputStream)) {
+            return extractSheetText(wb);
+        } catch (IOException e) {
+            log.error("Error extracting XLSX text: {}", e.getMessage(), e);
+            throw new CustomIOException("Error extracting XLSX file");
+        }
+    }
+
+    public static String extractXlsText(InputStream inputStream) {
+        try (Workbook wb = new HSSFWorkbook(inputStream)) {
+            return extractSheetText(wb);
+        } catch (IOException e) {
+            log.error("Error extracting XLS text: {}", e.getMessage(), e);
+            throw new CustomIOException("Error extracting XLS file");
+        }
+    }
+
+    private static String extractSheetText(Workbook wb) {
+        StringBuilder sb = new StringBuilder();
+        for (Sheet sheet : wb) {
+            for (Row row : sheet) {
+                for (Cell cell : row) {
+                    switch (cell.getCellType()) {
+                        case STRING -> sb.append(cell.getStringCellValue()).append(" ");
+                        case NUMERIC -> sb.append(cell.getNumericCellValue()).append(" ");
+                        case BOOLEAN -> sb.append(cell.getBooleanCellValue()).append(" ");
+                        default -> {}
+                    }
+                }
+                sb.append("\n");
+            }
+        }
+        return sb.toString().trim();
+    }
+
+    public static String extractPptxText(InputStream inputStream) {
+        try (XMLSlideShow ppt = new XMLSlideShow(inputStream)) {
+            StringBuilder sb = new StringBuilder();
+            for (XSLFSlide slide : ppt.getSlides()) {
+                for (XSLFShape shape : slide.getShapes()) {
+                    if (shape instanceof XSLFTextShape ts) {
+                        sb.append(ts.getText()).append("\n");
+                    }
+                }
+            }
+            return sb.toString().trim();
+        } catch (IOException e) {
+            log.error("Error extracting PPTX text: {}", e.getMessage(), e);
+            throw new CustomIOException("Error extracting PPTX file");
+        }
+    }
+
+    public static String extractPptText(InputStream inputStream) {
+        try (HSLFSlideShow ppt = new HSLFSlideShow(inputStream)) {
+            StringBuilder sb = new StringBuilder();
+            for (HSLFSlide slide : ppt.getSlides()) {
+                for (HSLFShape shape : slide.getShapes()) {
+                    if (shape instanceof HSLFTextShape ts) {
+                        sb.append(ts.getText()).append("\n");
+                    }
+                }
+            }
+            return sb.toString().trim();
+        } catch (IOException e) {
+            log.error("Error extracting PPT text: {}", e.getMessage(), e);
+            throw new CustomIOException("Error extracting PPT file");
         }
     }
 
@@ -223,50 +228,34 @@ public class FileUtil {
         if (files == null || files.length == 0) {
             throw new ResourceNotFoundException("Không có file nào được gửi lên");
         }
-
-        // Danh sách phần mở rộng tài liệu hợp lệ
-        Set<String> allowedExtensions = Set.of(
-                "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "odt", "rtf"
-        );
-
+        Set<String> allowed = Set.of("pdf","doc","docx","xls","xlsx","ppt","pptx","txt");
         List<FileBuffer> list = new ArrayList<>();
         for (int i = 0; i < files.length; i++) {
-            MultipartFile file = files[i];
-
-            if (file.isEmpty()) {
-                throw new ResourceNotFoundException(String.format("File %s bị trống", i + 1));
-            }
-
-            String originalName = file.getOriginalFilename();
-            if (originalName == null || !originalName.contains(".")) {
-                continue; // Bỏ qua file không có đuôi
-            }
-
-            String extension = originalName.substring(originalName.lastIndexOf('.') + 1).toLowerCase();
-            if (!allowedExtensions.contains(extension)) {
-                continue; // Bỏ qua file không hợp lệ
-            }
-
+            MultipartFile f = files[i];
+            if (f.isEmpty()) throw new ResourceNotFoundException("File " + (i+1) + " bị trống");
+            String name = f.getOriginalFilename();
+            if (name == null || !name.contains(".")) continue;
+            String ext = getFileExtension(name);
+            if (!allowed.contains(ext)) continue;
             try {
-                list.add(new FileBuffer(originalName, file.getBytes(), file.getSize(), file.getContentType()));
+                list.add(new FileBuffer(name, f.getBytes(), f.getSize(), f.getContentType()));
             } catch (IOException e) {
                 throw new CustomIOException("Không đọc được file");
             }
         }
-
-        if (list.isEmpty()) {
-            throw new ResourceNotFoundException("Không có file tài liệu hợp lệ nào được gửi lên");
-        }
-
+        if (list.isEmpty()) throw new ResourceNotFoundException("Không có file hợp lệ nào được gửi lên");
         return list;
     }
 
-
     public static String generateFileName(String blobName) {
-        return blobName.substring(blobName.lastIndexOf("_") + 1);
+        int idx = blobName.lastIndexOf('_');
+        return (idx == -1) ? blobName : blobName.substring(idx + 1);
     }
 
     public static String getOriginalFileName(String blobName) {
-        return blobName.substring( blobName.indexOf("_"), blobName.lastIndexOf("_")).split("\\.")[0];
+        int first = blobName.indexOf('_');
+        int last = blobName.lastIndexOf('_');
+        if (first < 0 || last <= first) return blobName;
+        return blobName.substring(first + 1, last);
     }
 }

@@ -161,7 +161,7 @@ public class DocumentServiceImpl extends AbstractItemCommonService<Document, Doc
             webSocketService.sendUploadError(currentUser.getEmail(), "Có lỗi xảy ra khi upload tài liệu.");
             documentStorageService.deleteBlobsFromCloud(blobsName);
             documentIndexService.deleteAll(itemIndexList);
-            throw new BadRequestException("Có lỗi xảy ra.");
+            throw new BadRequestException("Có lỗi xảy ra: "+e.getMessage());
         }
     }
 
